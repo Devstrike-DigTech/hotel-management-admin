@@ -158,7 +158,7 @@ function Figure({ label, value, sub, accent, muted }: { label: string; value: st
 
 function AccountCard({ account: s, mock, online, owner, onChange }: { account: PayoutAccount; mock: boolean; online?: boolean; owner: boolean; onChange: () => void }) {
   return (
-    <Panel className="relative h-full overflow-hidden" data-testid="payout-account">
+    <Panel className="relative flex h-full flex-col overflow-hidden" data-testid="payout-account">
       <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
         <div>
           <p className="eyebrow mb-1">Payout account</p>
@@ -208,6 +208,10 @@ function AccountCard({ account: s, mock, online, owner, onChange }: { account: P
           </div>
         </dl>
       </div>
+      <p className="mt-auto flex items-start gap-2 border-t border-line px-5 py-3.5 text-[12.5px] leading-relaxed text-ink-muted">
+        <Clock size={14} className="mt-0.5 shrink-0" />
+        Paystack pays your share of each online payment into this account, normally the next working day. Refunds come out of future settlements.
+      </p>
       {mock && <DevNote />}
     </Panel>
   );
@@ -477,7 +481,29 @@ function PaymentsTable({ from, to }: { from: string; to: string }) {
         <EmptyState compact glyph="dots" title="No online payments in this period" body="When a guest pays online, the payment and its commission show here." />
       ) : (
         <>
-          <div className="scrollbar-thin overflow-x-auto">
+          <ul className="divide-y divide-line md:hidden">
+            {q.data.items.map((p) => (
+              <li key={p.paymentId}>
+                <Link href={`/reservations/${p.reservationId}`} className="block px-4 py-3 active:bg-surface-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[13px] tracking-wide text-ink">{p.reservationCode}</span>
+                    <ChannelBadge source={p.channel} size="sm" compact />
+                    <span className="ml-auto font-mono text-[11.5px] text-ink-muted">{formatDate(p.paidAt, { day: "numeric", month: "short", year: undefined })}</span>
+                  </div>
+                  <p className="mt-0.5 truncate text-[12.5px] text-ink-muted">{p.guestName}</p>
+                  <p className="mt-1.5 flex items-baseline gap-3 font-mono text-[12.5px]">
+                    <span className="text-ink">{naira(p.amountKobo)}</span>
+                    <span className="text-ink-muted">{p.commissionKobo ? `−${naira(p.commissionKobo)}` : "no commission"}</span>
+                    <span className="ml-auto text-ink">
+                      <span className="font-sans text-[11.5px] text-ink-muted">to you </span>
+                      {naira(p.netKobo)}
+                    </span>
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <div className="scrollbar-thin hidden overflow-x-auto md:block">
             <table className="w-full min-w-[720px] text-[13.5px]" data-testid="payments-table">
               <thead>
                 <tr className="border-b border-line text-left">

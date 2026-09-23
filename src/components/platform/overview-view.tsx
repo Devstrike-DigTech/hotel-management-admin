@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, ChartBar } from "@phosphor-icons/react";
+import { ArrowUpRight, ChartBar, Storefront } from "@phosphor-icons/react";
 import { usePlatformMetrics } from "@/lib/api/hooks";
 import type { SubscriptionStatus } from "@/lib/api/types";
 import { PLAN_NAMES, PLAN_ORDER, SUB_STATUS, SUB_STATUS_ORDER, planTone } from "@/lib/catalog";
@@ -50,6 +50,23 @@ export function OverviewView() {
             <Hero label="Hotels" value={d ? number(d.tenantsTotal) : null} sub="tenants on the platform" />
             <Hero label="New in 30 days" value={d ? number(d.newTenants30d) : null} sub="signups" />
           </Panel>
+
+          {d?.marketplace && (
+            <Link
+              href="/platform/marketplace"
+              className="group mb-6 flex flex-wrap items-center gap-x-8 gap-y-3 rounded-lg border border-line bg-surface px-5 py-3.5 transition-colors hover:border-line-strong"
+            >
+              <span className="eyebrow flex items-center gap-2 text-[10px]">
+                <Storefront size={14} weight="duotone" className="text-laterite" /> Marketplace, 30 days
+              </span>
+              <Mini k="Booking value" v={nairaCompact(d.marketplace.gmv30dKobo)} />
+              <Mini k="Commission" v={nairaCompact(d.marketplace.commission30dKobo)} />
+              <Mini k="Receivable" v={nairaCompact(d.marketplace.receivableKobo)} />
+              <Mini k="Orphaned, open" v={String(d.marketplace.orphanedOpen)} alert={d.marketplace.orphanedOpen > 0} />
+              <Mini k="Flagged reviews" v={String(d.marketplace.flaggedReviews)} alert={d.marketplace.flaggedReviews > 0} />
+              <ArrowUpRight size={14} className="ml-auto text-ink-faint group-hover:text-laterite" />
+            </Link>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-12">
             <Panel className="lg:col-span-7">
@@ -181,5 +198,14 @@ function Hero({ label, value, sub, accent }: { label: string; value: string | nu
       )}
       {sub && <span className={`text-ink-muted ${/\d/.test(sub) ? "font-mono text-[12px]" : "text-[12.5px]"}`}>{sub}</span>}
     </div>
+  );
+}
+
+function Mini({ k, v, alert }: { k: string; v: string; alert?: boolean }) {
+  return (
+    <span className="flex items-baseline gap-2">
+      <span className="text-[12.5px] text-ink-muted">{k}</span>
+      <span className={alert ? "font-mono text-[15px] text-danger" : "font-mono text-[15px] text-ink"}>{v}</span>
+    </span>
   );
 }
