@@ -1,6 +1,15 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
+import { auditExportApi } from "@/lib/api/endpoints-m4";
+import { useCan } from "@/lib/permissions";
+import { toast } from "@/lib/store";
+import { addDays, diffDays, formatDay, todayKey } from "@/lib/dates";
+import { Dialog } from "@/components/ui/overlay";
+import { Field, Input } from "@/components/ui/form";
+import { Segmented } from "@/components/ui/primitives";
+import { ChipRadio } from "@/components/m2/bits";
 import { ClockCounterClockwise, DownloadSimple, LockSimple } from "@phosphor-icons/react";
 import { hotelApi } from "@/lib/api/endpoints";
 import type { AuditLog } from "@/lib/api/types";
@@ -26,7 +35,7 @@ function dayLabel(key: string) {
 }
 
 export function AuditView() {
-  const { has } = useEntitlements();
+  const { has, requiredPlan } = useEntitlements();
   const q = useInfiniteQuery({
     queryKey: ["audit", "infinite"],
     initialPageParam: 1,
@@ -47,25 +56,8 @@ export function AuditView() {
     else groups.push({ key: k, items: [it] });
   }
 
-  const exportCsv = () => {
-    const rows = [["time", "actor", "action", "entity", "entityId", "metadata"]].concat(
-      items.map((l) => [
-        l.createdAt,
-        l.actor?.fullName ?? "System",
-        l.action,
-        l.entityType,
-        l.entityId ?? "",
-        JSON.stringify(l.metadata ?? {}),
-      ]),
-    );
-    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `audit-log-${dayKey(new Date().toISOString())}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const { can } = useCan();
+  const [exporting, setExporting] = useState(false);
 
   return (
     <>
@@ -82,13 +74,14 @@ export function AuditView() {
         }
         description="An append-only record of every change. Entries can't be edited or deleted, by anyone."
         actions={
-          has("audit_export") ? (
-            <Button variant="secondary" onClick={exportCsv} disabled={!items.length}>
-              <DownloadSimple size={15} /> Export CSV
+          !can("audit.export") ? null : has("audit_export") ? (
+            <Button variant="secondary" onClick={() => setExporting(true)}>
+              <DownloadSimple size={15} /> Export
             </Button>
           ) : (
             <Button variant="secondary" onClick={() => openUpgrade({ kind: "feature", feature: "audit_export" })}>
-              <LockSimple size={14} weight="bold" className="text-brass" /> Export CSV
+              <LockSimple size={14} weight="bold" className="text-brass" /> Export
+              <span className="text-[11px] text-ink-faint">{requiredPlan("audit_export").name}</span>
             </Button>
           )
         }
@@ -167,6 +160,97 @@ export function AuditView() {
           </div>
         )}
       </Panel>
+      <ExportDialog open={exporting} onOpenChange={setExporting} />
     </>
+  );
+}
+
+type Preset = "7" | "30" | "month" | "custom";
+
+/** Download a range of the audit trail as CSV or JSON. The export is itself audited. */
+function ExportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const today = todayKey();
+  const [preset, setPreset] = useState<Preset>("30");
+  const [from, setFrom] = useState(addDays(today, -29));
+  const [to, setTo] = useState(today);
+  const [format, setFormat] = useState<"csv" | "json">("csv");
+  const range =
+    preset === "7" ? [addDays(today, -6), today] : preset === "30" ? [addDays(today, -29), today] : preset === "month" ? [today.slice(0, 8) + "01", today] : [from, to];
+  const days = diffDays(range[0], range[1]) + 1;
+  const m = useMutation({
+    mutationFn: async () => {
+      const res = await auditExportApi.download(range[0], range[1], format);
+      const blob = await res.blob();
+      const cd = res.headers.get("content-disposition") ?? "";
+      const name = /filename="?([^";]+)"?/.exec(cd)?.[1] ?? `audit-${range[0]}-${range[1]}.${format}`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(url);
+      return name;
+    },
+    onSuccess: (name) => {
+      toast.success(`${name} downloaded`, "The export is recorded in the audit log too.");
+      onOpenChange(false);
+    },
+    meta: { errorTitle: "Export failed" },
+  });
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      eyebrow="Audit log"
+      title="Export the trail"
+      description="Every entry in the range, with who, what, when and from where. Up to a year at a time."
+      footer={
+        <>
+          <Button variant="secondary" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button loading={m.isPending} disabled={days < 1 || days > 366} onClick={() => m.mutate()}>
+            <DownloadSimple size={14} /> Download {format.toUpperCase()}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        <ChipRadio
+          label="Range"
+          value={preset}
+          onChange={setPreset}
+          options={[
+            { value: "7", label: "Last 7 days" },
+            { value: "30", label: "Last 30 days" },
+            { value: "month", label: "This month" },
+            { value: "custom", label: "Dates" },
+          ]}
+        />
+        {preset === "custom" && (
+          <div className="flex gap-3">
+            <Field label="From" htmlFor="ax-from">
+              <Input id="ax-from" type="date" max={to} value={from} onChange={(e) => e.target.value && setFrom(e.target.value)} className="font-mono" />
+            </Field>
+            <Field label="To" htmlFor="ax-to">
+              <Input id="ax-to" type="date" min={from} max={today} value={to} onChange={(e) => e.target.value && setTo(e.target.value)} className="font-mono" />
+            </Field>
+          </div>
+        )}
+        <p className="text-[12.5px] text-ink-muted">
+          {formatDay(range[0], { day: "numeric", month: "short", year: "numeric" })} to {formatDay(range[1], { day: "numeric", month: "short", year: "numeric" })}, <span className="font-mono">{days}</span> days
+          {days > 366 && <span className="text-danger"> (a year at most)</span>}
+        </p>
+        <Segmented<"csv" | "json">
+          label="Format"
+          value={format}
+          onChange={setFormat}
+          options={[
+            { value: "csv", label: "CSV for Excel" },
+            { value: "json", label: "JSON" },
+          ]}
+        />
+      </div>
+    </Dialog>
   );
 }

@@ -28,6 +28,7 @@ import { paletteStore, useStore } from "@/lib/store";
 import { setThemePref } from "./theme-toggle";
 import { BookBookmark, BookOpenText, CalendarPlus, ChartBar, Coins, Door, Money, ShieldWarning, SignIn } from "@phosphor-icons/react";
 import { Bank, CalendarX, ChatsTeardrop, Globe, GlobeHemisphereWest, Storefront } from "@phosphor-icons/react";
+import { Bell, BellRinging, CalendarDots, DeviceMobile, DownloadSimple, GasPump, Package, Scales, SealCheck, ShieldCheck, Tag, Ticket, Wrench } from "@phosphor-icons/react";
 import { useCan } from "@/lib/permissions";
 import { useReservations } from "@/lib/api/hooks-m2";
 import { openNewReservation, openPayment } from "@/lib/store-m2";
@@ -233,12 +234,50 @@ export function CommandPalette() {
           </Command.Group>
         )}
 
+        <Command.Group heading="The house at work" className={groupCls}>
+          {can("maintenance.report") && (
+            <Action icon={<Wrench size={17} weight="duotone" />} label="Report a fault" hint="opens a ticket" keywords="maintenance broken repair ac leaking generator ticket" onSelect={() => run(() => router.push("/maintenance?new=1"))} />
+          )}
+          {can("housekeeping.assign") && (
+            <Action icon={<Scales size={17} weight="duotone" />} label="Hand out rooms to housekeeping" keywords="assign balance board cleaning" onSelect={() => run(() => router.push("/housekeeping"))} />
+          )}
+          {can("housekeeping.inspect") && (
+            <Action icon={<SealCheck size={17} weight="duotone" />} label="Inspect cleaned rooms" keywords="inspection queue supervisor pass send back" onSelect={() => run(() => router.push("/housekeeping?tab=inspection"))} />
+          )}
+          {can("housekeeping.work") && <Action icon={<DeviceMobile size={17} weight="duotone" />} label="My rooms" hint="phone view" keywords="housekeeper my tasks clean start finish" onSelect={() => run(() => router.push("/hk"))} />}
+          {can("housekeeping.view") && <Action icon={<Package size={17} weight="duotone" />} label="Log a lost item" keywords="lost and found phone charger left behind" onSelect={() => run(() => router.push("/housekeeping?tab=lost"))} />}
+          {(can("maintenance.work") || can("maintenance.manage")) && (
+            <Action icon={<GasPump size={17} weight="duotone" />} label="Log a diesel delivery" keywords="fuel generator litres supplier" onSelect={() => run(() => router.push("/maintenance?tab=diesel"))} />
+          )}
+          {can("rates.manage") && <Action icon={<CalendarDots size={17} weight="duotone" />} label="Paint a season" hint="Rate Almanac" keywords="rates weekend detty december price override min stay close arrival" onSelect={() => run(() => router.push("/rates"))} />}
+          {can("promotions.manage") && <Action icon={<Ticket size={17} weight="duotone" />} label="New promo code" keywords="discount voucher code offer" onSelect={() => run(() => router.push("/promotions"))} />}
+          {can("payments.take") && can("corporate.view") && (
+            <Action icon={<Tag size={17} weight="duotone" />} label="Record a company payment" hint="City Ledger" keywords="corporate transfer cheque statement receivable" onSelect={() => run(() => router.push("/city-ledger"))} />
+          )}
+          {can("corporate.manage") && <Action icon={<Bell size={17} weight="duotone" />} label="Remind a company to pay" keywords="city ledger overdue reminder statement" onSelect={() => run(() => router.push("/city-ledger"))} />}
+        </Command.Group>
+
         <Command.Group heading="Actions" className={groupCls}>
-          <Action icon={<Rows size={17} weight="duotone" />} label="Add rooms in bulk" hint="e.g. 101 to 120" keywords="add rooms bulk range create" onSelect={() => run(() => router.push("/rooms?new=bulk"))} />
-          <Action icon={<Plus size={17} weight="duotone" />} label="Add a room" keywords="new room create" onSelect={() => run(() => router.push("/rooms?new=room"))} />
-          <Action icon={<Bed size={17} weight="duotone" />} label="New room type" keywords="create category rate" onSelect={() => run(() => router.push("/rooms/types?new=1"))} />
-          <Action icon={<UserPlus size={17} weight="duotone" />} label="Add staff member" keywords="invite team user" onSelect={() => run(() => router.push("/staff?new=1"))} />
-          <Action icon={<ArrowCircleUp size={17} weight="duotone" />} label="Compare plans and upgrade" keywords="billing plan pricing subscription" onSelect={() => run(() => router.push("/billing#plans"))} />
+          {can("rooms.manage") && (
+            <>
+              <Action icon={<Rows size={17} weight="duotone" />} label="Add rooms in bulk" hint="e.g. 101 to 120" keywords="add rooms bulk range create" onSelect={() => run(() => router.push("/rooms?new=bulk"))} />
+              <Action icon={<Plus size={17} weight="duotone" />} label="Add a room" keywords="new room create" onSelect={() => run(() => router.push("/rooms?new=room"))} />
+              <Action icon={<Bed size={17} weight="duotone" />} label="New room type" keywords="create category rate" onSelect={() => run(() => router.push("/rooms/types?new=1"))} />
+            </>
+          )}
+          {can("staff.manage") && (
+            <>
+              <Action icon={<UserPlus size={17} weight="duotone" />} label="Add staff member" keywords="invite team user" onSelect={() => run(() => router.push("/staff?new=1"))} />
+              <Action icon={<ShieldCheck size={17} weight="duotone" />} label="Create a custom role" keywords="permissions access night auditor clone matrix" onSelect={() => run(() => router.push("/staff/roles"))} />
+            </>
+          )}
+          {can("audit.export") && <Action icon={<DownloadSimple size={17} weight="duotone" />} label="Export the audit log" keywords="csv json download trail history" onSelect={() => run(() => router.push("/audit"))} />}
+          {can("settings.manage") && (
+            <Action icon={<BellRinging size={17} weight="duotone" />} label="WhatsApp alerts and quiet hours" keywords="notifications owner alerts digest templates" onSelect={() => run(() => router.push("/settings/notifications"))} />
+          )}
+          {can("billing.manage") && (
+            <Action icon={<ArrowCircleUp size={17} weight="duotone" />} label="Compare plans and upgrade" keywords="billing plan pricing subscription" onSelect={() => run(() => router.push("/billing#plans"))} />
+          )}
         </Command.Group>
 
         <Command.Group heading="Go to" className={groupCls}>
