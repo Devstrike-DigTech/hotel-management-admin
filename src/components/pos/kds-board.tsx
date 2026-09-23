@@ -27,6 +27,8 @@ const TONE = {
 function clock(ms: number) {
   const s = Math.max(0, Math.floor(ms / 1000));
   const m = Math.floor(s / 60);
+  // past an hour, minutes and seconds stop being useful at a glance
+  if (m >= 60) return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m`;
   return `${m}:${String(s % 60).padStart(2, "0")}`;
 }
 
@@ -80,7 +82,7 @@ export function KdsBoard({
               const act = ACTION[t.status];
               const I = t.kind === "ROOM" ? Bed : t.kind === "TAB" ? Wine : ForkKnife;
               return (
-                <li key={t.id} data-testid={`kds-${t.id}`} className="overflow-hidden rounded-md border border-line-strong bg-surface animate-[rise_220ms_cubic-bezier(0.22,1,0.36,1)]">
+                <li key={t.id} data-testid={`kds-${t.id}`} className="shrink-0 overflow-hidden rounded-md border border-line-strong bg-surface animate-[rise_220ms_cubic-bezier(0.22,1,0.36,1)]">
                   <div className="flex items-center gap-3 px-4 py-2.5" style={{ boxShadow: `inset 0 4px 0 ${TONE[tone].band}` }}>
                     <I size={24} weight="duotone" className="shrink-0 text-ink-muted" />
                     <div className="min-w-0 flex-1">

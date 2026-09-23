@@ -60,9 +60,17 @@ export function PropertyScopeRuntime() {
   }, [list.data, current, pid]);
   useEffect(
     () =>
-      onPropertyDenied(({ message }) => {
-        const fallback = props.find((p) => p.id !== pid) ?? null;
+      onPropertyDenied(({ propertyId, message }) => {
+        const fallback = props.find((p) => p.id !== propertyId) ?? null;
         if (warned.current) return;
+        // a property that was never in this user's list (another group's, left in
+        // this browser): quietly fall back to the user's default
+        if (propertyId && !props.some((p) => p.id === propertyId)) {
+          warned.current = true;
+          window.setTimeout(() => (warned.current = false), 4000);
+          switchTo(null);
+          return;
+        }
         warned.current = true;
         window.setTimeout(() => (warned.current = false), 4000);
         toast.error("You don't have access to that property", message || "Switched you back to one you can work in.");

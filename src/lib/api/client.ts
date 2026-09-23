@@ -1,7 +1,7 @@
 import { config } from "@/lib/config";
 import { session, type Audience } from "./session";
 import { isForcedOffline, reportNetworkFailure, reportNetworkSuccess } from "@/lib/offline/network";
-import { PROPERTY_DENIED_CODES, currentPropertyId, emitPropertyDenied } from "@/lib/property";
+import { PROPERTY_DENIED_CODES, currentPropertyId, emitPropertyDenied, setPropertyId } from "@/lib/property";
 import type { ApiErrorBody, AuthResponse } from "./types";
 
 export class ApiError extends Error {
@@ -147,6 +147,7 @@ async function request(path: string, opts: RequestOptions): Promise<Response> {
   const { method = "GET", body, query, auth = "hotel", signal } = opts;
   const isForm = typeof FormData !== "undefined" && body instanceof FormData;
 
+  let sentPid: string | null = null;
   const send = async () => {
     const headers: Record<string, string> = { Accept: "application/json", ...(opts.headers ?? {}) };
     if (body !== undefined && !isForm) headers["Content-Type"] = "application/json";
@@ -154,6 +155,7 @@ async function request(path: string, opts: RequestOptions): Promise<Response> {
       const t = session.hotel()?.accessToken;
       if (t) headers.Authorization = `Bearer ${t}`;
       const pid = opts.propertyId === undefined ? currentPropertyId() : opts.propertyId;
+      sentPid = pid ?? null;
       if (pid) headers["X-Property-Id"] = pid;
     } else if (auth === "platform") {
       const t = session.platform()?.accessToken;
@@ -194,7 +196,20 @@ async function request(path: string, opts: RequestOptions): Promise<Response> {
   if (!res.ok) {
     const err = await parseError(res);
     if (auth === "hotel" && res.status === 403 && PROPERTY_DENIED_CODES.has(err.code)) {
-      emitPropertyDenied({ propertyId: opts.propertyId === undefined ? currentPropertyId() : (opts.propertyId ?? null), message: err.message });
+      const denied = sentPid;
+      emitPropertyDenied({ propertyId: denied, message: err.message });
+      // The stored property is not ours (access withdrawn, or another group's
+      // property left in this browser): forget it so the server picks the
+      // user's default, and read again. Only reads are retried: a write must
+      // never land in a different property from the one it was made in.
+      if (opts.propertyId === undefined && denied && method === "GET") {
+        if (currentPropertyId() === denied) setPropertyId(null);
+        if (currentPropertyId() !== denied) {
+          const again = await send();
+          if (again.ok) return again;
+          throw await parseError(again);
+        }
+      }
     }
     throw err;
   }

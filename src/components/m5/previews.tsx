@@ -44,7 +44,7 @@ const THREADS: InboxThread[] = [
   { id: "c", guestName: "Olumide Balogun", phone: "+2348091112233", channel: "WHATSAPP", status: "OPEN", unread: 0, lastMessage: { body: "Yes, a Deluxe King is ₦85,000 a night for Friday and Saturday.", direction: "OUT", at: ago(2400) }, windowExpiresAt: null, assignee: null, reservation: null },
 ];
 const MESSAGES: InboxMessage[] = [
-  { id: "1", direction: "OUT", kind: "AUTOMATION", body: "Welcome to The Palmwine House, Adaeze. You are in room 204. Reply to this message with any request and our team will help.", at: ago(300), status: "READ" },
+  { id: "1", direction: "OUT", kind: "AUTOMATION", body: "Welcome to The Harbour House, Adaeze. You are in room 204. Reply to this message with any request and our team will help.", at: ago(300), status: "READ" },
   { id: "2", direction: "IN", kind: "TEXT", body: "Good evening. Please can we get two extra towels and more toiletries in the room?", at: ago(4), detected: { kind: "HOUSEKEEPING", keyword: "towels" } },
 ];
 
@@ -65,7 +65,7 @@ export function InboxPreview() {
 export function LoyaltyPreview() {
   return (
     <div className="grid gap-5 lg:grid-cols-[1.1fr_1fr]">
-      <MemberCard m={{ id: "m", number: "PWC-000118", guestName: "Adaeze Okafor", tierName: "Silver", tierIndex: 1, points: 8450, pointsValueKobo: 845_000, nights12m: 14, nextTier: { name: "Gold", minNights: 25 }, programmeName: "Palmwine Circle" }} />
+      <MemberCard m={{ id: "m", number: "HHC-000118", guestName: "Adaeze Okafor", tierName: "Silver", tierIndex: 1, points: 8450, pointsValueKobo: 845_000, nights12m: 14, nextTier: { name: "Gold", minNights: 25 }, programmeName: "Harbour Circle" }} />
       <div className="rounded-md border border-line bg-surface p-5">
         <TierLadder
           tiers={[
@@ -178,9 +178,9 @@ export function DomainPreview() {
 
 export function GroupPreview() {
   const rows = [
-    ["The Palmwine House", 71, 74000, 52.5],
-    ["Palmwine House Ikoyi", 63, 128000, 80.6],
-    ["Palmwine House Abuja", 58, 91000, 52.8],
+    ["Harbour House Lekki", 71, 74000, 52.5],
+    ["Harbour House Ikoyi", 63, 128000, 80.6],
+    ["Harbour House Abuja", 58, 91000, 52.8],
   ] as const;
   return (
     <div className="grid gap-3 sm:grid-cols-3">

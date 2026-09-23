@@ -76,7 +76,7 @@ export const HOTEL_NAV: NavGroup[] = [
       { href: "/reservations", label: "Reservations", short: "Bookings", icon: BookBookmark, feature: "reservations", cap: "reservations.read", keywords: "bookings stays arrivals codes", shortcut: "G V" },
       { href: "/guests", label: "Guests", icon: AddressBook, feature: "guest_register", cap: "guest.read", keywords: "guest profiles people customers ndpa" },
       { href: "/inbox", label: "Guest inbox", short: "Inbox", icon: ChatCircleText, feature: "whatsapp_messaging", cap: "inbox.view", badge: "inbox", keywords: "whatsapp messages chat conversations reply guests threads", shortcut: "G I" },
-      { href: "/loyalty", label: "Loyalty", icon: Crown, feature: "loyalty", cap: "loyalty.view", keywords: "rewards points members tiers palmwine circle redeem" },
+      { href: "/loyalty", label: "Loyalty", icon: Crown, feature: "loyalty", cap: "loyalty.view", keywords: "rewards points members tiers circle redeem" },
       { href: "/reviews", label: "Reviews", icon: ChatsTeardrop, cap: "reviews.read", badge: "reviews", keywords: "ratings stars feedback reply verified stays" },
       { href: "/rooms", label: "Rooms", icon: Key, exact: true, cap: ["rooms.status", "rooms.manage", "reservations.view"], keywords: "key rack board status", shortcut: "G R" },
       { href: "/rooms/types", label: "Room types", icon: Bed, cap: ["rooms.manage", "rates.view"], keywords: "categories base price" },

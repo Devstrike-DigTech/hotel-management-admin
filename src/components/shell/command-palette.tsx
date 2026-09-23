@@ -286,7 +286,7 @@ export function CommandPalette() {
           {can("pricing.manage") && <Action icon={<ChartLineUp size={17} weight="duotone" />} label="Turn autopilot on or off" locked={!has("dynamic_pricing")} keywords="dynamic pricing autopilot guardrails floor ceiling" onSelect={() => run(() => router.push("/dynamic-pricing?tab=settings"))} />}
           {can("channels.view") && <Action icon={<Plugs size={17} weight="duotone" />} label="What the OTAs cost this month" locked={!has("channel_manager")} keywords="booking.com expedia airbnb commission direct" onSelect={() => run(() => router.push("/channel-manager"))} />}
           {can("channels.view") && <Action icon={<Plugs size={17} weight="duotone" />} label="Copy the iCal calendar links" locked={!has("channel_manager")} keywords="airbnb ical feed export import sync" onSelect={() => run(() => router.push("/channel-manager?tab=connections"))} />}
-          {can("loyalty.view") && <Action icon={<Crown size={17} weight="duotone" />} label="Find a loyalty member" locked={!has("loyalty")} keywords="points member tier palmwine circle enrol" onSelect={() => run(() => router.push("/loyalty?tab=members"))} />}
+          {can("loyalty.view") && <Action icon={<Crown size={17} weight="duotone" />} label="Find a loyalty member" locked={!has("loyalty")} keywords="points member tier circle enrol" onSelect={() => run(() => router.push("/loyalty?tab=members"))} />}
           {can("settings.manage") && <Action icon={<Globe size={17} weight="duotone" />} label="Set up a custom domain" locked={!has("custom_domain")} keywords="domain dns cname booking site address" onSelect={() => run(() => router.push("/settings/domain"))} />}
         </Command.Group>
 

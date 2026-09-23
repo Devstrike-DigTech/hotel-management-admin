@@ -87,10 +87,3 @@ export function fillTemplate(body: string, values: Record<string, string>) {
   return body.replace(/\{\{\s*([\w.]+)\s*\}\}|\{\{(\d+)\}\}/g, (_m, k, n) => values[k ?? n] ?? `[${k ?? n}]`);
 }
 
-export const DEFAULT_QUICK_REPLIES: QuickReply[] = [
-  { id: "wifi", label: "Wi-Fi", body: "Our Wi-Fi network is PalmwineGuest and the password is on the card in your room. Tell us if it gives you any trouble." },
-  { id: "checkout", label: "Check-out time", body: "Check-out is at 12 noon. If you need a little longer, reply here and we'll see what we can do." },
-  { id: "directions", label: "Directions", body: "We're on Admiralty Way, Lekki Phase 1, two buildings past the roundabout. Share your location and we'll guide your driver." },
-  { id: "breakfast", label: "Breakfast", body: "Breakfast is served at The Yard from 6:30 to 10:30 every morning." },
-  { id: "thanks", label: "On it", body: "Thank you, we're on it. Someone will be with you shortly." },
-];

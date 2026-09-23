@@ -289,7 +289,7 @@ function AddPropertySheet({ open, onOpenChange, props }: { open: boolean; onOpen
     >
       <div className="flex flex-col gap-4">
         <Field label="Name">
-          <Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Palmwine House Abuja" />
+          <Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="e.g. Harbour House Abuja" />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="City">
