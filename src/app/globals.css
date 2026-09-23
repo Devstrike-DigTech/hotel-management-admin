@@ -46,6 +46,13 @@
   --plan-enterprise-ink: #13110e;
   --shadow-float: 0 1px 0 rgb(27 26 23 / 0.04), 0 14px 36px -14px rgb(60 40 20 / 0.32);
   --grain-opacity: 0.04;
+  /* payment-method series (validated: adjacent CVD >= 7.9, normal >= 23.9 on surface) */
+  --m-cash: #2e8b62;
+  --m-pos: #d0592f;
+  --m-transfer: #4a68b8;
+  --m-card: #c0931e;
+  --m-ledger: #9a5ea6;
+  --m-comp: #a39a8c;
 }
 
 :root[data-theme="dark"] {
@@ -84,6 +91,12 @@
   --plan-enterprise-ink: #13110e;
   --shadow-float: 0 1px 0 rgb(0 0 0 / 0.3), 0 18px 40px -12px rgb(0 0 0 / 0.75);
   --grain-opacity: 0.06;
+  --m-cash: #3a9670;
+  --m-pos: #d4643e;
+  --m-transfer: #6b87cc;
+  --m-card: #b88c34;
+  --m-ledger: #a174bc;
+  --m-comp: #6f675c;
 }
 
 @theme inline {
@@ -314,6 +327,71 @@ button:focus-visible .tag-swing { animation: swing-hover 1100ms cubic-bezier(0.2
   74% { transform: rotate(1.4deg); }
   100% { transform: rotate(0); }
 }
+
+/* ---- the paper registration card ---- */
+.register-card {
+  --card: color-mix(in oklab, var(--surface) 82%, var(--brass-wash));
+  background:
+    radial-gradient(circle at 0 0, transparent 0, transparent 100%),
+    var(--card);
+  box-shadow:
+    0 1px 0 color-mix(in oklab, var(--ink) 6%, transparent),
+    0 18px 40px -24px rgb(60 40 20 / 0.45);
+}
+[data-theme="dark"] .register-card {
+  --card: color-mix(in oklab, var(--surface) 92%, var(--brass));
+  box-shadow: 0 18px 40px -20px rgb(0 0 0 / 0.8);
+}
+/* perforated tear-off edge along the top */
+.perforation {
+  height: 10px;
+  background-image: radial-gradient(circle at 5px 5px, var(--paper) 2.6px, transparent 3px);
+  background-size: 14px 10px;
+  background-position: 3px -5px;
+  background-repeat: repeat-x;
+}
+.card-field {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dashed var(--line-strong);
+  padding: 4px 0 5px;
+  font-size: 16px;
+  color: var(--ink);
+  outline: none;
+  border-radius: 0;
+  transition: border-color 150ms ease-out;
+}
+@media (min-width: 640px) {
+  .card-field { font-size: 15px; }
+}
+.card-field:hover { border-bottom-color: var(--ink-faint); }
+.card-field:focus { border-bottom: 1px solid var(--laterite); box-shadow: 0 1px 0 var(--laterite); }
+.card-field[aria-invalid="true"] { border-bottom: 1px solid var(--danger); }
+.card-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.stamp {
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 2px var(--card, var(--surface)), inset 0 0 0 3px currentColor;
+}
+
+/* ---- print ---- */
+@media print {
+  @page { margin: 12mm; }
+  html, body { background: #fff !important; color: #111 !important; }
+  body::before { display: none !important; }
+  .no-print, header[class*="sticky"], nav, aside.lg\:block { display: none !important; }
+  .print-only { display: block !important; }
+  .register-card { box-shadow: none !important; background: #fff !important; }
+  .perforation { display: none !important; }
+}
+.print-only { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   *,
