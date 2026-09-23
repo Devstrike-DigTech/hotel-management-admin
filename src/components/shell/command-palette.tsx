@@ -35,6 +35,8 @@ import { openNewReservation, openPayment } from "@/lib/store-m2";
 import { STAY_STATUS } from "@/lib/catalog-m2";
 import { naira } from "@/lib/format";
 import { StatusSwatch } from "@/components/keyrack/status-swatch";
+import { CashRegister, ChartLineUp, ChatCircleText, CookingPot, Crown, ForkKnife, Plugs, TreeStructure, Truck, Wine } from "@phosphor-icons/react";
+import { usePropertyScope, useSwitchProperty } from "./property-switcher";
 
 const itemCls =
   "group flex h-10 cursor-pointer items-center gap-3 rounded-md px-3 text-[14px] text-ink outline-none data-[selected=true]:bg-surface-2 data-[disabled=true]:opacity-50";
@@ -51,6 +53,9 @@ export function CommandPalette() {
   const { has } = useEntitlements();
   const { can } = useCan();
   const setStatus = useRoomStatus();
+  const scope = usePropertyScope();
+  const props = scope.props;
+  const switchTo = useSwitchProperty();
 
   const rooms = useQuery({ queryKey: qk.rooms({}), queryFn: () => hotelApi.rooms({}), enabled: open });
 
@@ -257,6 +262,34 @@ export function CommandPalette() {
           {can("corporate.manage") && <Action icon={<Bell size={17} weight="duotone" />} label="Remind a company to pay" keywords="city ledger overdue reminder statement" onSelect={() => run(() => router.push("/city-ledger"))} />}
         </Command.Group>
 
+        {(props.length > 1 || has("pos") || has("whatsapp_messaging") || can("settings.manage")) && (
+          <Command.Group heading="Across the group" className={groupCls}>
+            {props
+              .filter((p) => p.id !== scope.current?.id)
+              .map((p) => (
+                <Action key={p.id} icon={<TreeStructure size={17} weight="duotone" />} label={`Switch to ${p.name}`} hint={[p.area, p.city].filter(Boolean).join(", ")} keywords="property switch hotel work in change" onSelect={() => run(() => switchTo(p.id, p.name))} />
+              ))}
+            {props.length > 1 && can("reports.read") && <Action icon={<ChartBar size={17} weight="duotone" />} label="Group reports" hint="all properties" keywords="consolidated compare occupancy adr revpar group" onSelect={() => run(() => router.push("/group"))} />}
+            {can("settings.manage") && <Action icon={<TreeStructure size={17} weight="duotone" />} label="Add a property" locked={!has("multi_property")} keywords="new hotel property group second" onSelect={() => run(() => router.push("/properties"))} />}
+          </Command.Group>
+        )}
+
+        <Command.Group heading="Outlets, guests and channels" className={groupCls}>
+          {can("pos.view") && <Action icon={<CashRegister size={17} weight="duotone" />} label="Open the till" locked={!has("pos")} keywords="pos point of sale bar restaurant order table tab" onSelect={() => run(() => router.push("/pos"))} />}
+          {can("kds.view") && <Action icon={<CookingPot size={17} weight="duotone" />} label="Kitchen display" locked={!has("pos")} keywords="kds kitchen tickets bump" onSelect={() => run(() => router.push("/kds"))} />}
+          {can("pos.manage") && <Action icon={<ForkKnife size={17} weight="duotone" />} label="Mark an item sold out" hint="86" keywords="menu unavailable 86 finished" locked={!has("pos")} onSelect={() => run(() => router.push("/pos/menu"))} />}
+          {can("stock.manage") && <Action icon={<Truck size={17} weight="duotone" />} label="Record a stock delivery" locked={!has("pos")} keywords="stock purchase crates beer supplier" onSelect={() => run(() => router.push("/pos/stock"))} />}
+          {can("minibar.record") && <Action icon={<Wine size={17} weight="duotone" />} label="Record minibar use" locked={!has("pos")} keywords="minibar consumption charge room" onSelect={() => run(() => router.push("/pos/stock?tab=minibar"))} />}
+          {can("inbox.view") && <Action icon={<ChatCircleText size={17} weight="duotone" />} label="Guest inbox" hint="WhatsApp" locked={!has("whatsapp_messaging")} keywords="messages reply whatsapp chat unread" onSelect={() => run(() => router.push("/inbox"))} />}
+          {can("pricing.manage") && <Action icon={<ChartLineUp size={17} weight="duotone" />} label="Review pricing suggestions" hint="Rate Almanac" locked={!has("dynamic_pricing")} keywords="dynamic pricing accept suggestion yield" onSelect={() => run(() => router.push("/rates"))} />}
+          {can("pricing.manage") && <Action icon={<ChartLineUp size={17} weight="duotone" />} label="Add an event to the pricing calendar" locked={!has("dynamic_pricing")} keywords="concert afcon conference event uplift detty december" onSelect={() => run(() => router.push("/dynamic-pricing?tab=events"))} />}
+          {can("pricing.manage") && <Action icon={<ChartLineUp size={17} weight="duotone" />} label="Turn autopilot on or off" locked={!has("dynamic_pricing")} keywords="dynamic pricing autopilot guardrails floor ceiling" onSelect={() => run(() => router.push("/dynamic-pricing?tab=settings"))} />}
+          {can("channels.view") && <Action icon={<Plugs size={17} weight="duotone" />} label="What the OTAs cost this month" locked={!has("channel_manager")} keywords="booking.com expedia airbnb commission direct" onSelect={() => run(() => router.push("/channel-manager"))} />}
+          {can("channels.view") && <Action icon={<Plugs size={17} weight="duotone" />} label="Copy the iCal calendar links" locked={!has("channel_manager")} keywords="airbnb ical feed export import sync" onSelect={() => run(() => router.push("/channel-manager?tab=connections"))} />}
+          {can("loyalty.view") && <Action icon={<Crown size={17} weight="duotone" />} label="Find a loyalty member" locked={!has("loyalty")} keywords="points member tier palmwine circle enrol" onSelect={() => run(() => router.push("/loyalty?tab=members"))} />}
+          {can("settings.manage") && <Action icon={<Globe size={17} weight="duotone" />} label="Set up a custom domain" locked={!has("custom_domain")} keywords="domain dns cname booking site address" onSelect={() => run(() => router.push("/settings/domain"))} />}
+        </Command.Group>
+
         <Command.Group heading="Actions" className={groupCls}>
           {can("rooms.manage") && (
             <>
@@ -323,17 +356,20 @@ function Action({
   hint,
   keywords,
   onSelect,
+  locked,
 }: {
   icon: React.ReactNode;
   label: string;
   hint?: string;
   keywords?: string;
   onSelect: () => void;
+  locked?: boolean;
 }) {
   return (
     <Command.Item value={`${label} ${keywords ?? ""}`} onSelect={onSelect} className={itemCls}>
       <span className="text-ink-muted group-data-[selected=true]:text-laterite">{icon}</span>
       <span>{label}</span>
+      {locked && <LockSimple size={12} weight="bold" className="text-brass" aria-label="on a higher plan" />}
       {hint && <span className="ml-auto text-[12px] text-ink-faint">{hint}</span>}
     </Command.Item>
   );
