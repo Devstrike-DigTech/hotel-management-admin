@@ -79,6 +79,7 @@ type MenuItem = { id: string; name: string; available: boolean; station: string 
 type TerminalMenu = { outlet: Outlet & { defaultStation: string }; categories: { station: string | null; items: MenuItem[] }[] };
 type InHouse = { reservationId: string; code: string; room: { id: string; number: string }; guestName: string; loyaltyTier: string | null };
 type PosOrder = { id: string; number: string; status: string; folioId: string | null; totals: { totalKobo: number; dueKobo: number }; lines: { name: string; ticketId: string | null }[] };
+type FolioEntry = { id: string; type: string; description: string; voided: boolean; createdAt: string };
 type KdsTicket = { id: string; number: string; status: string; order: { id: string; number: string } };
 
 /** An item that goes to the given station and needs no choices. */
@@ -226,6 +227,13 @@ test("a room-service order goes to the kitchen display and onto the guest's foli
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/folios/${folio.id}`);
   await expect(page.getByText(new RegExp(`${order!.number}.*${item.name}`)).first()).toBeVisible();
+
+  // leave the guest's bill as it was: void the charge (its tax lines go with it)
+  teardown.push(async () => {
+    const f = await get<{ entries: FolioEntry[] }>(`/folios/${folio.id}`, owner, lekki.id);
+    for (const e of f.entries.filter((x) => x.type === "EXTRA" && !x.voided && x.description.includes(order!.number)))
+      await call("POST", `/folios/${folio.id}/entries/${e.id}/void`, { reason: "e2e clean-up" }, owner, lekki.id);
+  });
 });
 
 /* ------------------------------------------------------------------ */
@@ -324,15 +332,21 @@ test("accepting a pricing suggestion on the Rate Almanac reprices the night", as
 test("a guest's WhatsApp message is answered from the inbox", async () => {
   // messages are routed by the sender's stay: write as an in-house guest
   const guests = await get<InHouse[]>("/pos/rooms/in-house", owner, lekki.id);
+  // (preferably one with no conversation yet, so the seeded threads stay as they are)
+  type Conv = { id: string; status: string; guest: { phone: string } };
+  const convs = await get<{ items: Conv[] }>("/inbox/conversations?status=OPEN,PENDING,CLOSED&pageSize=100", owner, lekki.id);
   let phone = "";
   for (const g of guests) {
     const r = await get<{ guest: { phone: string | null } }>(`/reservations/${g.reservationId}`, owner, lekki.id);
-    if (r.guest.phone) {
+    if (!r.guest.phone) continue;
+    if (!phone) phone = r.guest.phone;
+    if (!convs.items.some((c) => c.guest.phone === r.guest.phone)) {
       phone = r.guest.phone;
       break;
     }
   }
   expect(phone).not.toBe("");
+  const prior = convs.items.find((c) => c.guest.phone === phone) ?? null;
   const inbound = await call<{ conversationId: string | null; routed: boolean }>("POST", "/inbox/dev/inbound", { phone, body: `Good evening, is the pool open late tonight? (${stamp})`, name: `Amaka E2E` }, owner, lekki.id);
   expect(inbound.conversationId).toBeTruthy();
 
@@ -350,7 +364,7 @@ test("a guest's WhatsApp message is answered from the inbox", async () => {
 
   const detail = await get<{ messages: { direction: string; body: string }[] }>(`/inbox/conversations/${inbound.conversationId}`, owner, lekki.id);
   expect(detail.messages.some((m) => m.direction === "OUTBOUND" && m.body === reply)).toBe(true);
-  teardown.push(() => call("PATCH", `/inbox/conversations/${inbound.conversationId}`, { status: "CLOSED" }, owner, lekki.id));
+  teardown.push(() => call("PATCH", `/inbox/conversations/${inbound.conversationId}`, { status: prior?.status ?? "CLOSED" }, owner, lekki.id));
 });
 
 /* ------------------------------------------------------------------ */
@@ -378,13 +392,16 @@ test("loyalty points come off a folio with the guest's code", async () => {
   } catch {
     member = await call<Member>("POST", "/loyalty/members", { guestId, via: "DESK" });
   }
-  if (member.points < 1500) member = await call<Member>("POST", `/loyalty/members/${member.id}/adjust`, { points: 1500, reason: `e2e top-up ${stamp}` });
+  const topUp = member.points < 1500;
+  if (topUp) member = await call<Member>("POST", `/loyalty/members/${member.id}/adjust`, { points: 1500, reason: `e2e top-up ${stamp}` });
   const folio = await get<{ id: string }>(`/reservations/${stay!.reservationId}/folio`, owner, lekki.id);
   const before = member.points;
+  const t0 = Date.now() - 5_000;
 
   await page.goto(`/folios/${folio.id}`);
   await page.getByTestId("redeem-points").click();
   await page.getByTestId("redeem-points-input").fill("1000");
+  const sentAt = Date.now() - 2_000;
   await page.getByTestId("redeem-send-code").click();
 
   let code = "";
@@ -393,7 +410,7 @@ test("loyalty points come off a folio with the guest's code", async () => {
       const r = await fetch(`${API}/public/dev/outbox?limit=20`);
       // the code goes by WhatsApp (template parameter) or SMS (otpCode)
       const j = (await r.json()) as { items: { createdAt: string; template: string; to: string; text: string; meta: { otpCode?: string; waParams?: string[] } }[] };
-      const m = j.items.find((x) => x.template === "OTP" && x.to === member.guest.phone && Date.now() - Date.parse(x.createdAt) < 120_000);
+      const m = j.items.find((x) => x.template === "OTP" && x.to === member.guest.phone && Date.parse(x.createdAt) >= sentAt);
       code = m?.meta.otpCode ?? m?.meta.waParams?.find((v) => /^\d{6}$/.test(v)) ?? m?.text.match(/\b\d{6}\b/)?.[0] ?? "";
       return code;
     }, { timeout: 15_000 })
@@ -404,41 +421,60 @@ test("loyalty points come off a folio with the guest's code", async () => {
 
   const after = await get<Member>(`/loyalty/members/${member.id}`);
   expect(after.points).toBe(before - 1000);
+
+  // put the bill and the points back: voiding the loyalty discount returns the points
+  const f = await get<{ entries: FolioEntry[] }>(`/folios/${folio.id}`, owner, lekki.id);
+  for (const e of f.entries.filter((x) => x.type === "DISCOUNT" && !x.voided && /points/i.test(x.description) && Date.parse(x.createdAt) > t0))
+    await call("POST", `/folios/${folio.id}/entries/${e.id}/void`, { reason: "e2e clean-up" }, owner, lekki.id);
+  if (topUp) await call("POST", `/loyalty/members/${member.id}/adjust`, { points: -1500, reason: `e2e top-up returned ${stamp}` });
+  expect((await get<Member>(`/loyalty/members/${member.id}`)).points).toBe(topUp ? before - 1500 : before);
 });
 
 /* ------------------------------------------------------------------ */
 
 test("a custom domain verifies once its DNS records are published", async ({ browser }) => {
   expect(ikoyi, "the seed has a second property").toBeTruthy();
+  type Domain = { id: string; domain: string; status: string };
+  const original = (await get<{ domain: Domain | null }>("/domains", owner, ikoyi.id)).domain;
+  // a throwaway address; the property's own domain comes back at the end
+  const name = `e2e-${stamp}.palmwineikoyi.com`;
   const c = await signedIn(browser, owner, { propertyId: ikoyi.id });
   const p = await c.newPage();
-  const current = await get<{ domain: { id: string; domain: string; status: string } | null }>("/domains", owner, ikoyi.id);
-  await p.goto("/settings/domain");
-  let name = current.domain?.domain ?? "";
-  if (current.domain?.status !== "PENDING") {
-    name = `stay${stamp}.palmwineikoyi.com`;
-    if (current.domain) await call("DELETE", `/domains/${current.domain.id}`, undefined, owner, ikoyi.id);
-    await p.reload();
+  try {
+    if (original) await call("DELETE", `/domains/${original.id}`, undefined, owner, ikoyi.id);
+    await p.goto("/settings/domain");
     await p.getByTestId("domain-input").fill(name);
     await p.getByTestId("domain-input").press("Enter");
+    await expect(p.getByTestId("domain-name")).toContainText(name);
+    await expect(p.getByTestId("domain-status")).toContainText(/Waiting|Pending|Checking/i);
+    await expect(p.getByTestId("dns-TXT-host")).toBeVisible();
+    await expect(p.getByTestId("dns-CNAME-value")).toBeVisible();
+
+    // before the records exist the check fails
+    await p.getByTestId("verify-domain").click();
+    await expect(p.getByTestId("domain-live")).toHaveCount(0);
+
+    // the hotel's DNS provider (mock) gets the records; verify again
+    await p.getByTestId("dev-publish").click();
+    const live = p.getByTestId("domain-live");
+    // publishing checks at once; if that check is still on its way, ask again
+    await expect(live.or(p.getByTestId("verify-domain"))).toBeVisible();
+    if (!(await live.isVisible())) await p.getByTestId("verify-domain").click({ timeout: 5_000 }).catch(() => undefined);
+    await expect(live).toBeVisible({ timeout: 20_000 });
+    const after = await get<{ domain: Domain | null }>("/domains", owner, ikoyi.id);
+    expect(after.domain?.domain).toBe(name);
+    expect(after.domain?.status).toBe("VERIFIED");
+  } finally {
+    await c.close();
+    // restore the property's own domain in the state it was in
+    const now = (await get<{ domain: Domain | null }>("/domains", owner, ikoyi.id)).domain;
+    if (now && now.domain !== original?.domain) await call("DELETE", `/domains/${now.id}`, undefined, owner, ikoyi.id);
+    if (original && now?.domain !== original.domain) {
+      const back = await call<Domain>("POST", "/domains", { domain: original.domain }, owner, ikoyi.id);
+      if (original.status === "VERIFIED") {
+        await call("POST", `/domains/${back.id}/dev/publish`, {}, owner, ikoyi.id);
+        await call("POST", `/domains/${back.id}/verify`, {}, owner, ikoyi.id);
+      }
+    }
   }
-  await expect(p.getByTestId("domain-name")).toContainText(name);
-  await expect(p.getByTestId("domain-status")).toContainText(/Waiting|Pending|Checking/i);
-  await expect(p.getByTestId("dns-TXT-host")).toBeVisible();
-  await expect(p.getByTestId("dns-CNAME-value")).toBeVisible();
-
-  // before the records exist the check fails and says which
-  await p.getByTestId("verify-domain").click();
-  await expect(p.getByTestId("domain-live")).toHaveCount(0);
-
-  // the hotel's DNS provider (mock) gets the records; verify again
-  await p.getByTestId("dev-publish").click();
-  const live = p.getByTestId("domain-live");
-  // publishing checks at once; if that check is still on its way, ask again
-  await expect(live.or(p.getByTestId("verify-domain"))).toBeVisible();
-  if (!(await live.isVisible())) await p.getByTestId("verify-domain").click({ timeout: 5_000 }).catch(() => undefined);
-  await expect(live).toBeVisible({ timeout: 20_000 });
-  const after = await get<{ domain: { status: string } | null }>("/domains", owner, ikoyi.id);
-  expect(after.domain?.status).toBe("VERIFIED");
-  await c.close();
 });

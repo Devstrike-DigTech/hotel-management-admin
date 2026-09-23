@@ -153,7 +153,7 @@ test("takes a cash payment inside an open shift", async () => {
   await sheet.getByRole("radio", { name: "Cash" }).click();
   await sheet.getByRole("button", { name: /^Record/ }).click();
   await expect(sheet.getByText(/Receipt/)).toBeVisible();
-  await expect(sheet.getByText(/RCT-\d{4}-\d+/)).toBeVisible();
+  await expect(sheet.getByText(/RCT-(?:[A-Z0-9]{2,6}-)?\d{4}-\d+/)).toBeVisible();
   await sheet.getByRole("button", { name: "Done" }).click();
   await expect(page.getByTestId("folio-balance")).toHaveText("₦0");
 });
@@ -162,7 +162,7 @@ test("checks the guest out and issues the final invoice", async () => {
   await page.getByTestId("check-out").click();
   const dialog = page.getByRole("dialog");
   await dialog.getByTestId("confirm-checkout").click();
-  await expect(dialog.getByTestId("invoice-number")).toHaveText(/INV-\d{4}-\d+/);
+  await expect(dialog.getByTestId("invoice-number")).toHaveText(/INV-(?:[A-Z0-9]{2,6}-)?\d{4}-\d+/);
   const r = await apiGet<{ status: string }>(`/reservations/${reservationId}`);
   expect(r.status).toBe("CHECKED_OUT");
 });
