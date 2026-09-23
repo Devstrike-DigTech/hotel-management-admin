@@ -546,10 +546,10 @@ export function PosTerminal() {
             </div>
           ) : (
             <>
-              <div className="hidden min-h-0 flex-1 md:flex">
+              <div className="hidden min-h-0 min-w-0 flex-1 md:flex">
                 <MenuBoard menu={menu} counts={counts} onPick={(i) => pick(i)} onOptions={setOptionsFor} disabled={!can("pos.order")} />
               </div>
-              <div className="flex min-h-0 flex-1 md:hidden">
+              <div className="flex min-h-0 min-w-0 flex-1 md:hidden">
                 <MenuBoard menu={menu} counts={counts} onPick={(i) => pick(i)} onOptions={setOptionsFor} compact disabled={!can("pos.order")} />
               </div>
             </>
@@ -588,7 +588,7 @@ export function PosTerminal() {
       >
         <ReceiptIcon size={20} weight="duotone" />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[14px] font-medium">{ticket ? ticketTitle(ticket) : "No ticket open"}</span>
+          <span className="block truncate text-[14px] font-medium">{ticket ? ticketTitle(ticket) : openTickets.length ? "Pick a ticket" : "No ticket open"}</span>
           <span className="block text-[12px] text-paper/70">{ticket ? `${ticket.lines.filter((l) => l.state !== "VOID").reduce((s, l) => s + l.qty, 0)} items${drafts ? `, ${drafts} not sent` : ""}` : `${openTickets.length} open`}</span>
         </span>
         <span className="font-mono text-[18px]">{ticket ? naira(total) : ""}</span>

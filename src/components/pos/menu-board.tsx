@@ -69,7 +69,7 @@ export function MenuBoard({
   };
 
   return (
-    <div className={cn("flex min-h-0 flex-1", compact ? "flex-col" : "flex-row")}>
+    <div className={cn("flex min-h-0 min-w-0 flex-1", compact ? "flex-col" : "flex-row")}>
       {/* categories */}
       <nav
         aria-label="Menu categories"

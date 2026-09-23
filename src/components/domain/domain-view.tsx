@@ -278,7 +278,7 @@ function Live({ d, canonical, manage }: { d: CustomDomain; canonical: string; ma
           Live
         </span>
         <p className="eyebrow">Your booking site</p>
-        <p className="mt-3 flex items-center gap-2 font-mono text-[24px] text-ink sm:text-[28px]" data-testid="domain-live">
+        <p className="mt-3 flex min-w-0 items-center gap-2 break-all font-mono text-[16px] text-ink min-[420px]:text-[20px] sm:text-[28px]" data-testid="domain-live">
           <LockSimple size={20} weight="bold" className="text-palm" /> {d.domain}
         </p>
         <p className="mt-2 text-[13.5px] text-ink-muted">
