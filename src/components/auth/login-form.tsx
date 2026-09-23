@@ -45,7 +45,9 @@ export function LoginForm() {
       const res = await authApi.login(email.trim(), password);
       qc.clear();
       storeAuth(res);
-      router.replace(next.startsWith("/") && !next.startsWith("//") ? next : "/today");
+      // housekeepers land on their rooms, not the desk
+      const home = res.user.role === "HOUSEKEEPING" && !params.get("next") ? "/hk" : "/today";
+      router.replace(next.startsWith("/") && !next.startsWith("//") && params.get("next") ? next : home);
     } catch (err) {
       setError(
         isApiError(err) && err.status === 401

@@ -144,7 +144,15 @@ test("an online booking shows where it came from", async ({ browser }) => {
       headers: { Authorization: `Bearer ${token}` },
     })
   ).json()) as { items: { reservationId: string; code: string; channel: "MARKETPLACE" | "BOOKING_SITE" }[] };
-  const booking = feed.items[0];
+  // an online booking the guest has already been sent messages for (fresh test bookings may have none yet)
+  let booking = feed.items[0];
+  for (const it of feed.items) {
+    const sent = (await (await fetch(`${API}/reservations/${it.reservationId}/notifications`, { headers: { Authorization: `Bearer ${token}` } })).json()) as unknown;
+    if (Array.isArray(sent) && sent.length) {
+      booking = it;
+      break;
+    }
+  }
   expect(booking, "the seed has online bookings for the demo hotel").toBeTruthy();
   const label = booking.channel === "MARKETPLACE" ? /Marketplace/i : /Booking site/i;
 

@@ -68,17 +68,22 @@ test("books a walk-in reservation with live availability", async () => {
   await page.getByRole("button", { name: "New reservation" }).first().click();
   const drawer = page.getByRole("dialog", { name: "New reservation" });
   await expect(drawer).toBeVisible();
-  // first room type that still has rooms tonight
+  // the room type with the most rooms left tonight (repeated runs fill the demo house)
   const types = drawer.getByRole("radiogroup", { name: "Room type" }).getByRole("radio");
   await expect(types.first()).toBeVisible();
   await expect(drawer.getByText(/left$/).first()).toBeVisible();
   const count = await types.count();
+  let best = -1;
+  let most = 0;
   for (let i = 0; i < count; i++) {
-    if (await types.nth(i).isEnabled()) {
-      await types.nth(i).click();
-      break;
+    const left = Number(((await types.nth(i).textContent()) ?? "").match(/(\d+) left/)?.[1] ?? 0);
+    if ((await types.nth(i).isEnabled()) && left > most) {
+      most = left;
+      best = i;
     }
   }
+  expect(best).toBeGreaterThanOrEqual(0);
+  await types.nth(best).click();
   await drawer.getByLabel("Phone").fill(phone);
   await expect(drawer.getByLabel("Full name")).toBeVisible();
   await drawer.getByLabel("Full name").fill(guestName);

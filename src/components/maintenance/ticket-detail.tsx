@@ -214,11 +214,16 @@ export function TicketDetail({ id }: { id: string }) {
                     <span className="font-medium">{formatDay(dayKeyOf(t.block.to), { weekday: "short", day: "numeric", month: "short" })}</span>.
                   </p>
                   <p className="mt-1 text-[12.5px] text-ink-muted">{t.block.reason}</p>
-                  {manage && (
-                    <Button size="sm" variant="secondary" className="mt-3" onClick={() => setReleasing(true)}>
-                      Release the room now
-                    </Button>
-                  )}
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    {manage && (
+                      <Button size="sm" variant="secondary" onClick={() => setReleasing(true)}>
+                        Release the room now
+                      </Button>
+                    )}
+                    <Link href={`/ledger?room=${t.room.number}`} className="text-[12.5px] font-medium text-laterite hover:underline">
+                      See it on the Ledger
+                    </Link>
+                  </div>
                 </>
               ) : (
                 <>

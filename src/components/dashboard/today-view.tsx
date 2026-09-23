@@ -16,6 +16,7 @@ import { OnlineTodayCard } from "@/components/online/online-feed";
 import { useDashboard, useMe, useRooms } from "@/lib/api/hooks";
 import { useRoomStatus } from "@/lib/api/mutations";
 import type { Room, RoomStatus } from "@/lib/api/types";
+import type { DashboardM4 } from "@/lib/api/types-m4";
 import { LIMIT_LABEL, ROOM_STATUS, ROOM_STATUS_ORDER, SUB_STATUS } from "@/lib/catalog";
 import { daysUntil, firstName, formatDate, greeting, lagosHour, lagosLongDate, relativeTime } from "@/lib/format";
 import { ButtonLink, Button } from "@/components/ui/button";
@@ -449,12 +450,38 @@ function HousekeepingQueue({
   onOpen: (r: Room) => void;
 }) {
   const setStatus = useRoomStatus();
+  const dash = useDashboard();
+  const m4 = dash.data as (typeof dash.data & DashboardM4) | undefined;
+  const hk = m4?.housekeeping;
+  const mt = m4?.maintenance;
   const queue = (rooms ?? [])
     .filter((r) => r.status === "VACANT_DIRTY" || r.status === "OUT_OF_ORDER")
     .sort((a, b) => (a.status === b.status ? a.number.localeCompare(b.number, undefined, { numeric: true }) : a.status === "VACANT_DIRTY" ? -1 : 1));
   return (
     <Panel className="lg:col-span-4">
       <PanelHeader eyebrow="To turn around" title="Housekeeping queue" />
+      {(hk || mt) && (
+        <div className="grid grid-cols-2 divide-x divide-line border-b border-line text-[12px]">
+          {hk && (
+            <Link href="/housekeeping" className="flex flex-col gap-0.5 px-4 py-2.5 hover:bg-surface-2/50">
+              <span className="text-ink-muted">Housekeeping</span>
+              <span className="text-ink">
+                <span className="font-mono">{hk.open}</span> to clean, <span className="font-mono">{hk.awaitingInspection}</span> to inspect
+              </span>
+              {hk.urgent > 0 && <span className="text-laterite">{hk.urgent} with a guest due today</span>}
+            </Link>
+          )}
+          {mt && (
+            <Link href="/maintenance" className="flex flex-col gap-0.5 px-4 py-2.5 hover:bg-surface-2/50">
+              <span className="text-ink-muted">Maintenance</span>
+              <span className="text-ink">
+                <span className="font-mono">{mt.open}</span> open, <span className="font-mono">{mt.blockedRooms}</span> {mt.blockedRooms === 1 ? "room" : "rooms"} out
+              </span>
+              {mt.overdue > 0 && <span className="text-danger">{mt.overdue} past the SLA</span>}
+            </Link>
+          )}
+        </div>
+      )}
       <div className="px-2 py-2">
         {loading ? (
           <div className="space-y-2 p-3">

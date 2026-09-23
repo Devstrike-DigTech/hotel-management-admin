@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ArrowCounterClockwise,
   CalendarBlank,
@@ -45,6 +46,17 @@ export function LedgerView() {
   const [undoCount, setUndoCount] = useState(0);
   const ledger = useRef<LedgerHandle>(null);
   const q = useTapeChart(from, to);
+  // deep link: /ledger?room=308 scrolls to that room (maintenance links here)
+  const wantRoom = useSearchParams().get("room");
+  const jumped = useRef<string | null>(null);
+  useEffect(() => {
+    if (!wantRoom || !q.data || jumped.current === wantRoom) return;
+    const r = q.data.rooms.find((x) => x.number === wantRoom);
+    if (!r) return;
+    jumped.current = wantRoom;
+    const id = window.setTimeout(() => ledger.current?.scrollToRoom(r.id, "auto"), 60);
+    return () => window.clearTimeout(id);
+  }, [wantRoom, q.data]);
   const refresh = useDeskRefresh();
   const { can } = useCan();
   const editable = can("reservations.write");

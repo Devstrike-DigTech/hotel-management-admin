@@ -57,6 +57,7 @@ import {
 
 export interface LedgerHandle {
   scrollToDay: (key: DayKey, behavior?: ScrollBehavior) => void;
+  scrollToRoom: (roomId: string, behavior?: ScrollBehavior) => void;
   undo: () => void;
   canUndo: () => boolean;
 }
@@ -319,7 +320,17 @@ export const Ledger = forwardRef<LedgerHandle, LedgerProps>(function Ledger(
     undoRef.current = undo;
   }, [undo]);
 
-  useImperativeHandle(ref, () => ({ scrollToDay, undo: () => void undo(), canUndo: () => undoStack.current.length > 0 }), [scrollToDay, undo]);
+  const scrollToRoom = useCallback(
+    (roomId: string, behavior: ScrollBehavior = "smooth") => {
+      const el = scroller.current;
+      const row = rows.find((r) => r.kind === "room" && r.room.id === roomId);
+      if (!el || !row) return;
+      el.scrollTo({ top: Math.max(0, row.y - el.clientHeight / 3), behavior });
+    },
+    [rows],
+  );
+
+  useImperativeHandle(ref, () => ({ scrollToDay, scrollToRoom, undo: () => void undo(), canUndo: () => undoStack.current.length > 0 }), [scrollToDay, scrollToRoom, undo]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
