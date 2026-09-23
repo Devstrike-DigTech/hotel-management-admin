@@ -162,12 +162,27 @@ function Overview({ conns, onConnect }: { conns: ChannelConnection[]; onConnect:
               <Skeleton className="mt-5 h-32" />
             ) : (
               <>
-                <p className="display mt-5 text-[30px] leading-[1.12] text-ink sm:text-[34px]" data-testid="ota-headline">
-                  You paid <span className="font-mono text-[0.9em] tracking-tight text-danger">{naira(c.ota.commissionKobo)}</span> to OTAs in {monthName(c.month)}.
-                </p>
-                <p className="mt-3 text-[15px] leading-relaxed text-ink-muted">
-                  The same {number(c.ota.bookings)} bookings on your own booking site would have saved about <span className="font-mono text-palm">{naira(c.savingsKobo)}</span>: no commission, only the card fee (about {naira(c.directCostEstimateKobo)} in all).
-                </p>
+                {c.ota.commissionKobo > 0 ? (
+                  <>
+                    <p className="display mt-5 text-[30px] leading-[1.12] text-ink sm:text-[34px]" data-testid="ota-headline">
+                      You paid <span className="font-mono text-[0.9em] tracking-tight text-danger">{naira(c.ota.commissionKobo)}</span> to OTAs in {monthName(c.month)}.
+                    </p>
+                    <p className="mt-3 text-[15px] leading-relaxed text-ink-muted">
+                      The same {number(c.ota.bookings)} bookings on your own booking site would have saved about <span className="font-mono text-palm">{naira(c.savingsKobo)}</span>: no commission, only the card fee (about {naira(c.directCostEstimateKobo)} in all).
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="display mt-5 text-[30px] leading-[1.12] text-ink sm:text-[34px]" data-testid="ota-headline">
+                      No OTA commission in {monthName(c.month)}.
+                    </p>
+                    <p className="mt-3 text-[15px] leading-relaxed text-ink-muted">
+                      {c.ota.bookings
+                        ? `${number(c.ota.bookings)} OTA ${c.ota.bookings === 1 ? "booking has" : "bookings have"} no commission recorded yet. Set each channel's rate under Connections to see what they cost.`
+                        : "Every booking this month came direct. Keep it that way: your booking site charges no commission."}
+                    </p>
+                  </>
+                )}
                 <div className="mt-5 flex flex-wrap gap-2">
                   <Link href="/settings/booking" className="inline-flex h-9 items-center gap-1.5 rounded-md bg-ink px-3.5 text-[13px] font-medium text-paper hover:opacity-90">
                     Grow direct bookings <ArrowRight size={13} />

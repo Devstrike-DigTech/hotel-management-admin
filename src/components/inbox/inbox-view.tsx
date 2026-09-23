@@ -196,6 +196,7 @@ export function InboxView() {
 
   return (
     <>
+      <div className={cn(activeId && "hidden md:block")}>
       <PageHeader
         eyebrow={
           <>
@@ -228,8 +229,9 @@ export function InboxView() {
           </>
         }
       />
+      </div>
 
-      <Panel className="flex h-[calc(100dvh-230px)] min-h-[560px] overflow-hidden md:h-[calc(100dvh-250px)]">
+      <Panel className={cn("flex overflow-hidden md:h-[calc(100dvh-250px)] md:min-h-[560px]", activeId ? "h-[calc(100dvh-172px)] min-h-[440px]" : "h-[calc(100dvh-230px)] min-h-[560px]")}>
         {/* list */}
         <div className={cn("flex w-full shrink-0 flex-col border-line md:w-[330px] md:border-r", activeId && "hidden md:flex")}>
           <div className="border-b border-line p-3">
@@ -451,7 +453,7 @@ function SuggestionBar({ s, onMake, convId }: { s: TaskSuggestion; onMake: () =>
   return (
     <div className="flex flex-wrap items-center gap-2 text-[13px]" data-testid="task-suggestion">
       <Lightning size={14} weight="fill" className="text-ochre" />
-      <span className="min-w-0 flex-1 text-ink">
+      <span className="min-w-[13rem] flex-1 text-ink">
         Sounds like {s.kind === "MAINTENANCE" ? "a maintenance job" : "a housekeeping request"}
         {s.room ? <> for room <span className="font-mono">{s.room.number}</span></> : null}: <span className="text-ink-muted">&ldquo;{s.summary}&rdquo;</span>
       </span>

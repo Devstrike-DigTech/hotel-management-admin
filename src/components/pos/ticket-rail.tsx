@@ -111,8 +111,12 @@ export function TicketRail({
       {!ticket ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 text-center">
           <Receipt size={34} weight="thin" className="text-ink-faint" />
-          <p className="display-sm text-[19px] text-ink">No ticket open</p>
-          <p className="text-[13.5px] leading-relaxed text-ink-muted">Start one for a table, a room or a bar tab, then tap the menu.</p>
+          <p className="display-sm text-[19px] text-ink">{open.length ? "Pick a ticket" : "No ticket open"}</p>
+          <p className="text-[13.5px] leading-relaxed text-ink-muted">
+            {open.length
+              ? `${open.length} ${open.length === 1 ? "ticket is" : "tickets are"} open above. Tap one to add to it, or start a new one.`
+              : "Start one for a table, a room or a bar tab, then tap the menu."}
+          </p>
           <Button onClick={onNew} size="lg" className="mt-1">
             <Plus size={16} weight="bold" /> New ticket
           </Button>
