@@ -66,7 +66,9 @@ test.beforeAll(async ({ browser }) => {
   page = await ctx.newPage();
 });
 
+const teardown: (() => Promise<void>)[] = [];
 test.afterAll(async () => {
+  for (const f of teardown) await f();
   await ctx?.close();
 });
 
@@ -274,16 +276,27 @@ test("painting a season on the Rate Almanac reprices those nights", async () => 
 test("a booking with a promo code and a company account checks out to the City Ledger", async () => {
   type Account = { id: string; name: string; active: boolean; availableCreditKobo: number };
   const accounts = await get<Account[]>("/corporate-accounts");
-  let account = accounts.filter((a) => a.active).sort((a, b) => b.availableCreditKobo - a.availableCreditKobo)[0];
-  if (!account || account.availableCreditKobo < 50_000_000)
-    account = await call<Account>("POST", "/corporate-accounts", { name: "Lagoon Logistics Ltd", contactName: "Bayo Akande", email: "accounts@lagoonlogistics.ng", creditLimitKobo: 200_000_000, paymentTermsDays: 30, billingCycle: "MONTHLY" });
-  // WELCOME10 from the seed; a fresh code if the seed doesn't have it live
+  // a seeded company with room on its credit line; one made (and paused afterwards) if the seed has none
+  let account = accounts.filter((a) => a.active && a.availableCreditKobo >= 50_000_000).sort((a, b) => b.availableCreditKobo - a.availableCreditKobo)[0];
+  let madeAccount = false;
+  if (!account) {
+    account = await call<Account>("POST", "/corporate-accounts", { name: `Lagoon Logistics ${stamp}`, contactName: "Bayo Akande", email: "accounts@lagoonlogistics.ng", creditLimitKobo: 200_000_000, paymentTermsDays: 30, billingCycle: "MONTHLY" });
+    madeAccount = true;
+  }
+  // WELCOME10 from the seed; a fresh code (paused afterwards) if the seed doesn't have it live
   const promos = await get<{ code: string; status: string }[]>("/promo-codes");
   let code = "WELCOME10";
+  let madePromo: string | null = null;
   if (!promos.some((p) => p.code === code && p.status === "ACTIVE")) {
     code = `E2E${stamp}`;
-    await call("POST", "/promo-codes", { code, description: "e2e 10% off", type: "PERCENT", value: 1000, channels: ["FRONT_DESK", "BOOKING_SITE", "MARKETPLACE"], active: true });
+    madePromo = (await call<{ id: string }>("POST", "/promo-codes", { code, description: "e2e 10% off", type: "PERCENT", value: 1000, channels: ["FRONT_DESK", "BOOKING_SITE", "MARKETPLACE"], active: true })).id;
   }
+  const cleanup = async () => {
+    if (madePromo) await call("PATCH", `/promo-codes/${madePromo}`, { active: false }).catch(() => undefined);
+    if (madeAccount) await call("PATCH", `/corporate-accounts/${account.id}`, { active: false }).catch(() => undefined);
+  };
+  test.info().annotations.push({ type: "fixtures", description: `${account.name}, ${code}` });
+  teardown.push(cleanup);
   const phone = `0816${stamp}4`;
 
   await page.goto("/reservations");
