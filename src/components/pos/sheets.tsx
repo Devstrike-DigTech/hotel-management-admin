@@ -267,8 +267,8 @@ export function NewTicketSheet({
             if (name.trim()) onCreate({ kind: "TAB", label: name.trim() });
           }}
         >
-          <Field label="Name on the tab">
-            <Input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Tunde, blue shirt" maxLength={40} />
+          <Field label="Name on the tab" htmlFor="pos-tab-name">
+            <Input id="pos-tab-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Tunde, blue shirt" maxLength={40} />
           </Field>
           <Button type="submit" size="lg" className="mt-4 h-12 w-full" disabled={!name.trim()}>
             Open tab

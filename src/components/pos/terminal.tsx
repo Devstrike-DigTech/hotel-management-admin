@@ -164,7 +164,7 @@ export function PosTerminal() {
     for (const l of Object.values(local)) {
       if (seen.has(l.key) || l.outletId !== outletId) continue;
       if (l.serverId && !queuedFor(l.key) && !l.drafts.length) continue; // settled or gone elsewhere
-      out.push({ key: l.key, id: l.serverId, outletId: l.outletId, kind: l.kind, label: l.label, covers: l.covers, openedAt: l.openedAt, status: "OPEN", reservationId: l.reservationId, guestName: l.guestName, lines: [...l.queued, ...l.drafts], pending: queuedFor(l.key) || !l.serverId });
+      out.push({ key: l.key, id: l.serverId, outletId: l.outletId, kind: l.kind, label: l.label, covers: l.covers, openedAt: l.openedAt, status: "OPEN", reservationId: l.reservationId, guestName: l.guestName, lines: [...l.queued, ...l.drafts], pending: queuedFor(l.key) || (!l.serverId && l.queued.length > 0) });
     }
     return out.sort((a, b) => a.openedAt.localeCompare(b.openedAt));
   }, [serverOpen, local, outletId, queuedFor]);

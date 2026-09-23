@@ -100,7 +100,7 @@ test.beforeAll(async ({ browser }) => {
   props = await get<Property[]>("/properties");
   lekki = props.find((p) => p.slug !== IKOYI)!;
   ikoyi = props.find((p) => p.slug === IKOYI)!;
-  expect(lekki && ikoyi).toBeTruthy();
+  expect(lekki).toBeTruthy();
   ctx = await signedIn(browser, owner, { propertyId: lekki.id });
   page = await ctx.newPage();
 });
@@ -114,32 +114,37 @@ test.afterAll(async () => {
 /* ------------------------------------------------------------------ */
 
 test("switching property shows that property's rooms", async ({ browser }) => {
+  expect(ikoyi, "the seed has a second property").toBeTruthy();
   type Room = { id: string; number: string };
   const lekkiRooms = await get<Room[]>("/rooms", owner, lekki.id);
   const ikoyiRooms = await get<Room[]>("/rooms", owner, ikoyi.id);
+  // Ikoyi numbers its rooms like Lekki; a room only Lekki has, and the room count, tell them apart
   const onlyLekki = lekkiRooms.find((r) => !ikoyiRooms.some((x) => x.number === r.number))!;
-  const onlyIkoyi = ikoyiRooms.find((r) => !lekkiRooms.some((x) => x.number === r.number))!;
-  expect(onlyLekki && onlyIkoyi).toBeTruthy();
+  expect(onlyLekki).toBeTruthy();
+  expect(ikoyiRooms.length).not.toBe(lekkiRooms.length);
 
   const c = await signedIn(browser, owner, { propertyId: lekki.id });
+  await c.addInitScript(() => localStorage.setItem("admin.rooms.view", "table"));
   const p = await c.newPage();
   await p.goto("/rooms");
   const roomBtn = (n: string) => p.getByRole("button", { name: new RegExp(`^Room ${n}:`) });
+  const allRooms = p.getByRole("button", { name: /^Room \S+: .* Change status$/ });
   await expect(roomBtn(onlyLekki.number)).toBeVisible();
+  await expect(allRooms).toHaveCount(lekkiRooms.length);
   await expect(p.getByTestId("topbar-property-lg")).toContainText(lekki.name);
 
   await p.getByTestId("property-switcher").click();
   await p.getByTestId(`property-option-${IKOYI}`).click();
   await expect(p.getByTestId("topbar-property-lg")).toContainText(ikoyi.name);
-  await expect(roomBtn(onlyIkoyi.number)).toBeVisible();
+  await expect(allRooms).toHaveCount(ikoyiRooms.length);
   await expect(roomBtn(onlyLekki.number)).toHaveCount(0);
   expect(await p.evaluate(() => localStorage.getItem("admin.property"))).toBe(ikoyi.id);
 
   // and back: the header goes with every request
   await p.getByTestId("property-switcher").click();
   await p.getByTestId(`property-option-${lekki.slug}`).click();
+  await expect(allRooms).toHaveCount(lekkiRooms.length);
   await expect(roomBtn(onlyLekki.number)).toBeVisible();
-  await expect(roomBtn(onlyIkoyi.number)).toHaveCount(0);
   await c.close();
   // leave the saved default on Lekki for the other tests
   await call("PUT", "/me/current-property", { propertyId: lekki.id });
@@ -155,6 +160,8 @@ test("a room-service order goes to the kitchen display and onto the guest's foli
   expect(guests.length).toBeGreaterThan(0);
   const guest = guests[0];
 
+  const already = new Set((await get<{ items: { id: string }[] }>(`/pos/orders?status=OPEN&outletId=${outlet.id}&pageSize=100`, owner, lekki.id)).items.map((o) => o.id));
+
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.goto("/pos");
   await page.getByTestId(`outlet-${outlet.code}`).click();
@@ -164,8 +171,9 @@ test("a room-service order goes to the kitchen display and onto the guest's foli
   await page.getByTestId(`guest-${guest.room.number}`).click();
   await expect(page.getByTestId("pos-ticket-title")).toContainText(guest.room.number);
 
-  await page.getByLabel("Find an item").fill(item.name);
-  await page.getByLabel("Find an item").press("Enter");
+  const find = page.locator('input[placeholder^="Find an item"]:visible');
+  await find.fill(item.name);
+  await find.press("Enter");
   await expect(page.getByTestId(`line-${item.name}`)).toBeVisible();
   await page.getByTestId("pos-send").click();
 
@@ -173,8 +181,8 @@ test("a room-service order goes to the kitchen display and onto the guest's foli
   let order: PosOrder | undefined;
   await expect
     .poll(async () => {
-      const list = await get<{ items: { id: string; room: { number: string } | null }[] }>(`/pos/orders?status=OPEN&outletId=${outlet.id}&q=${guest.room.number}&pageSize=50`, owner, lekki.id);
-      for (const o of list.items) {
+      const list = await get<{ items: { id: string; room: { number: string } | null }[] }>(`/pos/orders?status=OPEN&outletId=${outlet.id}&pageSize=100`, owner, lekki.id);
+      for (const o of list.items.filter((x) => x.room?.number === guest.room.number && !already.has(x.id))) {
         const full = await get<PosOrder>(`/pos/orders/${o.id}`, owner, lekki.id);
         if (full.lines.some((l) => l.name === item.name && l.ticketId)) order = full;
       }
@@ -184,19 +192,21 @@ test("a room-service order goes to the kitchen display and onto the guest's foli
   const tickets = await get<KdsTicket[]>("/kds/tickets?station=KITCHEN", owner, lekki.id);
   const ticket = tickets.find((t) => t.order.id === order!.id)!;
   expect(ticket).toBeTruthy();
-  const kot = String(Number(ticket.number.replace(/\D/g, "")));
 
   // the kitchen: start it, mark it ready
   const kc = await signedIn(browser, owner, { viewport: { width: 1024, height: 768 }, propertyId: lekki.id });
   const kds = await kc.newPage();
   await kds.goto("/kds");
-  const card = kds.getByTestId(`kds-${kot}`);
+  const card = kds.locator(`[data-testid="kds-${ticket.id}"]:visible`);
   await expect(card).toBeVisible();
   await expect(card).toContainText(item.name);
-  await kds.getByTestId(`kds-advance-${kot}`).click();
+  await kds.locator(`[data-testid="kds-advance-${ticket.id}"]:visible`).click();
   await expect.poll(async () => (await get<KdsTicket[]>("/kds/tickets?station=KITCHEN&status=PREPARING,READY", owner, lekki.id)).find((t) => t.id === ticket.id)?.status, { timeout: 15_000 }).toBe("PREPARING");
-  await kds.getByTestId(`kds-advance-${kot}`).click();
-  await expect.poll(async () => (await get<KdsTicket[]>("/kds/tickets?station=KITCHEN&status=READY,SERVED", owner, lekki.id)).find((t) => t.id === ticket.id)?.status, { timeout: 15_000 }).toBe("READY");
+  const fire = kds.getByRole("region", { name: "On the fire" }).locator(`[data-testid="kds-${ticket.id}"]:visible`);
+  await expect(fire).toBeVisible();
+  await kds.waitForTimeout(400); // let the card settle in its new lane
+  await fire.locator(`[data-testid="kds-advance-${ticket.id}"]`).click();
+  await expect.poll(async () => (await get<KdsTicket[]>("/kds/tickets?station=KITCHEN&status=READY", owner, lekki.id)).find((t) => t.id === ticket.id)?.status, { timeout: 15_000 }).toBe("READY");
   await kc.close();
 
   // charge it to the room
@@ -245,8 +255,9 @@ test("a cash sale at the till needs an open shift", async ({ browser }) => {
   await p.getByRole("radio", { name: "Bar tab" }).click();
   await p.getByLabel("Name on the tab").fill(`E2E ${stamp}`);
   await p.getByRole("button", { name: "Open tab" }).click();
-  await p.getByLabel("Find an item").fill(item.name);
-  await p.getByLabel("Find an item").press("Enter");
+  const find = p.locator('input[placeholder^="Find an item"]:visible');
+  await find.fill(item.name);
+  await find.press("Enter");
   await expect(p.getByTestId(`line-${item.name}`)).toBeVisible();
 
   await p.getByTestId("pos-settle").click();
@@ -290,14 +301,14 @@ test("accepting a pricing suggestion on the Rate Almanac reprices the night", as
 
   await expect(cell).toHaveAttribute("aria-label", new RegExp(`${naira(s.suggestedKobo).replace("₦", "₦")}, set by dynamic pricing`));
   await expect(cell.locator("[data-ghost]")).toHaveCount(0);
-  const cal = await get<{ roomTypes: { roomType?: { id: string }; roomTypeId?: string; id?: string; days: { date: string; priceKobo: number; overrideSource: string | null }[] }[] }>(
+  const cal = await get<{ roomTypes: { roomType?: { id: string }; roomTypeId?: string; id?: string; days: { date: string; rateKobo: number; overrideSource: string | null }[] }[] }>(
     `/rates/calendar?from=${s.date}&to=${s.date}`,
     owner,
     lekki.id,
   );
   const row = cal.roomTypes.find((r) => (r.roomType?.id ?? r.roomTypeId ?? r.id) === typeId)!;
   const day = row.days.find((d) => d.date === s.date)!;
-  expect(day.priceKobo).toBe(s.suggestedKobo);
+  expect(day.rateKobo).toBe(s.suggestedKobo);
   expect(day.overrideSource).toBe("PRICING");
 
   // put the night back
@@ -311,7 +322,17 @@ test("accepting a pricing suggestion on the Rate Almanac reprices the night", as
 /* ------------------------------------------------------------------ */
 
 test("a guest's WhatsApp message is answered from the inbox", async () => {
-  const phone = `+2348091${stamp}`;
+  // messages are routed by the sender's stay: write as an in-house guest
+  const guests = await get<InHouse[]>("/pos/rooms/in-house", owner, lekki.id);
+  let phone = "";
+  for (const g of guests) {
+    const r = await get<{ guest: { phone: string | null } }>(`/reservations/${g.reservationId}`, owner, lekki.id);
+    if (r.guest.phone) {
+      phone = r.guest.phone;
+      break;
+    }
+  }
+  expect(phone).not.toBe("");
   const inbound = await call<{ conversationId: string | null; routed: boolean }>("POST", "/inbox/dev/inbound", { phone, body: `Good evening, is the pool open late tonight? (${stamp})`, name: `Amaka E2E` }, owner, lekki.id);
   expect(inbound.conversationId).toBeTruthy();
 
@@ -320,12 +341,12 @@ test("a guest's WhatsApp message is answered from the inbox", async () => {
   await expect(thread).toBeVisible();
   await thread.click();
   await expect(page.getByTestId("window-meter")).toBeVisible();
-  await expect(page.getByText(`is the pool open late tonight? (${stamp})`)).toBeVisible();
+  await expect(page.getByText(`Good evening, is the pool open late tonight? (${stamp})`, { exact: true }).last()).toBeVisible();
 
   const reply = `Yes, the pool is open until 22:00 tonight. Towels are at the bar. (${stamp})`;
-  await page.getByTestId("composer").getByLabel("Reply").fill(reply);
-  await page.getByTestId("composer").getByRole("button", { name: "Send" }).click();
-  await expect(page.getByText(reply)).toBeVisible();
+  await page.getByTestId("composer").fill(reply);
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.getByText(reply, { exact: true }).last()).toBeVisible();
 
   const detail = await get<{ messages: { direction: string; body: string }[] }>(`/inbox/conversations/${inbound.conversationId}`, owner, lekki.id);
   expect(detail.messages.some((m) => m.direction === "OUTBOUND" && m.body === reply)).toBe(true);
@@ -338,20 +359,27 @@ test("loyalty points come off a folio with the guest's code", async () => {
   type Member = { id: string; points: number; guest: { id: string; phone: string | null } };
   const guests = await get<InHouse[]>("/pos/rooms/in-house", owner, lekki.id);
   expect(guests.length).toBeGreaterThan(0);
-  // a member in the house (the seed has some); else enrol the first guest
-  let stay = guests.find((g) => g.loyaltyTier) ?? guests[0];
-  const res = await get<{ guest: { id: string } }>(`/reservations/${stay.reservationId}`, owner, lekki.id);
+  // a member in the house with a phone for the code (the seed has some); else enrol one
+  const ordered = [...guests.filter((g) => g.loyaltyTier), ...guests.filter((g) => !g.loyaltyTier)];
+  let stay: InHouse | null = null;
+  let guestId = "";
+  for (const g of ordered) {
+    const r = await get<{ guest: { id: string; phone: string | null } }>(`/reservations/${g.reservationId}`, owner, lekki.id);
+    if (r.guest.phone) {
+      stay = g;
+      guestId = r.guest.id;
+      break;
+    }
+  }
+  expect(stay).toBeTruthy();
   let member: Member;
   try {
-    member = await get<Member>(`/loyalty/members/by-guest/${res.guest.id}`);
+    member = await get<Member>(`/loyalty/members/by-guest/${guestId}`);
   } catch {
-    member = await call<Member>("POST", "/loyalty/members", { guestId: res.guest.id, via: "DESK" });
-  }
-  if (!member.guest.phone) {
-    stay = guests.find((g) => g.reservationId !== stay.reservationId) ?? stay;
+    member = await call<Member>("POST", "/loyalty/members", { guestId, via: "DESK" });
   }
   if (member.points < 1500) member = await call<Member>("POST", `/loyalty/members/${member.id}/adjust`, { points: 1500, reason: `e2e top-up ${stamp}` });
-  const folio = await get<{ id: string }>(`/reservations/${stay.reservationId}/folio`, owner, lekki.id);
+  const folio = await get<{ id: string }>(`/reservations/${stay!.reservationId}/folio`, owner, lekki.id);
   const before = member.points;
 
   await page.goto(`/folios/${folio.id}`);
@@ -363,8 +391,10 @@ test("loyalty points come off a folio with the guest's code", async () => {
   await expect
     .poll(async () => {
       const r = await fetch(`${API}/public/dev/outbox?limit=20`);
-      const j = (await r.json()) as { items: { createdAt: string; meta: { otpCode?: string } }[] };
-      code = j.items.find((m) => m.meta?.otpCode && Date.now() - Date.parse(m.createdAt) < 120_000)?.meta.otpCode ?? "";
+      // the code goes by WhatsApp (template parameter) or SMS (otpCode)
+      const j = (await r.json()) as { items: { createdAt: string; template: string; to: string; text: string; meta: { otpCode?: string; waParams?: string[] } }[] };
+      const m = j.items.find((x) => x.template === "OTP" && x.to === member.guest.phone && Date.now() - Date.parse(x.createdAt) < 120_000);
+      code = m?.meta.otpCode ?? m?.meta.waParams?.find((v) => /^\d{6}$/.test(v)) ?? m?.text.match(/\b\d{6}\b/)?.[0] ?? "";
       return code;
     }, { timeout: 15_000 })
     .not.toBe("");
@@ -379,6 +409,7 @@ test("loyalty points come off a folio with the guest's code", async () => {
 /* ------------------------------------------------------------------ */
 
 test("a custom domain verifies once its DNS records are published", async ({ browser }) => {
+  expect(ikoyi, "the seed has a second property").toBeTruthy();
   const c = await signedIn(browser, owner, { propertyId: ikoyi.id });
   const p = await c.newPage();
   const current = await get<{ domain: { id: string; domain: string; status: string } | null }>("/domains", owner, ikoyi.id);
@@ -402,8 +433,11 @@ test("a custom domain verifies once its DNS records are published", async ({ bro
 
   // the hotel's DNS provider (mock) gets the records; verify again
   await p.getByTestId("dev-publish").click();
-  await p.getByTestId("verify-domain").click();
-  await expect(p.getByTestId("domain-live")).toBeVisible({ timeout: 20_000 });
+  const live = p.getByTestId("domain-live");
+  // publishing checks at once; if that check is still on its way, ask again
+  await expect(live.or(p.getByTestId("verify-domain"))).toBeVisible();
+  if (!(await live.isVisible())) await p.getByTestId("verify-domain").click({ timeout: 5_000 }).catch(() => undefined);
+  await expect(live).toBeVisible({ timeout: 20_000 });
   const after = await get<{ domain: { status: string } | null }>("/domains", owner, ikoyi.id);
   expect(after.domain?.status).toBe("VERIFIED");
   await c.close();

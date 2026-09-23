@@ -230,6 +230,67 @@ after themselves.
 
 ---
 
+## Milestone 5: Pro, a group of hotels with outlets and channels
+
+A group with more than one property, a till and a kitchen display for the restaurant and bar, the OTAs on one
+screen, prices that follow demand, a WhatsApp inbox, a loyalty programme across the group, and the booking site
+on the hotel's own domain.
+
+![The till at 1024 px: menu board, open tickets and the running ticket](docs/screenshots/m5-pos-1024-light.png)
+
+| | |
+|---|---|
+| ![Kitchen display: tickets by stage, timers turning late](docs/screenshots/m5-kds-1024-dark.png) | ![Settle: cash, transfer, POS, charge to a room or a company](docs/screenshots/m5-pos-settle-1024-light.png) |
+| ![Guest inbox: thread, 24-hour window and the stay beside it](docs/screenshots/m5-inbox-1440-light.png) | ![Rate Almanac with dynamic-pricing suggestions as ghost prices](docs/screenshots/m5-rates-ghosts-1440-light.png) |
+| ![Channel manager: what the OTAs cost against the booking site](docs/screenshots/m5-channels-1440-light.png) | ![Group reports: every property side by side](docs/screenshots/m5-group-1440-dark.png) |
+| ![Loyalty: members, tiers and points owed](docs/screenshots/m5-loyalty-1440-light.png) | ![Custom domain: the two DNS records to add, checked live](docs/screenshots/m5-domain-pending-1440-light.png) |
+
+Every M5 shot (1440 px and 390 px, the till and the kitchen display at 1024 x 768, light and dark) is in
+`docs/screenshots/m5-*`.
+
+### Property scope
+
+The switcher at the top of the sidebar lists the properties you may open (`/me.properties`). The chosen one is kept
+in `localStorage` (`admin.property`), saved as your default (`PUT /me/current-property`) and sent as `X-Property-Id`
+on every request by the API client (`src/lib/property.ts`, `src/lib/api/client.ts`). Switching clears the cached
+queries, so no page ever shows one property's rooms under another's name; the topbar always names the property.
+Offline outbox entries keep the property they were captured in and replay with it. A `403 PROPERTY_ACCESS_DENIED`
+(access removed while signed in) moves you back to a property you can still open and says so. Only the group
+reports show "All properties"; every other page is one property at a time.
+
+### M5 routes
+
+| Route | |
+|---|---|
+| `/pos` | The till, full screen and tablet-first: outlets across the top, categories, a menu board of large tiles (long-press or right-click for modifiers, hatched when 86'd, happy-hour prices), open tickets as chips, the running ticket with *Send to kitchen*, *Split* (by item or evenly) and *Settle*. Settle takes cash (quick amounts and change), transfer or card terminal inside your shift, *Charge to room* with an in-house guest search, name check and signature, or a company account (City Ledger). Voiding a sent item asks for a reason and, above the threshold, a manager's PIN. Orders are captured offline through the outbox with client ids and send when the line is back |
+| `/kds` | Kitchen display, always dark: New, On the fire, Ready; timers turn amber and red; bump with one tap, recall, a chime for new tickets, kitchen / bar filter, full screen |
+| `/pos/menu` | Outlets, categories, items (price, stations, modifiers, stock links, tax), happy hours |
+| `/pos/stock` | Stock on hand with reorder levels, deliveries, counts with variance, movements, minibar par levels per room type and *Record minibar* |
+| `/pos/reports` | Net sales by hour, how it was paid (cash, terminal, transfer, rooms, companies), top items, by outlet, by cashier, and voids |
+| `/channel-manager` | What the OTAs cost against direct bookings, connections (iCal export URLs to copy, import feeds; Channex with a room-type and rate-plan mapping grid), OTA bookings with overbooking flags, the sync log |
+| `/dynamic-pricing` | Pending suggestions by night with their reasons (accept, edit or reject, one by one or in bulk), mode (off, suggest, autopilot) and guardrails per room type, frozen dates, events calendar, competitor prices, change history with revert, and *What it earned*, labelled as an estimate |
+| `/rates` | The Rate Almanac shows pending suggestions as ghost prices on each night; click one for the reasons and accept or reject it there. Nights set by pricing carry a small mark |
+| `/inbox` | Guest WhatsApp threads matched to their stay: filters (unread, mine, unassigned), the 24-hour window meter (templates only once it closes), quick replies, templates with labelled parameters, notes to staff, assign, and *Make a task* from any message (housekeeping task or maintenance ticket, pre-filled from the server's keyword suggestion). The stay, balance and loyalty tier sit beside the thread |
+| `/loyalty`, `/loyalty/members/[id]` | Programme overview (members, points owed, earned and expiring), members, programme settings and tiers; a member's card, points statement and adjustments. On a folio, *Redeem points* takes a code sent to the guest, or a manager's PIN |
+| `/properties` | The group's properties, *Add a property* (with settings copied from another), and which staff can open which property |
+| `/group` | Occupancy, ADR, RevPAR, revenue and OTA commission for every property, compared night by night |
+| `/settings/domain` | Custom domain wizard: choose the address, the two DNS records to copy (with notes per registrar), live verification every 30 seconds, then live |
+
+Lower plans see each page as a preview built from the same components with sample data and the plan that unlocks
+it. The sidebar has an *Outlets* group; the command palette gains *Across the group* (switch property, group
+reports) and entries for every M5 page, with a lock mark where the plan doesn't include it. New roles `WAITER` and
+`KITCHEN` land on the till and the kitchen display.
+
+### M5 end-to-end tests
+
+`e2e/m5.spec.ts`: switching property shows the other property's rooms; a room-service order sent from the till
+appears on the kitchen display, is bumped to ready, charged to the room and appears on the guest's folio; a cash sale
+at the till is blocked until a shift is open; a dynamic-pricing suggestion accepted on the Rate Almanac changes the
+night's price; a message from the dev inbound simulator is answered from the inbox; loyalty points are redeemed on a
+folio with the code from the dev outbox; a custom domain verifies after its records are published to the mock DNS.
+
+---
+
 ## Stack
 
 | | |
@@ -300,7 +361,7 @@ In development the sign-in pages show a small "Dev" button that fills the demo c
 | `/billing/mock-checkout` | Development stand-in for Paystack; calls `POST /billing/dev/confirm` |
 | `/audit` | Day-grouped timeline, paging, CSV export (gated by `audit_export`) |
 | `/housekeeping` | Live board on Growth and above; preview and upgrade card below it |
-| `/pos`, `/channel-manager`, `/dynamic-pricing`, `/loyalty` | Locked previews naming the plan that unlocks them |
+| `/pos`, `/channel-manager`, `/dynamic-pricing`, `/loyalty`, `/inbox`, `/group` | Pro pages (see Milestone 5); on lower plans, previews naming the plan that unlocks them |
 
 Cmd/Ctrl+K opens the command palette: navigation, actions ("Add rooms in bulk", "Add staff member"),
 theme and log out. Type a room number and a status (`204 dirty`, `305 clean`) to change it without

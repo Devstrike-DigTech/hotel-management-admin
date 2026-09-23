@@ -130,7 +130,7 @@ function PropertyCard({ p, color, current, onSwitch }: { p: PropertySummary; col
           </div>
           <div>
             <dt className="text-ink-muted">Invoices</dt>
-            <dd className="font-mono text-ink">INV-{p.invoicePrefix ?? ""}-…</dd>
+            <dd className="font-mono text-ink">{p.invoicePrefix ? `INV-${p.invoicePrefix}-…` : "INV-2026-…"}</dd>
           </div>
         </dl>
         <div className="mt-3 flex flex-wrap gap-1.5">

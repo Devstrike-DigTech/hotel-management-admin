@@ -80,7 +80,7 @@ export function KdsBoard({
               const act = ACTION[t.status];
               const I = t.kind === "ROOM" ? Bed : t.kind === "TAB" ? Wine : ForkKnife;
               return (
-                <li key={t.id} data-testid={`kds-${t.kot}`} className="overflow-hidden rounded-md border border-line-strong bg-surface animate-[rise_220ms_cubic-bezier(0.22,1,0.36,1)]">
+                <li key={t.id} data-testid={`kds-${t.id}`} className="overflow-hidden rounded-md border border-line-strong bg-surface animate-[rise_220ms_cubic-bezier(0.22,1,0.36,1)]">
                   <div className="flex items-center gap-3 px-4 py-2.5" style={{ boxShadow: `inset 0 4px 0 ${TONE[tone].band}` }}>
                     <I size={24} weight="duotone" className="shrink-0 text-ink-muted" />
                     <div className="min-w-0 flex-1">
@@ -123,7 +123,7 @@ export function KdsBoard({
                         type="button"
                         onClick={() => onAdvance(t)}
                         disabled={busyId === t.id}
-                        data-testid={`kds-advance-${t.kot}`}
+                        data-testid={`kds-advance-${t.id}`}
                         className={cn(
                           "flex h-16 flex-1 items-center justify-center gap-2.5 text-[20px] font-medium transition-colors disabled:opacity-50",
                           t.status === "PREPARING" ? "bg-palm text-surface hover:opacity-90" : t.status === "NEW" ? "bg-surface-2 text-ink hover:bg-line" : "text-ink-muted hover:bg-surface-2 hover:text-ink",

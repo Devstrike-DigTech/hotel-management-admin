@@ -24,10 +24,14 @@ export function useSwitchProperty() {
     // remember it as the default for sessions that send no header (and other devices)
     if (id) void propertiesApi.setCurrent(id).catch(() => undefined);
     void clearPersistedQueries();
-    // drop everything scoped to the old house, keep who we are and the plans
-    qc.removeQueries({ predicate: (q) => !["me", "public", "properties"].includes(String(q.queryKey[0])) });
+    // drop everything scoped to the old house (keep who we are and the plans):
+    // queries on screen go back to loading and fetch again with the new header,
+    // the rest are dropped so they never show the old property's data
+    const scoped = (q: { queryKey: readonly unknown[] }) => !["me", "public", "properties"].includes(String(q.queryKey[0]));
+    void qc.cancelQueries({ predicate: scoped });
+    void qc.resetQueries({ predicate: (q) => scoped(q) && q.getObserversCount() > 0 });
+    qc.removeQueries({ predicate: (q) => scoped(q) && q.getObserversCount() === 0 });
     void qc.invalidateQueries({ queryKey: ["me"] });
-    void qc.refetchQueries({ type: "active" });
     if (name) toast.info(`Now working in ${name}`);
   };
 }
