@@ -100,6 +100,73 @@ bookings, payments and a shift to the demo hotel.
 Development only: `localStorage["admin.apiOrigin"] = "http://localhost:4020"` points the app at another
 API (such as a contract mock) without a restart; production builds ignore it.
 
+## Milestone 3: the guest side, as the hotel sees it
+
+Guests now book and pay online, on the marketplace and on each hotel's own booking site. The admin shows
+where every booking came from, what was paid, what the platform kept, and what the guest was told.
+
+![Payouts: the account on file, commission in plain words, and every online payment](docs/screenshots/m3-payouts-1440-light.png)
+
+| | |
+|---|---|
+| ![Online booking: the policy with the guest's view](docs/screenshots/m3-booking-settings-1440-light.png) | ![Reviews: rating, spread, subscores and the monthly trend](docs/screenshots/m3-reviews-1440-dark.png) |
+| ![A paid marketplace booking with its messages](docs/screenshots/m3-reservation-online-1440-light.png) | ![The Ledger with channel stamps](docs/screenshots/m3-ledger-1440-dark.png) |
+| ![Console: the marketplace](docs/screenshots/m3-platform-marketplace-1440-light.png) | ![Console: review moderation](docs/screenshots/m3-platform-reviews-1440-dark.png) |
+
+On a phone: [Payouts](docs/screenshots/m3-payouts-390-light.png), [Online booking](docs/screenshots/m3-booking-settings-390-dark.png),
+[Reviews](docs/screenshots/m3-reviews-390-light.png). Every M3 page is in `docs/screenshots/m3-*`.
+
+### M3 routes
+
+| Route | |
+|---|---|
+| `/payouts` | **Owner**: search Nigerian banks, type the 10-digit NUBAN, see the name the bank returns and confirm it before the Paystack subaccount is saved. Everyone with access: the account on file and its settlement status, paid online, commission, paid to you and refunds for 30 or 90 days, and commission per booking. The two channels are explained side by side: marketplace bookings pay the plan's commission (taken at the split, or invoiced monthly when the guest pays at the hotel); booking-site bookings pay none |
+| `/settings/booking` | Online booking on or off, pay at the hotel, the cancellation policy (free window, late fee, no-show fee as presets or exact values) on a timeline, and **what the guest sees**: the same sentences plus a worked example with real dates and naira. The note added to the pre-arrival message |
+| `/reviews` | Overall rating, the star spread (click to filter), subscores as rulers, a 12-month trend in hand-drawn SVG, filters by reply and traveller type, a reply composer with gentle checks (thank them, answer the point, no phone or room numbers), report to moderators, and a **Verified stay** link to the reservation |
+| `/platform/marketplace` | Gross booking value, commission collected against receivable by hotel, the channel and payment mix, pay-at-hotel receivables by month with *Settle*, and orphaned payments with a refund retry |
+| `/platform/reviews` | The moderation queue: flagged, live and hidden reviews; hide with a reason (abuse, personal details, off topic, spam, other) and a note the hotel sees, keep a flagged one up, or restore |
+
+Online bookings everywhere else:
+
+- **Channel stamps**: *Marketplace* (brass, a shop front) and *Booking site* (adire, a globe) on the Ledger bars and
+  their hover cards, the reservations list (with a source filter), the reservation, the quick peek and the Today board.
+  Colour never carries it alone: glyph and name (or `MKT` / `SITE` where space is tight) go with it.
+- **Holds**: an unpaid online booking holds its room for 20 minutes. A countdown shows on the list, the board, the
+  Ledger hover card and the reservation (a ring that turns ochre in the last five minutes). While it runs the desk
+  cannot confirm or check it in by hand.
+- **The reservation** gains a *Booked online* card (paid online or at the hotel, each Paystack payment and its
+  reference, commission, refunds, contact, special requests) and **What the guest was sent**: a timeline of every
+  email, SMS and WhatsApp with status and provider. Opening one shows the SMS as a phone bubble (with its length) or
+  the email in a sandboxed iframe (no scripts, no same-origin, a strict CSP inside the document).
+- **Cancelling a booking paid online** from the admin always refunds the guest in full, whatever the policy; the
+  dialog shows the refund and the commission given back, and needs an owner or manager.
+- **New online booking slips**: the shell polls `GET /online-bookings/feed?since=` every 30 seconds and drops a slip
+  for each new booking, payment or cancellation (the first poll only sets the baseline), and refreshes the desk views.
+  Today has a *Booked online* card with arrivals, new bookings and open holds.
+- The palette adds *Marketplace bookings*, *Booking site bookings*, *Reply to reviews*, *Change cancellation policy*,
+  *Turn online booking on or off* and *Set up or change the payout account*; the sidebar adds Reviews (with the
+  number waiting for a reply), Payouts and Online booking, and the console adds Marketplace and Reviews (with the
+  flagged count) and a marketplace strip on its overview.
+
+### M3 roles
+
+| | Owner | Manager | Front desk | Accountant |
+|---|---|---|---|---|
+| Payouts | read, set up the account | read | | read |
+| Online booking settings | edit | edit | | |
+| Reviews | read, reply, report | read, reply, report | read | read |
+| Message bodies (email preview) | yes | yes | yes | first lines only |
+| Cancel a booking paid online | yes | yes | | |
+| New booking slips | yes | yes | yes | yes |
+
+### M3 end-to-end tests
+
+`e2e/online.spec.ts` runs with the rest (`pnpm test:e2e`): an owner without a payout account (Wuse Garden in the seed)
+sets one up in dev mock mode (bank search, account look-up, confirm the name, save), a manager replies to a review,
+an owner changes the cancellation policy and sees the guest's wording change before saving (then restores the seed
+default), and a marketplace booking is found by its channel badge and opened. `E2E_API_ORIGIN` points the app at
+another API origin through the development override.
+
 ---
 
 ## Stack
@@ -237,6 +304,25 @@ src/
     permissions.ts                                  role capabilities
     offline/                                        IndexedDB, network state, outbox, desk actions, persistence
 public/sw.js, public/icons/                         service worker and app icons
+```
+
+M3 adds:
+
+```
+src/
+  app/(hotel)/payouts, reviews, settings/booking
+  app/platform/(console)/marketplace, reviews
+  components/
+    m3/bits.tsx       channel badge, hold countdown, stars
+    payouts/          bank picker (combobox), onboarding, account, commission explainer, payments
+    reviews/          reviews page, SVG rating trend, subscore rulers, star spread
+    online/           feed runtime (slips) and the Today card
+    notifications/    message timeline, sandboxed email frame
+    reservations/online-card.tsx
+    gating/require-cap.tsx
+  lib/
+    api/types-m3.ts, endpoints-m3.ts, hooks-m3.ts    the M3 contract
+    policy.ts                                        cancellation policy in plain language
 e2e/                                                Playwright tests
 ```
 
