@@ -245,6 +245,11 @@ on the hotel's own domain.
 | ![Channel manager: what the OTAs cost against the booking site](docs/screenshots/m5-channels-1440-light.png) | ![Group reports: every property side by side](docs/screenshots/m5-group-1440-dark.png) |
 | ![Loyalty: members, tiers and points owed](docs/screenshots/m5-loyalty-1440-light.png) | ![Custom domain: the two DNS records to add, checked live](docs/screenshots/m5-domain-pending-1440-light.png) |
 
+On a phone: [the till](docs/screenshots/m5-pos-390-light.png), [inbox](docs/screenshots/m5-inbox-390-light.png),
+[dynamic pricing](docs/screenshots/m5-pricing-390-dark.png), [custom domain](docs/screenshots/m5-domain-pending-390-light.png).
+Also: [a suggestion's reasons on the almanac](docs/screenshots/m5-suggestion-1440-light.png), [the property
+switcher](docs/screenshots/m5-switcher-1440-light.png), [redeeming points on a folio](docs/screenshots/m5-redeem-1440-light.png),
+[what pricing earned](docs/screenshots/m5-pricing-earned-1440-light.png), [a Growth hotel's preview of the till](docs/screenshots/m5-upsell-pos-1440-light.png).
 Every M5 shot (1440 px and 390 px, the till and the kitchen display at 1024 x 768, light and dark) is in
 `docs/screenshots/m5-*`.
 
