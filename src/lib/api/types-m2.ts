@@ -1,6 +1,7 @@
 /* The M2 contract (scratchpad API-M2.md) as TypeScript. Money in kobo, rates in basis points. */
 
 import type { Paginated, RoomStatus } from "./types";
+import type { OnlineBookingInfo, OnlineCounts, OnlineFields } from "./types-m3";
 import type {
   FlagStatus,
   FolioEntryType,
@@ -48,7 +49,7 @@ export interface GuestLite {
   vip: boolean;
 }
 
-export interface ReservationListItem {
+export interface ReservationListItem extends OnlineFields {
   id: string;
   code: string;
   status: ReservationStatus;
@@ -85,6 +86,8 @@ export interface ReservationDetail extends Omit<ReservationListItem, "guest"> {
   clientCreatedAt: string | null;
   createdBy: UserRef | null;
   guest: Guest;
+  /** M3: set for bookings made online (marketplace or booking site) */
+  online?: OnlineBookingInfo | null;
 }
 
 export interface ReservationInput {
@@ -191,7 +194,7 @@ export interface RoomAvailability {
   })[];
 }
 
-export interface TapeStay {
+export interface TapeStay extends OnlineFields {
   reservationId: string;
   code: string;
   roomId: string | null;
@@ -222,7 +225,7 @@ export interface TapeChart {
 
 /* ---------- front desk today ---------- */
 
-export interface TodayStay {
+export interface TodayStay extends OnlineFields {
   id: string;
   code: string;
   status: ReservationStatus;
@@ -257,6 +260,8 @@ export interface FrontDeskToday {
   rooms: { total: number; byStatus: Record<RoomStatus, number> };
   openFlags: number | null;
   myShift: Shift | null;
+  /** M3 */
+  online?: OnlineCounts;
 }
 
 /* ---------- guests ---------- */

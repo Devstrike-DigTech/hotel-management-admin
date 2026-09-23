@@ -44,7 +44,7 @@ export const usePublicPlans = (enabled = true) =>
 export const usePublicFeatures = (enabled = true) =>
   useQuery({ queryKey: qk.features, queryFn: publicApi.features, staleTime: 30 * 60_000, enabled });
 
-export const usePlatformMetrics = () => useQuery({ queryKey: qk.pMetrics, queryFn: platformApi.metrics });
+export const usePlatformMetrics = (enabled = true) => useQuery({ queryKey: qk.pMetrics, queryFn: platformApi.metrics, enabled });
 export const usePlatformTenants = (q: { q?: string; plan?: string; status?: string; page?: number }) =>
   useQuery({ queryKey: qk.pTenants(q), queryFn: () => platformApi.tenants(q), placeholderData: (p) => p });
 export const usePlatformTenant = (id: string) =>

@@ -315,6 +315,8 @@ export interface PlatformMetrics {
   trialsEndingSoon: TenantRow[];
   newTenants30d: number;
   signupsByWeek: { week: string; count: number }[];
+  /** M3 */
+  marketplace?: { gmv30dKobo: number; commission30dKobo: number; receivableKobo: number; orphanedOpen: number; flaggedReviews: number };
 }
 
 export interface FeatureOverride {

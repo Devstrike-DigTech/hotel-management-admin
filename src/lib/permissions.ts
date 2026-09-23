@@ -33,7 +33,16 @@ export type Capability =
   | "id.reveal"
   | "folio.read"
   | "digest.manage"
-  | "approver";
+  | "approver"
+  // M3
+  | "payouts.read" // online revenue and commission
+  | "payouts.manage" // bank account onboarding (owner only)
+  | "booking.settings" // online booking, pay at hotel, cancellation policy
+  | "reviews.read"
+  | "reviews.reply"
+  | "cancel.refund" // hotel-initiated cancel with full refund
+  | "notifications.preview" // open the message body (email HTML) a guest was sent
+  | "online.feed"; // new online booking toasts
 
 const MANAGER: Capability[] = [
   "reservations.read",
@@ -64,9 +73,11 @@ const MANAGER: Capability[] = [
   "approver",
 ];
 
+const MANAGER_M3: Capability[] = ["payouts.read", "booking.settings", "reviews.read", "reviews.reply", "cancel.refund", "notifications.preview", "online.feed"];
+
 const CAPS: Record<Role, Capability[]> = {
-  OWNER: MANAGER,
-  MANAGER,
+  OWNER: [...MANAGER, ...MANAGER_M3, "payouts.manage"],
+  MANAGER: [...MANAGER, ...MANAGER_M3],
   FRONT_DESK: [
     "reservations.read",
     "reservations.write",
@@ -78,8 +89,11 @@ const CAPS: Record<Role, Capability[]> = {
     "id.reveal",
     "folio.read",
     "tax.read",
+    "reviews.read",
+    "notifications.preview",
+    "online.feed",
   ],
-  ACCOUNTANT: ["reservations.read", "shift.viewAll", "guard.read", "reports.read", "guest.read", "folio.read", "tax.read"],
+  ACCOUNTANT: ["reservations.read", "shift.viewAll", "guard.read", "reports.read", "guest.read", "folio.read", "tax.read", "payouts.read", "reviews.read", "online.feed"],
   HOUSEKEEPING: [],
 };
 
