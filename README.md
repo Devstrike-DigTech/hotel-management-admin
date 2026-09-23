@@ -172,6 +172,62 @@ an owner changes the cancellation policy and sees the guest's wording change bef
 default), and a marketplace booking is found by its channel badge and opened. `E2E_API_ORIGIN` points the app at
 another API origin through the development override.
 
+## Milestone 4: the house at work, and what a night is worth
+
+Housekeeping, maintenance, roles you can shape yourself, and the commercial side: seasons and prices on one
+almanac, rate plans, promo codes, company accounts and the City Ledger that bills them.
+
+![The Rate Almanac: every room type, every night, with seasons across the top](docs/screenshots/m4-rates-1440-dark.png)
+
+| | |
+|---|---|
+| ![Housekeeping board: drag a room onto a name; workload bars per person](docs/screenshots/m4-housekeeping-1440-light.png) | ![Painting a season across nights and room types](docs/screenshots/m4-rates-paint-1440-light.png) |
+| ![Maintenance: tickets by status, each with its SLA clock](docs/screenshots/m4-maintenance-1440-light.png) | ![A ticket: timeline, SLA countdown and the room out of order](docs/screenshots/m4-ticket-1440-dark.png) |
+| ![Roles and permissions: system roles locked, custom roles editable](docs/screenshots/m4-roles-1440-dark.png) | ![City Ledger: aging by bucket and credit in use](docs/screenshots/m4-city-ledger-1440-dark.png) |
+| ![Promo codes as ticket stubs, with usage](docs/screenshots/m4-promotions-1440-light.png) | ![The diesel log: litres and naira in two aligned panels](docs/screenshots/m4-diesel-1440-light.png) |
+| ![New reservation: plan, company, promo and the price per night](docs/screenshots/m4-new-reservation-1440-light.png) | ![Alerts and WhatsApp templates](docs/screenshots/m4-notifications-1440-light.png) |
+
+On a phone: [My rooms (`/hk`)](docs/screenshots/m4-hk-390-dark.png), [offline](docs/screenshots/m4-hk-offline-390-dark.png),
+[housekeeping](docs/screenshots/m4-housekeeping-390-light.png), [maintenance](docs/screenshots/m4-maintenance-390-dark.png),
+[almanac](docs/screenshots/m4-rates-390-light.png), [roles](docs/screenshots/m4-roles-390-light.png). On a lower plan the
+same pages show an upgrade preview built from the real components ([rates](docs/screenshots/m4-upsell-rates-1440-light.png)).
+Every M4 shot is in `docs/screenshots/m4-*`.
+
+### M4 routes
+
+| Route | |
+|---|---|
+| `/housekeeping` | **Board**: Unassigned, Assigned, Cleaning, Done. Drag a room onto a person (or tap it, then tap a name), assign a whole floor, or *Balance the load* from the server's suggestion (shown as ghost chips before you apply). Each person's workload bar is minutes against a 7-hour shift, split by clean type. Arrivals today are marked urgent. **Inspection**: pass, or send back with a reason. **Lost & found**: log, hand back, dispose. **Checklists**: per clean type, with inspection, stayover and deep-clean rules |
+| `/hk` | The housekeeper's phone view: today's rooms, one room at a time, a large checklist and *Finish room*. Works with no signal: starts, ticks, finishes and skips go through the offline outbox (Idempotency-Keys) and send when the line is back. Housekeepers land here after sign-in |
+| `/maintenance` | Tickets as a board (drag to change status) or a list, filters for open and past SLA, *Report a fault* with room or area, category, priority and **block the room**: if reservations clash, the dialog lists them before you block anyway. Tabs for the **preventive** calendar and schedules, the **diesel log** (litres and naira as two aligned charts, never a dual axis) and reports |
+| `/maintenance/[id]` | Timeline, a live SLA countdown, assignee and priority, the out-of-order card with *See it on the Ledger* (`/ledger?room=`, where the block shows as a hatched band) and release |
+| `/rates` | **The Rate Almanac**: room types by nights with the resolved price a guest would pay, season bands across the top, fixed-price pins, minimum-stay and closed-to-arrival marks, forecast-occupancy bars per night. Drag (or Shift+arrows, then Enter) to paint a season, a fixed price or restrictions. Fully keyboard operable (`role="grid"`) |
+| `/rates/plans` | Rate plans: price rule against the best available rate, cancellation, stay length, channels |
+| `/promotions` | Promo codes with times used, given away and revenue brought in |
+| `/corporate` | Company accounts: negotiated plan, credit limit, terms, credit in use, aging, stays |
+| `/city-ledger` | Outstanding and overdue, aging buckets, credit per account, statements with *Record payment*, *Send reminder* and a print view (`/print/statement/[id]`) |
+| `/staff/roles` | The permission matrix: built-in roles locked (clone one to change it), custom roles editable, cells you can't grant hatched (no escalation), and a *What changes* diff before saving |
+| `/settings/notifications` | Revenue Guard alerts (who, bundling, urgent rules, quiet hours on a day ruler), WhatsApp template approval status and the alert log |
+| `/audit` | Adds *Export* (CSV or JSON by date range), on Pro |
+
+The new-reservation drawer gains rate plan, company account and promo code pickers with a per-night price breakdown
+from `POST /rates/quote`; check-out can charge a company account to the City Ledger (within its credit limit).
+
+### Permissions
+
+The UI no longer gates by role name. `/me` returns `permissions`, and `useCan()` (`src/lib/permissions.ts`) checks
+them for pages, sidebar items, palette entries and buttons. If a token predates M4, the built-in role map is the
+fallback. A custom role is enforced the same way everywhere, so hiding a page from a role hides its nav item, its
+palette entry and the page itself ("Rates isn't part of your role").
+
+### M4 end-to-end tests
+
+`e2e/m4.spec.ts`: a housekeeping task finished on `/hk` and passed at inspection leaves the room clean; a
+maintenance ticket that blocks a room shows the block on the Ledger; a custom role without a page hides it from a
+user who holds that role; painting a season on the almanac changes the price; a booking with a promo code and a
+company account checks out to the City Ledger. The tests make their own data when the seed lacks it and clean up
+after themselves.
+
 ---
 
 ## Stack
