@@ -65,7 +65,7 @@ export function TagInput({
         }}
         onBlur={() => draft && commit(draft)}
         placeholder={value.length ? "" : placeholder}
-        className="min-w-[120px] flex-1 bg-transparent px-1 text-[14px] outline-none"
+        className="min-w-[120px] flex-1 bg-transparent px-1 text-[16px] sm:text-[14px] outline-none"
       />
     </div>
   );

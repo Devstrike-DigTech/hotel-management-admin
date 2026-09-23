@@ -118,7 +118,9 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center justify-between gap-3 border-b border-line px-4 sm:px-6 lg:px-10">
-          <p className="eyebrow">Devstrike Digital &middot; Operations</p>
+          <p className="eyebrow truncate">
+            <span className="hidden sm:inline">Devstrike Digital &middot; </span>Operations
+          </p>
           <ThemeToggle compact />
         </header>
         <main className="flex-1 px-4 pb-16 pt-6 sm:px-6 md:pt-9 lg:px-10">

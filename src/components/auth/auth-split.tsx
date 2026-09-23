@@ -70,7 +70,24 @@ export function AuthSplit({
           {aside}
         </div>
       </aside>
-      <main className="relative flex min-h-dvh flex-col px-5 py-8 sm:px-10 lg:px-16">{children}</main>
+      <main className="relative flex min-h-dvh flex-col px-5 py-8 sm:px-10 lg:px-16">
+        {/* a strip of the cloth on small screens */}
+        <div
+          aria-hidden
+          className={cn(
+            "relative -mx-5 -mt-8 mb-8 h-20 overflow-hidden sm:-mx-10 lg:hidden",
+            ink ? "bg-[#1b1a17]" : "bg-[#1f2d48] dark:bg-[#141d30]",
+          )}
+        >
+          <AdireField
+            cols={12}
+            rows={3}
+            animated={false}
+            className={cn("absolute inset-0 h-full w-full opacity-30", ink ? "text-[#d6a94a]" : "text-[#ece3d2]")}
+          />
+        </div>
+        {children}
+      </main>
     </div>
   );
 }

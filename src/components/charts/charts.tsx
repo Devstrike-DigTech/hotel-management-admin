@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 
 /* Small, hand-built SVG charts in the house style: thin marks, hairline grid,
@@ -20,9 +20,19 @@ export function ColumnChart({
   color?: string;
 }) {
   const [hover, setHover] = useState<number | null>(null);
+  // Render in real pixels so axis text stays legible at every width.
+  const [w, setW] = useState(600);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setW(Math.max(240, Math.round(e.contentRect.width))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const max = Math.max(1, ...data.map((d) => d.y));
   const niceMax = Math.ceil(max / 2) * 2 || 2;
-  const w = 600;
+  const labelEvery = w < 420 ? 4 : 3;
   const padL = 26;
   const padB = 22;
   const innerH = height - padB - 8;
@@ -32,8 +42,8 @@ export function ColumnChart({
   const y = (v: number) => 8 + innerH - (v / niceMax) * innerH;
 
   return (
-    <div className="relative">
-      <svg viewBox={`0 0 ${w} ${height}`} className="w-full" role="img" aria-label={label}>
+    <div className="relative" ref={ref}>
+      <svg viewBox={`0 0 ${w} ${height}`} width={w} height={height} className="block w-full" role="img" aria-label={label}>
         {ticks.map((t) => (
           <g key={t}>
             <line x1={padL} x2={w} y1={y(t)} y2={y(t)} style={{ stroke: "var(--line)" }} strokeDasharray={t === 0 ? undefined : "2 4"} />
@@ -57,7 +67,7 @@ export function ColumnChart({
                   style={{ fill: color, opacity: hover === null || hover === i ? 1 : 0.45, transition: "opacity 150ms" }}
                 />
               )}
-              {(i === 0 || i === data.length - 1 || i % 3 === 0) && (
+              {(i === data.length - 1 || (i % labelEvery === 0 && data.length - 1 - i >= labelEvery / 2)) && (
                 <text x={cx} y={height - 6} textAnchor="middle" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fill: "var(--ink-muted)" }}>
                   {formatX(d.x)}
                 </text>

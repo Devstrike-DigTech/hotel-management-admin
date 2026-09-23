@@ -25,7 +25,8 @@ export function nairaCompact(kobo: number | null | undefined): string {
 }
 
 function trim(v: number) {
-  return v.toFixed(v >= 100 ? 0 : 1).replace(/\.0$/, "");
+  const s = v.toFixed(v >= 100 ? 0 : v >= 10 ? 1 : 2);
+  return s.includes(".") ? s.replace(/0+$/, "").replace(/\.$/, "") : s;
 }
 
 export function number(n: number | null | undefined): string {

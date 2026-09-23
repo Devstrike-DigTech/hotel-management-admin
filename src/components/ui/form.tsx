@@ -5,7 +5,7 @@ import { CaretDown, Eye, EyeSlash, LockSimple } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 
 const control =
-  "w-full rounded-md border border-line-strong bg-surface px-3 text-[14px] text-ink transition-[border-color,box-shadow] duration-150 outline-none hover:border-ink-faint focus:border-laterite focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--laterite)_18%,transparent)] disabled:cursor-not-allowed disabled:opacity-60 aria-[invalid=true]:border-danger";
+  "w-full rounded-md border border-line-strong bg-surface px-3 text-[16px] text-ink sm:text-[14px] transition-[border-color,box-shadow] duration-150 outline-none hover:border-ink-faint focus:border-laterite focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--laterite)_18%,transparent)] disabled:cursor-not-allowed disabled:opacity-60 aria-[invalid=true]:border-danger";
 
 export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(function Input(
   { className, ...rest },
@@ -55,7 +55,7 @@ export const AffixInput = forwardRef<
           {prefix}
         </span>
       )}
-      <input ref={ref} className="min-w-0 flex-1 bg-transparent px-3 text-[14px] outline-none disabled:cursor-not-allowed" {...rest} />
+      <input ref={ref} className="min-w-0 flex-1 bg-transparent px-3 text-[16px] outline-none sm:text-[14px] disabled:cursor-not-allowed" {...rest} />
       {suffix && (
         <span className="flex items-center border-l border-line bg-surface-2/60 px-3 font-mono text-[12px] text-ink-muted">
           {suffix}

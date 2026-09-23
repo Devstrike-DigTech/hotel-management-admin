@@ -88,7 +88,30 @@ export function StaffView() {
           ) : !staff.data?.length ? (
             <EmptyState glyph="eye" title="Just you for now" body="Add your front desk, housekeeping and managers so each has their own sign-in." />
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <ul className="divide-y divide-line sm:hidden">
+              {sortStaff(staff.data).map((s) => {
+                const self = s.id === me.data?.user.id;
+                return (
+                  <li key={s.id} className="flex items-center gap-3 px-4 py-3.5">
+                    <Avatar name={s.fullName} role={s.role} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-medium text-ink">
+                        {s.fullName} {self && <span className="font-normal text-ink-faint">(you)</span>}
+                      </p>
+                      <p className="mt-0.5 flex items-center gap-2 text-[12px] text-ink-muted">
+                        <Badge tone={ROLE_TONE[s.role]}>{ROLES[s.role]?.label ?? s.role}</Badge>
+                        <span className="truncate">{s.lastLoginAt ? relativeTime(s.lastLoginAt) : "Never signed in"}</span>
+                      </p>
+                    </div>
+                    {canManage && s.role !== "OWNER" && !self && (
+                      <RowMenu label={s.fullName} onEdit={() => setEditing(s)} onDelete={() => setRemoving(s)} deleteLabel="Remove access" />
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="hidden overflow-x-auto sm:block">
               <table className="w-full min-w-[640px] border-collapse text-left text-[13.5px]">
                 <thead>
                   <tr className="border-b border-line text-ink-muted">
@@ -102,24 +125,13 @@ export function StaffView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {staff.data.map((s) => {
+                  {sortStaff(staff.data).map((s) => {
                     const self = s.id === me.data?.user.id;
                     return (
                       <tr key={s.id} className="border-b border-line last:border-b-0 hover:bg-surface-2/50">
                         <td className="py-3 pl-5">
                           <div className="flex items-center gap-3">
-                            <span
-                              className={cn(
-                                "grid h-9 w-9 shrink-0 place-items-center rounded-full border font-mono text-[11.5px] font-medium",
-                              )}
-                              style={{
-                                color: `var(--${ROLE_TONE[s.role] === "neutral" ? "ink-muted" : ROLE_TONE[s.role]})`,
-                                borderColor: "var(--line-strong)",
-                                background: "var(--paper)",
-                              }}
-                            >
-                              {initials(s.fullName)}
-                            </span>
+                            <Avatar name={s.fullName} role={s.role} />
                             <div className="min-w-0">
                               <p className="truncate font-medium text-ink">
                                 {s.fullName} {self && <span className="font-normal text-ink-faint">(you)</span>}
@@ -146,6 +158,7 @@ export function StaffView() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </Panel>
 
@@ -193,6 +206,27 @@ export function StaffView() {
         onConfirm={() => (removing ? del.mutateAsync(removing) : undefined)}
       />
     </>
+  );
+}
+
+function sortStaff(list: Staff[]) {
+  return [...list].sort(
+    (a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role) || a.fullName.localeCompare(b.fullName),
+  );
+}
+
+function Avatar({ name, role }: { name: string; role: Role }) {
+  return (
+    <span
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-full border font-mono text-[11.5px] font-medium"
+      style={{
+        color: `var(--${ROLE_TONE[role] === "neutral" ? "ink-muted" : ROLE_TONE[role]})`,
+        borderColor: "var(--line-strong)",
+        background: "var(--paper)",
+      }}
+    >
+      {initials(name)}
+    </span>
   );
 }
 
