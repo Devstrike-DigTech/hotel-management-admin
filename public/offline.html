@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en-NG">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Offline</title>
+<style>
+  :root { color-scheme: light dark; --paper:#f4efe6; --ink:#1b1a17; --muted:#6b645a; --laterite:#b4452a; --line:#e0d7c8; }
+  @media (prefers-color-scheme: dark) { :root { --paper:#13110e; --ink:#efe8dc; --muted:#a69d8f; --laterite:#e0714b; --line:#332e27; } }
+  body { margin:0; min-height:100dvh; display:grid; place-items:center; background:var(--paper); color:var(--ink); font: 15px/1.55 ui-sans-serif, system-ui, sans-serif; }
+  main { max-width: 420px; padding: 32px 24px; text-align:center; }
+  h1 { font: 400 30px/1.1 Georgia, ui-serif, serif; letter-spacing:-0.02em; margin: 18px 0 10px; }
+  p { color: var(--muted); margin: 0 0 18px; }
+  a { display:inline-block; padding: 10px 16px; border-radius:6px; background:var(--laterite); color:#fff6ef; text-decoration:none; font-weight:500; }
+  hr { border:0; border-top:1px dashed var(--line); margin: 22px 0; }
+</style>
+</head>
+<body>
+<main>
+  <img src="/icon.svg" width="44" height="44" alt="" />
+  <h1>The line is down.</h1>
+  <p>This page hasn't been opened on this device yet, so there's no saved copy. Open Today to keep working: check-ins, payments, room status and check-outs are saved here and sync when the connection returns.</p>
+  <a href="/today">Open Today</a>
+  <hr />
+  <p style="font-size:13px">Your queued actions are safe on this device.</p>
+</main>
+</body>
+</html>

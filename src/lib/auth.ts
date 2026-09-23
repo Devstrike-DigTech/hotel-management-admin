@@ -9,6 +9,7 @@ import { jwtExpiry, session } from "./api/session";
 import { useMe, usePublicPlans } from "./api/hooks";
 import type { AuthResponse } from "./api/types";
 import { minimumPlanFor } from "./catalog";
+import { clearPersistedQueries } from "./offline/persist";
 
 const noop = () => () => {};
 export function useHydrated() {
@@ -38,6 +39,7 @@ export function useLogout() {
     if (s?.refreshToken) await authApi.logout(s.refreshToken);
     session.setHotel(null);
     qc.clear();
+    void clearPersistedQueries();
     router.replace("/login");
   }, [qc, router]);
 }
