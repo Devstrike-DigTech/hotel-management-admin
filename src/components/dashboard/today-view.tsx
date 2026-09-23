@@ -154,7 +154,7 @@ export function TodayView() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-12">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-12">
         {/* key rack */}
         <Panel className="flex flex-col overflow-hidden lg:col-span-8">
           <PanelHeader

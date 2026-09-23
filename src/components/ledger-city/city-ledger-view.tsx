@@ -56,7 +56,7 @@ export function CityLedgerView() {
             What the companies <em>owe the house</em>.
           </>
         }
-        description="Stays checked out to a company account, the statements they were sent and how old each naira is. Older money is darker."
+        description="Stays checked out to a company account, the statements they were sent and how old each naira is. The older the debt, the stronger its colour."
         actions={
           <ButtonLink href="/corporate" variant="secondary">
             Corporate accounts
@@ -127,7 +127,7 @@ export function CityLedgerView() {
           ) : !inv.data.items.length ? (
             <EmptyState compact glyph="dots" title="Nothing owed here" body="Every statement in this view is settled." />
           ) : (
-            <div className="overflow-x-auto">
+            <div className="relative overflow-x-auto">
               <table className="w-full min-w-[760px] text-left text-[13px]">
                 <thead>
                   <tr className="border-b border-line text-ink-muted">

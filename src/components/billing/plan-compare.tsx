@@ -65,7 +65,7 @@ export function PlanCompare({
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-line bg-surface">
+      <div className="relative overflow-x-auto rounded-lg border border-line bg-surface">
         <table className="w-full min-w-[860px] table-fixed border-collapse text-left">
           <thead>
             <tr className="align-top">

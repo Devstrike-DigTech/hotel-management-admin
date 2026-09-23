@@ -105,7 +105,7 @@ export function NotificationSettingsView() {
       ) : !form || !g ? (
         <Skeleton className="h-96" />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
           <div className="flex flex-col gap-5">
             <Panel>
               <PanelHeader eyebrow="Revenue Guard" title="Who hears about high flags" />

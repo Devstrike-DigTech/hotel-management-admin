@@ -103,7 +103,7 @@ export function Diesel() {
         ) : !logs.data.items.length ? (
           <EmptyState compact glyph="river" title="No deliveries logged" body="Log each delivery as the tanker leaves: litres, what you paid and the supplier." />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full min-w-[640px] text-left text-[13px]">
               <thead>
                 <tr className="border-b border-line text-ink-muted">

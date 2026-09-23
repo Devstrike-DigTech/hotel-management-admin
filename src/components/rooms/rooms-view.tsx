@@ -272,7 +272,7 @@ function RoomsTable({
     (a, b) => a.floor - b.floor || a.number.localeCompare(b.number, undefined, { numeric: true }),
   );
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="w-full min-w-[720px] border-collapse text-left text-[13.5px]">
         <thead>
           <tr className="border-b border-line text-ink-muted">

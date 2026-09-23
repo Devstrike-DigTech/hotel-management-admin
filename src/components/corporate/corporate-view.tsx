@@ -66,7 +66,7 @@ export function CorporateView() {
               key={a.id}
               type="button"
               onClick={() => setOpen(a.id)}
-              className={cn("flex flex-col gap-4 rounded-lg border bg-surface p-5 text-left transition-colors hover:border-line-strong", !a.active && "opacity-60", a.availableCreditKobo < 0 ? "border-[color-mix(in_oklab,var(--danger)_35%,transparent)]" : "border-line")}
+              className={cn("flex min-w-0 flex-col gap-4 rounded-lg border bg-surface p-5 text-left transition-colors hover:border-line-strong", !a.active && "opacity-60", a.availableCreditKobo < 0 ? "border-[color-mix(in_oklab,var(--danger)_35%,transparent)]" : "border-line")}
               data-testid={`corp-${a.name}`}
             >
               <div className="flex items-start gap-3">
@@ -81,7 +81,7 @@ export function CorporateView() {
                 </div>
                 {!a.active && <Badge>Inactive</Badge>}
               </div>
-              <div className="grid grid-cols-[1fr_auto] items-end gap-6">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-6">
                 <CreditMeter usedKobo={a.outstandingKobo} limitKobo={a.creditLimitKobo} />
                 <AgingStrip buckets={a.aging} width={96} />
               </div>

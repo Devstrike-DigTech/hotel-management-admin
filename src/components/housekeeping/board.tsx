@@ -32,7 +32,7 @@ const typeColor = (t: HkType) => TYPE_SERIES[t] ?? "var(--ink-faint)";
 export type BoardGroup = "status" | "floor";
 
 const STATUS_COLUMNS: { key: string; title: string; hint: string; match: (t: HkTaskView) => boolean }[] = [
-  { key: "open", title: "Unassigned", hint: "Drag onto a name", match: (t) => t.status === "OPEN" || (!t.assigneeId && t.status === "REJECTED") },
+  { key: "open", title: "Unassigned", hint: "Drag to a name", match: (t) => t.status === "OPEN" || (!t.assigneeId && t.status === "REJECTED") },
   { key: "assigned", title: "Assigned", hint: "Waiting to start", match: (t) => t.status === "ASSIGNED" || (!!t.assigneeId && t.status === "REJECTED") },
   { key: "progress", title: "Cleaning", hint: "In the room now", match: (t) => t.status === "IN_PROGRESS" },
   { key: "done", title: "Done", hint: "Waiting for inspection first", match: (t) => t.status === "DONE" || t.status === "INSPECTED" },

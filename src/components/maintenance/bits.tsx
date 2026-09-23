@@ -138,7 +138,7 @@ export function SlaClock({
     );
   }
   return (
-    <span className={cn("inline-flex items-center gap-1.5 font-mono text-[11px]", breached && !resolvedAt ? "text-danger" : "text-ink-muted")} title={text}>
+    <span className={cn("inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap font-mono text-[11px]", breached && !resolvedAt ? "text-danger" : "text-ink-muted")} title={text}>
       <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`} aria-hidden>
         <circle cx={S / 2} cy={S / 2} r={R} fill="none" stroke="var(--line-strong)" strokeWidth={2} />
         <circle
@@ -152,7 +152,7 @@ export function SlaClock({
           transform={`rotate(-90 ${S / 2} ${S / 2})`}
         />
       </svg>
-      {text}
+      {breached && !resolvedAt ? `${span(-left)} over` : text}
     </span>
   );
 }

@@ -208,7 +208,7 @@ export function BillingView() {
         ) : !invoices.data?.length ? (
           <EmptyState compact glyph="ladder" title="No invoices yet" body="Your first invoice appears here once you choose a plan." />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full min-w-[620px] border-collapse text-left text-[13.5px]">
               <thead>
                 <tr className="border-b border-line">

@@ -315,7 +315,7 @@ function History() {
       ) : !list.length ? (
         <EmptyState compact glyph="ladder" title="No closed shifts yet" />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full min-w-[640px] text-[13px]">
             <thead>
               <tr className="border-b border-line text-left">

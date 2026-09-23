@@ -87,7 +87,7 @@ export function TenantsView() {
         ) : !items.length ? (
           <EmptyState glyph="dots" title="No hotels match" body="Try a different name, plan or status." />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full min-w-[820px] border-collapse text-left text-[13.5px]">
               <thead>
                 <tr className="border-b border-line">
