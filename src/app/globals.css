@@ -7,7 +7,7 @@
  * the active theme. The default Tailwind palette is removed on purpose.
  */
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .theme-dark, .theme-dark *));
 
 :root {
   color-scheme: light;
@@ -61,7 +61,8 @@
   --season-5: #9a5ea6;
 }
 
-:root[data-theme="dark"] {
+:root[data-theme="dark"],
+.theme-dark {
   color-scheme: dark;
   --paper: #13110e;
   --surface: #1c1915;
@@ -194,6 +195,11 @@
 @keyframes drift {
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(-120px, -120px, 0); }
+}
+@keyframes pos-pop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
 }
 @keyframes breathe {
   0%, 100% { opacity: 0.55; }
