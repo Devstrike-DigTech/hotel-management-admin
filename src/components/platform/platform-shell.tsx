@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useEffect } from "react";
-import { Buildings, ChartBar, SignOut, Stack } from "@phosphor-icons/react";
+import { Buildings, ChartBar, ChatsTeardrop, SignOut, Stack, Storefront } from "@phosphor-icons/react";
+import { usePlatformMetrics } from "@/lib/api/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { onSessionExpired } from "@/lib/api/client";
 import { session } from "@/lib/api/session";
@@ -16,7 +17,9 @@ import { ThemeToggle } from "@/components/shell/theme-toggle";
 
 const NAV = [
   { href: "/platform", label: "Overview", icon: ChartBar },
+  { href: "/platform/marketplace", label: "Marketplace", icon: Storefront },
   { href: "/platform/tenants", label: "Tenants", icon: Buildings },
+  { href: "/platform/reviews", label: "Reviews", icon: ChatsTeardrop, badge: "flagged" as const },
   { href: "/platform/plans", label: "Plans", icon: Stack },
 ];
 
@@ -30,6 +33,8 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const qc = useQueryClient();
+  const metrics = usePlatformMetrics(!!s);
+  const flagged = metrics.data?.marketplace?.flaggedReviews ?? 0;
 
   useEffect(() => {
     if (hydrated && !s) router.replace(`/platform/login?next=${encodeURIComponent(pathname)}`);
@@ -78,6 +83,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
               {NAV.map((n) => {
                 const I = n.icon;
                 const on = active(pathname, n.href);
+                const count = "badge" in n ? flagged : 0;
                 return (
                   <li key={n.href}>
                     <Link
@@ -91,6 +97,11 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
                       {on && <span className="absolute -left-3 top-1.5 bottom-1.5 hidden w-[3px] rounded-r-xs bg-[#d6a94a] lg:block" />}
                       <I size={18} weight="duotone" className={on ? "text-[#d6a94a]" : ""} />
                       {n.label}
+                      {!!count && (
+                        <span className="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#d6a94a] px-1.5 font-mono text-[10.5px] font-medium text-[#1b1a17]" aria-label={`${count} flagged`}>
+                          {count}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
