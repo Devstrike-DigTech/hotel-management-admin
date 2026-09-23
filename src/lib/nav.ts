@@ -33,6 +33,12 @@ import {
   ShieldCheck,
   BellRinging,
   DeviceMobile,
+  ChatCircleText,
+  CookingPot,
+  ForkKnife,
+  Package,
+  TreeStructure,
+  Globe,
   type Icon,
 } from "@phosphor-icons/react";
 import type { Capability, Permission } from "./permissions";
@@ -47,7 +53,7 @@ export interface NavItem {
   /** hidden without this capability or permission (an array means any of them) */
   cap?: Capability | Permission | (Capability | Permission)[];
   /** show a live count badge */
-  badge?: "flags" | "approvals" | "reviews";
+  badge?: "flags" | "approvals" | "reviews" | "inbox";
   /** label on the phone tab bar */
   short?: string;
   /** hidden for roles that have this capability (avoids duplicates) */
@@ -69,6 +75,8 @@ export const HOTEL_NAV: NavGroup[] = [
       { href: "/ledger", label: "The Ledger", short: "Ledger", icon: Rows, feature: "reservations", cap: "reservations.read", keywords: "tape chart calendar availability grid", shortcut: "G L" },
       { href: "/reservations", label: "Reservations", short: "Bookings", icon: BookBookmark, feature: "reservations", cap: "reservations.read", keywords: "bookings stays arrivals codes", shortcut: "G V" },
       { href: "/guests", label: "Guests", icon: AddressBook, feature: "guest_register", cap: "guest.read", keywords: "guest profiles people customers ndpa" },
+      { href: "/inbox", label: "Guest inbox", short: "Inbox", icon: ChatCircleText, feature: "whatsapp_messaging", cap: "inbox.view", badge: "inbox", keywords: "whatsapp messages chat conversations reply guests threads", shortcut: "G I" },
+      { href: "/loyalty", label: "Loyalty", icon: Crown, feature: "loyalty", cap: "loyalty.view", keywords: "rewards points members tiers palmwine circle redeem" },
       { href: "/reviews", label: "Reviews", icon: ChatsTeardrop, cap: "reviews.read", badge: "reviews", keywords: "ratings stars feedback reply verified stays" },
       { href: "/rooms", label: "Rooms", icon: Key, exact: true, cap: ["rooms.status", "rooms.manage", "reservations.view"], keywords: "key rack board status", shortcut: "G R" },
       { href: "/rooms/types", label: "Room types", icon: Bed, cap: ["rooms.manage", "rates.view"], keywords: "categories base price" },
@@ -83,12 +91,24 @@ export const HOTEL_NAV: NavGroup[] = [
     ],
   },
   {
+    label: "Outlets",
+    items: [
+      { href: "/pos", label: "Point of sale", short: "POS", icon: CashRegister, feature: "pos", cap: "pos.view", exact: true, keywords: "till bar restaurant order ticket table tab room charge settle receipt" },
+      { href: "/kds", label: "Kitchen display", icon: CookingPot, feature: "pos", cap: "kds.view", keywords: "kds kitchen bar tickets bump ready kot" },
+      { href: "/pos/menu", label: "Menu & outlets", icon: ForkKnife, feature: "pos", cap: "pos.manage", keywords: "menu items prices categories modifiers happy hour outlets" },
+      { href: "/pos/stock", label: "Stock & minibar", icon: Package, feature: "pos", cap: ["stock.view", "stock.manage", "minibar.record"], keywords: "stock inventory count variance purchases minibar par levels low stock" },
+      { href: "/pos/reports", label: "Outlet sales", icon: ChartBar, feature: "pos", cap: "pos.view", keywords: "pos reports sales by outlet item hour voids cashier top items" },
+    ],
+  },
+  {
     label: "Rates & sales",
     items: [
       { href: "/rates", label: "Rate Almanac", short: "Rates", icon: CalendarDots, feature: "promotions", cap: "rates.view", exact: true, keywords: "rates prices seasons calendar weekend detty december override min stay closed to arrival stop sell" },
       { href: "/rates/plans", label: "Rate plans", icon: Notebook, feature: "promotions", cap: "rates.view", keywords: "bar non-refundable corporate long stay breakfast" },
       { href: "/promotions", label: "Promo codes", icon: Ticket, feature: "promotions", cap: "rates.view", keywords: "promo codes discount voucher welcome10" },
       { href: "/corporate", label: "Corporate accounts", icon: Briefcase, feature: "promotions", cap: "corporate.view", keywords: "companies negotiated rate credit limit oil bank ngo" },
+      { href: "/dynamic-pricing", label: "Dynamic pricing", icon: ChartLineUp, feature: "dynamic_pricing", cap: "pricing.view", keywords: "suggestions autopilot guardrails events calendar yield pricing engine earned" },
+      { href: "/channel-manager", label: "Channel manager", icon: Plugs, feature: "channel_manager", cap: "channels.view", keywords: "ota booking.com expedia airbnb agoda ical channex sync mapping commission" },
       { href: "/city-ledger", label: "City Ledger", icon: Tag, feature: "promotions", cap: "corporate.view", keywords: "receivables aging statements invoices companies owe" },
     ],
   },
@@ -102,16 +122,8 @@ export const HOTEL_NAV: NavGroup[] = [
       { href: "/approvals", label: "Approvals", icon: SealCheck, cap: "shift.approve", badge: "approvals", keywords: "approve shifts manager variance" },
       { href: "/guard", label: "Revenue Guard", icon: ShieldWarning, feature: "revenue_guard_basic", cap: "guard.read", badge: "flags", keywords: "flags leakage fraud alerts triage" },
       { href: "/reports", label: "Reports", icon: ChartBar, cap: "reports.read", keywords: "daily flash revenue occupancy adr revpar shifts digest night audit" },
+      { href: "/group", label: "Group reports", icon: TreeStructure, feature: "multi_property", cap: "reports.read", keywords: "all properties consolidated compare group occupancy adr revpar" },
       { href: "/register", label: "Guest register", icon: BookOpenText, feature: "guest_register", cap: "frontdesk.checkin", keywords: "police register csv export security book" },
-    ],
-  },
-  {
-    label: "Grow",
-    items: [
-      { href: "/pos", label: "Point of sale", icon: CashRegister, feature: "pos", keywords: "bar restaurant pos" },
-      { href: "/dynamic-pricing", label: "Dynamic pricing", icon: ChartLineUp, feature: "dynamic_pricing", keywords: "rates yield" },
-      { href: "/channel-manager", label: "Channel manager", icon: Plugs, feature: "channel_manager", keywords: "ota booking sync" },
-      { href: "/loyalty", label: "Loyalty", icon: Crown, feature: "loyalty", keywords: "rewards points guests" },
     ],
   },
   {
@@ -120,6 +132,8 @@ export const HOTEL_NAV: NavGroup[] = [
       { href: "/staff", label: "Staff", icon: UsersThree, exact: true, cap: "staff.manage", keywords: "team people users pin", shortcut: "G S" },
       { href: "/staff/roles", label: "Roles & permissions", icon: ShieldCheck, cap: "staff.manage", keywords: "custom roles permissions access matrix night auditor clone" },
       { href: "/property", label: "Property", icon: Buildings, cap: "settings.manage", keywords: "settings details hotel branding amenities" },
+      { href: "/properties", label: "Properties & access", icon: TreeStructure, cap: ["settings.manage", "properties.manage"], keywords: "multi property group add property staff access switch" },
+      { href: "/settings/domain", label: "Custom domain", icon: Globe, feature: "custom_domain", cap: "settings.manage", keywords: "domain dns cname txt booking site own domain verify" },
       { href: "/settings/booking", label: "Online booking", icon: GlobeHemisphereWest, cap: "booking.settings", keywords: "booking site marketplace pay at hotel cancellation policy refund online" },
       { href: "/settings/taxes", label: "Taxes & charges", icon: Percent, cap: "tax.read", keywords: "vat consumption tax service charge discount threshold" },
       { href: "/settings/notifications", label: "Alerts & WhatsApp", icon: BellRinging, cap: "settings.manage", keywords: "notifications whatsapp templates quiet hours owner alerts digest" },

@@ -432,6 +432,8 @@ export interface RateCalendar {
       ruleId: string | null;
       ruleName: string | null;
       override: boolean;
+      /** M5: who set the override (dynamic pricing writes overrides too) */
+      overrideSource?: "MANUAL" | "PRICING" | null;
       restriction: Omit<RateRestriction, "roomTypeId" | "date"> | null;
       sellable: number;
       booked: number;

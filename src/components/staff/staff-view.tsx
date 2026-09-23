@@ -31,6 +31,8 @@ const ROLE_TONE: Record<Role, Tone> = {
   ACCOUNTANT: "neutral",
   SUPERVISOR: "palm",
   MAINTENANCE: "ochre",
+  WAITER: "adire",
+  KITCHEN: "ochre",
   CUSTOM: "laterite",
 };
 

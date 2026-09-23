@@ -108,6 +108,8 @@ const LEGACY: Partial<Record<string, Permission[] | "*" | "*-payouts">> = {
   HOUSEKEEPING: ["housekeeping.view", "housekeeping.work", "maintenance.report"],
   SUPERVISOR: ["housekeeping.view", "housekeeping.work", "housekeeping.assign", "housekeeping.inspect", "rooms.status", "maintenance.view", "maintenance.report", "reservations.view"],
   MAINTENANCE: ["maintenance.view", "maintenance.report", "maintenance.work", "housekeeping.view"],
+  WAITER: ["pos.view", "pos.order", "pos.settle", "kds.view", "shifts.own", "payments.take", "loyalty.view"],
+  KITCHEN: ["kds.view", "pos.view", "stock.view"],
 };
 
 type Checker = (p: Permission) => boolean;

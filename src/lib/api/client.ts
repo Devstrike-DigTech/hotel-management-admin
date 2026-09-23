@@ -1,6 +1,7 @@
 import { config } from "@/lib/config";
 import { session, type Audience } from "./session";
 import { isForcedOffline, reportNetworkFailure, reportNetworkSuccess } from "@/lib/offline/network";
+import { PROPERTY_DENIED_CODES, currentPropertyId, emitPropertyDenied } from "@/lib/property";
 import type { ApiErrorBody, AuthResponse } from "./types";
 
 export class ApiError extends Error {
@@ -36,6 +37,12 @@ export interface RequestOptions {
   signal?: AbortSignal;
   /** Extra headers, e.g. Idempotency-Key for offline-safe writes. */
   headers?: Record<string, string>;
+  /**
+   * The property scope (X-Property-Id). Defaults to the property selected in
+   * the shell; pass a specific id to override, or null to send none (group-wide
+   * calls such as the property list or group reports).
+   */
+  propertyId?: string | null;
 }
 
 /* ---- session-expiry signal (the shell listens and redirects) ---- */
@@ -146,6 +153,8 @@ async function request(path: string, opts: RequestOptions): Promise<Response> {
     if (auth === "hotel") {
       const t = session.hotel()?.accessToken;
       if (t) headers.Authorization = `Bearer ${t}`;
+      const pid = opts.propertyId === undefined ? currentPropertyId() : opts.propertyId;
+      if (pid) headers["X-Property-Id"] = pid;
     } else if (auth === "platform") {
       const t = session.platform()?.accessToken;
       if (t) headers.Authorization = `Bearer ${t}`;
@@ -182,7 +191,13 @@ async function request(path: string, opts: RequestOptions): Promise<Response> {
     throw err;
   }
 
-  if (!res.ok) throw await parseError(res);
+  if (!res.ok) {
+    const err = await parseError(res);
+    if (auth === "hotel" && res.status === 403 && PROPERTY_DENIED_CODES.has(err.code)) {
+      emitPropertyDenied({ propertyId: opts.propertyId === undefined ? currentPropertyId() : (opts.propertyId ?? null), message: err.message });
+    }
+    throw err;
+  }
   return res;
 }
 

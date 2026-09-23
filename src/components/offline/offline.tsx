@@ -8,6 +8,7 @@ import {
   CloudArrowUp,
   CloudSlash,
   Door,
+  ForkKnife,
   Money,
   SignIn,
   Trash,
@@ -39,6 +40,7 @@ const KIND: Record<OutboxKind, { label: string; icon: React.ReactNode }> = {
   "room-status": { label: "Room status", icon: <Broom size={16} weight="duotone" /> },
   "check-out": { label: "Check-out", icon: <Door size={16} weight="duotone" /> },
   housekeeping: { label: "Housekeeping", icon: <Broom size={16} weight="duotone" /> },
+  "pos-order": { label: "Order", icon: <ForkKnife size={16} weight="duotone" /> },
 };
 
 /** Mount once inside the hotel shell: network watch, outbox load, auto-sync, service worker. */

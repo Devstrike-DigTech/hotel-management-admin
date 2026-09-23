@@ -25,6 +25,7 @@ import { useCan } from "@/lib/permissions";
 import { NewReservationHost } from "@/components/reservations/new-reservation";
 import { PaymentHost } from "@/components/folio/take-payment";
 import { OnlineFeedRuntime } from "@/components/online/online-feed";
+import { PropertyScopeRuntime, usePropertyScope } from "./property-switcher";
 
 const COLLAPSE_KEY = "admin.sidebar.collapsed";
 
@@ -97,6 +98,8 @@ function Shell({ children }: { children: React.ReactNode }) {
   }, []);
 
   const current = allNavItems().find((i) => isActive(pathname, i.href));
+  const scope = usePropertyScope();
+  const place = scope.current?.name ?? me.data?.tenant.name;
 
   return (
     <div className="flex min-h-dvh">
@@ -144,7 +147,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             <p className="truncate text-[13.5px] font-medium text-ink">{me.data?.tenant.name ?? " "}</p>
           </div>
           <p className="eyebrow hidden items-center gap-2 lg:flex">
-            <span className="text-ink-faint">{me.data?.tenant.name}</span>
+            <span className="text-ink-faint" data-testid="topbar-property-lg">{place}</span>
             <span className="text-ink-faint">/</span>
             <span className="text-ink">{current?.label ?? ""}</span>
           </p>
@@ -191,6 +194,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <NewReservationHost />
       <PaymentHost />
       <OnlineFeedRuntime />
+      <PropertyScopeRuntime />
     </div>
   );
 }

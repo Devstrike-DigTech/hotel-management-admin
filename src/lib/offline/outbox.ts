@@ -4,6 +4,7 @@ import { api, isApiError, type ApiError } from "@/lib/api/client";
 import { createStore, useStore } from "@/lib/store";
 import { idb } from "./idb";
 import { networkStore } from "./network";
+import { currentPropertyId } from "@/lib/property";
 
 /**
  * The offline outbox. Desk actions that can be taken without a connection:
@@ -14,7 +15,7 @@ import { networkStore } from "./network";
  * the server before the line dropped is never applied twice.
  */
 
-export type OutboxKind = "check-in" | "payment" | "room-status" | "check-out" | "housekeeping";
+export type OutboxKind = "check-in" | "payment" | "room-status" | "check-out" | "housekeeping" | "pos-order";
 
 export interface OutboxItem {
   id: string; // also the Idempotency-Key
@@ -30,6 +31,8 @@ export interface OutboxItem {
   error?: { code: string; message: string; status: number };
   /** query keys to refresh once this lands */
   invalidate?: string[][];
+  /** the property it was taken in (replayed with the same X-Property-Id) */
+  propertyId?: string | null;
 }
 
 export const outboxStore = createStore<OutboxItem[]>([]);
@@ -78,7 +81,7 @@ async function remove(id: string) {
 }
 
 export async function enqueue(item: Omit<OutboxItem, "attempts" | "status">) {
-  await save({ ...item, attempts: 0, status: "queued" });
+  await save({ propertyId: currentPropertyId(), ...item, attempts: 0, status: "queued" });
 }
 
 export async function discard(id: string) {
@@ -115,6 +118,7 @@ export function syncOutbox(): Promise<void> {
           method: item.method,
           body: item.body,
           headers: { "Idempotency-Key": item.id },
+          ...(item.propertyId !== undefined ? { propertyId: item.propertyId } : {}),
         });
         await remove(item.id);
         landed++;

@@ -11,12 +11,13 @@ import { useEntitlements, useLogout } from "@/lib/auth";
 import { useCan } from "@/lib/permissions";
 import { useGuardSummary, useShifts } from "@/lib/api/hooks-m2";
 import { useReviewSummary } from "@/lib/api/hooks-m3";
+import { useInboxSummary } from "@/lib/api/hooks-m5";
 import { roleLabel } from "@/lib/catalog";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { LogoMark, Wordmark } from "@/components/brand";
-import { PlanPlate, Skeleton, Tip } from "@/components/ui/primitives";
-import { TrialPill } from "./trial-pill";
+import { Tip } from "@/components/ui/primitives";
+import { PropertySwitcher } from "./property-switcher";
 import { ThemeToggle } from "./theme-toggle";
 
 export function Sidebar({
@@ -31,17 +32,19 @@ export function Sidebar({
   variant?: "desktop" | "drawer";
 }) {
   const pathname = usePathname();
-  const { me, has, loading } = useEntitlements();
+  const { has, loading } = useEntitlements();
   const { can, ready } = useCan();
   const c = variant === "desktop" && collapsed;
   const guardOn = ready && can("guard.read") && has("revenue_guard_basic");
   const summary = useGuardSummary(guardOn);
   const pending = useShifts({ status: "CLOSED", pageSize: 1 }, ready && can("shift.approve"));
   const reviews = useReviewSummary(ready && can("reviews.reply"));
+  const inbox = useInboxSummary(ready && can("inbox.view") && has("whatsapp_messaging"));
   const badges: Record<string, number | undefined> = {
     flags: summary.data?.open,
     approvals: pending.data?.total,
     reviews: reviews.data?.unreplied,
+    inbox: inbox.data?.unread,
   };
 
   return (
@@ -52,27 +55,8 @@ export function Sidebar({
         </Link>
       </div>
 
-      {/* tenant */}
-      {!c && (
-        <div className="mx-3 mb-3 rounded-md border border-line bg-paper/70 px-3 py-3">
-          {loading || !me ? (
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-36" />
-              <Skeleton className="h-4 w-24" />
-            </div>
-          ) : (
-            <>
-              <p className="display-sm truncate text-[15.5px] leading-tight text-ink" title={me.tenant.name}>
-                {me.tenant.name}
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <PlanPlate name={me.subscription.planName} code={me.subscription.planCode} />
-                <TrialPill sub={me.subscription} className="h-5 pl-1 pr-2 text-[11px]" />
-              </div>
-            </>
-          )}
-        </div>
-      )}
+      {/* property (and the group it belongs to) */}
+      {!c && <PropertySwitcher onNavigate={onNavigate} />}
 
       <nav aria-label="Main" className="scrollbar-thin flex-1 overflow-y-auto overflow-x-hidden px-3 pb-4">
         {HOTEL_NAV.map((g) => ({ ...g, items: g.items.filter((i) => navVisible(i, can, ready)) }))
@@ -173,9 +157,9 @@ function NavLink({
         <span
           className={cn(
             "ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1.5 font-mono text-[10.5px] font-medium",
-            item.badge === "flags" ? "bg-laterite text-laterite-ink" : "bg-brass-wash text-brass",
+            item.badge === "flags" || item.badge === "inbox" ? "bg-laterite text-laterite-ink" : "bg-brass-wash text-brass",
           )}
-          aria-label={`${count} ${item.badge === "flags" ? "open flags" : item.badge === "reviews" ? "to reply to" : "waiting"}`}
+          aria-label={`${count} ${item.badge === "flags" ? "open flags" : item.badge === "reviews" ? "to reply to" : item.badge === "inbox" ? "unread messages" : "waiting"}`}
         >
           {count}
         </span>
