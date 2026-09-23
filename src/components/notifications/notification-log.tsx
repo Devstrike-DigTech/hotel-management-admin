@@ -59,7 +59,11 @@ export function NotificationLog({ reservationId }: { reservationId: string }) {
       <PanelHeader
         eyebrow="Messages"
         title="What the guest was sent"
-        description={items.length ? `${items.length} ${items.length === 1 ? "message" : "messages"}, newest first` : undefined}
+        description={
+          items.length
+            ? `${items.filter((n) => n.audience === "GUEST").length} to the guest${items.some((n) => n.audience !== "GUEST") ? `, ${items.filter((n) => n.audience !== "GUEST").length} to the hotel` : ""}, newest first`
+            : undefined
+        }
       />
       {q.isError ? (
         <ErrorState error={q.error} onRetry={() => q.refetch()} className="py-8" />
@@ -108,7 +112,7 @@ export function NotificationLog({ reservationId }: { reservationId: string }) {
                       {relativeTime(n.createdAt)}
                     </time>
                   </span>
-                  {n.preview && <span className="mt-1 line-clamp-1 block text-[12px] text-ink-faint">{n.preview}</span>}
+                  {n.preview && <span className="mt-1 line-clamp-1 text-[12px] text-ink-faint">{n.preview}</span>}
                   {n.status === "FAILED" && n.error && <span className="mt-1 block text-[12px] text-danger">{n.error}</span>}
                 </button>
               </li>

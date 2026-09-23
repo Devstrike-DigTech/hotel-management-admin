@@ -139,24 +139,28 @@ test("an owner changes the cancellation policy and sees the guest's wording", as
 
 test("an online booking shows where it came from", async ({ browser }) => {
   const { page, token, close } = await signedIn(browser, DEMO);
-  const r = await fetch(`${API}/reservations?source=MARKETPLACE&pageSize=5`, { headers: { Authorization: `Bearer ${token}` } });
-  const list = (await r.json()) as { items: { id: string; code: string; source: string }[] };
-  const booking = list.items.find((i) => i.source === "MARKETPLACE");
-  expect(booking, "the seed has marketplace bookings").toBeTruthy();
+  const feed = (await (
+    await fetch(`${API}/online-bookings/feed?since=${encodeURIComponent(new Date(Date.now() - 60 * 86_400_000).toISOString())}&limit=20`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  ).json()) as { items: { reservationId: string; code: string; channel: "MARKETPLACE" | "BOOKING_SITE" }[] };
+  const booking = feed.items[0];
+  expect(booking, "the seed has online bookings for the demo hotel").toBeTruthy();
+  const label = booking.channel === "MARKETPLACE" ? /Marketplace/i : /Booking site/i;
 
-  await page.goto("/reservations?source=MARKETPLACE&view=all");
-  const row = page.getByRole("row").filter({ hasText: booking!.code });
+  await page.goto(`/reservations?source=${booking.channel}&view=all`);
+  await page.getByLabel("Search reservations").fill(booking.code);
+  const row = page.getByRole("row").filter({ hasText: booking.code });
   await expect(row).toBeVisible();
-  await expect(row.getByTestId("channel-badge")).toHaveAttribute("data-channel", "MARKETPLACE");
-  await expect(row.getByTestId("channel-badge")).toHaveText(/Marketplace/i);
+  await expect(row.getByTestId("channel-badge")).toHaveAttribute("data-channel", booking.channel);
+  await expect(row.getByTestId("channel-badge")).toHaveText(label);
 
-  await row.getByRole("link", { name: booking!.code }).click();
-  await page.waitForURL(new RegExp(`/reservations/${booking!.id}`));
-  await expect(page.getByTestId("channel-badge").first()).toHaveAttribute("data-channel", "MARKETPLACE");
-  // a booking made online carries its online block; a desk booking tagged Marketplace does not
+  await row.getByRole("link", { name: booking.code }).click();
+  await page.waitForURL(new RegExp(`/reservations/${booking.reservationId}`));
+  await expect(page.getByTestId("channel-badge").first()).toHaveAttribute("data-channel", booking.channel);
   const online = page.getByTestId("online-card");
-  const messages = page.getByRole("heading", { name: "What the guest was sent" });
-  await expect(messages).toBeVisible();
-  if (await online.isVisible()) await expect(online).toContainText(/Booked online/i);
+  await expect(online).toBeVisible();
+  await expect(online).toContainText(/Booked online/i);
+  await expect(page.getByTestId("notification-log")).toBeVisible();
   await close();
 });

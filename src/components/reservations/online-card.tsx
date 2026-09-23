@@ -33,6 +33,16 @@ const REFUND: Record<RefundStatus, { label: string; color: string }> = {
 const REFUND_WHY = { GUEST_CANCELLED: "Guest cancelled", HOTEL_CANCELLED: "Hotel cancelled", PAYMENT_ORPHANED: "Paid after the room went" } as const;
 const CHANNEL_NAME: Record<string, string> = { card: "Card", bank_transfer: "Transfer", ussd: "USSD", bank: "Bank" };
 
+function headline(r: ReservationDetail) {
+  const o = r.online!;
+  if (o.paymentMode === "PAY_AT_HOTEL") return r.status === "CANCELLED" ? "Pay at hotel, cancelled" : "Pays at the hotel";
+  const paid = o.payments.some((p) => ["SUCCEEDED", "PARTIALLY_REFUNDED", "REFUNDED"].includes(p.status));
+  if (!paid) return r.status === "CANCELLED" ? "Never paid, released" : "Paying online";
+  if (o.payments.every((p) => p.status === "REFUNDED" || p.status === "FAILED" || p.status === "INITIALIZED")) return "Paid online, refunded";
+  if (o.payments.some((p) => p.status === "PARTIALLY_REFUNDED")) return "Paid online, partly refunded";
+  return "Paid online";
+}
+
 /** The online half of a booking: channel, how it was paid, commission, refunds, contact. */
 export function OnlineBookingCard({ r }: { r: ReservationDetail }) {
   const o = r.online!;
@@ -46,7 +56,7 @@ export function OnlineBookingCard({ r }: { r: ReservationDetail }) {
           <ChannelBadge source={o.channel} size="sm" />
         </div>
         <p className="display-sm mt-1.5 text-[19px] leading-tight text-ink">
-          {o.paymentMode === "PAY_AT_HOTEL" ? "Pays at the hotel" : o.guaranteeType === "PREPAID" ? "Paid online" : "Paying online"}
+          {headline(r)}
         </p>
         <p className="mt-0.5 text-[12.5px] text-ink-muted">
           Quoted <span className="font-mono text-ink">{naira(o.quotedTotalKobo)}</span>
