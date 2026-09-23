@@ -20,6 +20,7 @@ import { Badge, EmptyState, PageHeader, Panel, PanelHeader, Segmented, Skeleton 
 import { NairaInput } from "@/components/m2/bits";
 
 type Tab = "stock" | "counts" | "moves" | "minibar";
+const plural = (unit: string, n = 2) => (n === 1 || unit === "kg" ? unit : /(ch|sh|s|x)$/.test(unit) ? `${unit}es` : `${unit}s`);
 const qty = (n: number) => (Number.isInteger(n) ? number(n) : n.toFixed(2).replace(/0$/, ""));
 const MOVE_LABEL: Record<StockMovementType, string> = { PURCHASE: "Delivery", SALE: "Sold", VOID_RETURN: "Void, back to stock", WASTE: "Waste", ADJUSTMENT: "Adjustment", COUNT: "Count", MINIBAR: "Minibar" };
 
@@ -130,7 +131,7 @@ function Stock() {
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-4 py-2.5">
-                      <span className={cn("font-mono text-[14px]", s.lowStock ? "text-ochre" : "text-ink")}>{qty(s.onHand)}</span> <span className="text-ink-muted">{s.unit}s</span>
+                      <span className={cn("font-mono text-[14px]", s.lowStock ? "text-ochre" : "text-ink")}>{qty(s.onHand)}</span> <span className="text-ink-muted">{plural(s.unit, s.onHand)}</span>
                       {s.lowStock && (
                         <Badge tone="ochre" className="ml-2">
                           low
@@ -296,7 +297,7 @@ function CountSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (o: b
           {rows.map(({ s, v, value }) => (
             <tr key={s.id} className="border-b border-dashed border-line last:border-b-0">
               <td className="py-2 text-ink">
-                {s.name} <span className="text-[11.5px] text-ink-muted">({s.unit}s)</span>
+                {s.name} <span className="text-[11.5px] text-ink-muted">({plural(s.unit)})</span>
               </td>
               <td className="py-2 text-right font-mono text-ink-muted">{qty(s.onHand)}</td>
               <td className="py-2 pl-3">
@@ -340,7 +341,7 @@ function AdjustDialog({ item, onClose }: { item: StockItem | null; onClose: () =
       open={!!item}
       onOpenChange={(o) => !o && onClose()}
       title={item ? `${item.name}` : ""}
-      description={item ? `${qty(item.onHand)} ${item.unit}s on hand.` : undefined}
+      description={item ? `${qty(item.onHand)} ${plural(item.unit, item.onHand)} on hand.` : undefined}
       footer={
         <Button onClick={() => save.mutate()} loading={save.isPending} disabled={!q || !note.trim()}>
           {type === "WASTE" ? "Record waste" : "Adjust"}
@@ -366,7 +367,7 @@ function AdjustDialog({ item, onClose }: { item: StockItem | null; onClose: () =
             </div>
           )}
           <Input inputMode="decimal" value={n} onChange={(e) => setN(e.target.value.replace(/[^\d.]/g, ""))} placeholder="1" className="w-28 font-mono" aria-label="Quantity" />
-          <span className="text-[13px] text-ink-muted">{item?.unit}s</span>
+          <span className="text-[13px] text-ink-muted">{item ? plural(item.unit) : ""}</span>
         </div>
         <Field label="What happened">
           <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={type === "WASTE" ? "Two bottles broke in the chiller" : "Miscounted at delivery"} />

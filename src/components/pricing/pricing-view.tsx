@@ -200,7 +200,7 @@ function Suggestions() {
                 />
               )}
               <span className="display-sm text-[14px] italic text-ink">{formatDay(date, { weekday: "long", day: "numeric", month: "long" })}</span>
-              <span className="font-mono text-[11px] text-ink-muted">{rows[0].occupancy.daysOut === 0 ? "tonight" : `${rows[0].occupancy.daysOut} days out`}</span>
+              <span className="font-mono text-[11px] text-ink-muted">{rows[0].occupancy.daysOut === 0 ? "tonight" : rows[0].occupancy.daysOut === 1 ? "tomorrow" : `${rows[0].occupancy.daysOut} days out`}</span>
             </header>
             <ul>
               {rows.map((s) => {

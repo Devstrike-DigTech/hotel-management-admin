@@ -103,9 +103,12 @@ function PropertyCard({ p, color, current, onSwitch }: { p: PropertySummary; col
   return (
     <Panel className={cn("flex flex-col overflow-hidden", current && "shadow-[0_0_0_1px_var(--ink)]")} data-testid={`property-${p.slug}`}>
       <div className="relative h-32 overflow-hidden border-b border-line bg-surface-2">
+        <div className="absolute inset-0 grid place-items-center text-ink-faint" aria-hidden>
+          <Buildings size={34} weight="thin" />
+        </div>
         {p.coverImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- remote hotel photos from any host
-          <img src={p.coverImageUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+          <img src={p.coverImageUrl} alt="" className="relative h-full w-full object-cover" loading="lazy" onError={(e) => (e.currentTarget.style.visibility = "hidden")} />
         ) : (
           <div className="grid h-full place-items-center text-ink-faint">
             <Buildings size={34} weight="thin" />

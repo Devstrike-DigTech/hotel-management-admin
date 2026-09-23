@@ -11,7 +11,7 @@ export const CHANNEL_LOOK: Record<string, { mono: string; color: string }> = {
   BOOKING_COM: { mono: "B.", color: "var(--adire)" },
   EXPEDIA: { mono: "Ex", color: "var(--brass)" },
   AGODA: { mono: "Ag", color: "var(--laterite)" },
-  AIRBNB: { mono: "Ab", color: "var(--danger)" },
+  AIRBNB: { mono: "Ab", color: "var(--m-ledger)" },
   HOTELS_NG: { mono: "Hn", color: "var(--palm)" },
   TRIVAGO: { mono: "Tv", color: "var(--ochre)" },
   OTHER: { mono: "OT", color: "var(--ink-muted)" },

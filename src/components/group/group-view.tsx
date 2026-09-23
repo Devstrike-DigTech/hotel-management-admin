@@ -167,7 +167,7 @@ function Compare({ r, colorOf, onOpen }: { r: GroupReport; colorOf: Map<string, 
               {r.properties.map((p) => (
                 <td key={p.property.id} className="px-4 py-2.5">
                   <Button size="sm" variant="ghost" onClick={() => onOpen(p.property.id, p.property.name)}>
-                    Work in {p.property.name.split(" ").slice(-1)[0]}
+                    Switch to it
                   </Button>
                 </td>
               ))}
@@ -209,7 +209,7 @@ function MultiLine({ r, colorOf }: { r: GroupReport; colorOf: Map<string, string
         })}
         {days.map((d, i) =>
           i === days.length - 1 || (i % every === 0 && days.length - 1 - i >= every * 0.7) ? (
-            <text key={d.date} x={xAt(i)} y={height - 7} textAnchor="middle" style={{ ...axisText, fill: "var(--ink-muted)" }}>
+            <text key={d.date} x={xAt(i)} y={height - 7} textAnchor={i === days.length - 1 ? "end" : i === 0 ? "start" : "middle"} style={{ ...axisText, fill: "var(--ink-muted)" }}>
               {formatDay(d.date, { day: "numeric", month: "short" })}
             </text>
           ) : null,
