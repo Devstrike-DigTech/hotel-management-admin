@@ -187,7 +187,8 @@ export function AlmanacGrid({
     } else return;
     e.preventDefault();
     if (e.shiftKey) {
-      if (!anchor.current || !selection) anchor.current = { r: fr, c: fc };
+      // extend from the last cell clicked or moved to (a click commits and clears the selection)
+      if (!anchor.current) anchor.current = { r: fr, c: fc };
       onSelectionChange(norm(anchor.current, { r, c }));
     } else {
       anchor.current = { r, c };

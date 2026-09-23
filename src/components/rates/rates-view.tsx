@@ -293,7 +293,11 @@ export function RatesView() {
               selection={tray?.sel ?? sel}
               onSelectionChange={(s) => {
                 setSel(s);
-                if (!s) setTray(null);
+                // a new selection replaces the one being painted; Enter or release opens the tray again
+                if (!s || tray?.sel) {
+                  setTray(null);
+                  setDraft(null);
+                }
               }}
               onCommit={onCommit}
               onRuleClick={(r) => canManage && isBar && setTray({ sel: null, rule: r })}
