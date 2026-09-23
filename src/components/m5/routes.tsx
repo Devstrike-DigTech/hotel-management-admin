@@ -1,6 +1,6 @@
 "use client";
 
-import { ChartLineUp, ChatCircleText, Crown, Plugs } from "@phosphor-icons/react";
+import { ChartLineUp, ChatCircleText, Crown, Globe, Plugs, TreeStructure } from "@phosphor-icons/react";
 import { FeaturePage } from "@/components/gating/feature-page";
 import { RequireCap } from "@/components/gating/require-cap";
 import { InboxView } from "@/components/inbox/inbox-view";
@@ -8,7 +8,10 @@ import { LoyaltyView } from "@/components/loyalty/loyalty-view";
 import { MemberView } from "@/components/loyalty/member-view";
 import { ChannelsView } from "@/components/channels/channels-view";
 import { PricingView } from "@/components/pricing/pricing-view";
-import { ChannelPreview, InboxPreview, LoyaltyPreview, PricingPreview } from "./previews";
+import { DomainView } from "@/components/domain/domain-view";
+import { GroupView } from "@/components/group/group-view";
+import { PropertiesView } from "@/components/properties/properties-view";
+import { ChannelPreview, DomainPreview, GroupPreview, InboxPreview, LoyaltyPreview, PricingPreview } from "./previews";
 
 export function InboxRoute() {
   return (
@@ -115,5 +118,57 @@ export function PricingRoute() {
         <PricingView />
       </RequireCap>
     </FeaturePage>
+  );
+}
+
+export function DomainRoute() {
+  return (
+    <FeaturePage
+      feature="custom_domain"
+      icon={Globe}
+      name="Custom domain"
+      title={
+        <>
+          Your booking site, <em>at your own address</em>.
+        </>
+      }
+      pitch="Guests book on book.yourhotel.com. Two DNS records to copy, checked for you while you wait, and a secure certificate once they are in place."
+      bullets={["A subdomain of the domain you already own", "Step-by-step for Whogohost, Qservers, GoDaddy and Cloudflare", "Live verification, then a daily check", "Search engines see your address as the real one"]}
+      preview={<DomainPreview />}
+    >
+      <RequireCap cap="settings.manage" what="The custom domain">
+        <DomainView />
+      </RequireCap>
+    </FeaturePage>
+  );
+}
+
+export function GroupRoute() {
+  return (
+    <FeaturePage
+      feature="multi_property"
+      icon={TreeStructure}
+      name="Group reports"
+      title={
+        <>
+          The whole group, <em>side by side</em>.
+        </>
+      }
+      pitch="Several hotels from one account: switch between them from the sidebar, give staff the properties they work in, and compare occupancy, ADR, RevPAR and revenue across the group."
+      bullets={["Up to three properties on Pro, as many as you like on Enterprise", "Each with its own rooms, rates, menus and invoice numbers", "Guests and loyalty shared across the group", "Consolidated reports and a property-by-property compare"]}
+      preview={<GroupPreview />}
+    >
+      <RequireCap cap="reports.read" what="Group reports">
+        <GroupView />
+      </RequireCap>
+    </FeaturePage>
+  );
+}
+
+export function PropertiesRoute() {
+  return (
+    <RequireCap cap="settings.manage" what="Properties">
+      <PropertiesView />
+    </RequireCap>
   );
 }
