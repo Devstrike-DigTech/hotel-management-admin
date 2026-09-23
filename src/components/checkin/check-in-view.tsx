@@ -22,12 +22,12 @@ import { useCurrentShift, useReservation, useRoomAvailability } from "@/lib/api/
 import { guestsApi, reservationsApi } from "@/lib/api/endpoints-m2";
 import { normalisePhone, useDeskRefresh } from "@/lib/api/mutations-m2";
 import { errorMessage, isApiError } from "@/lib/api/client";
-import type { CheckInInput, Gender, ReservationDetail } from "@/lib/api/types-m2";
+import type { CheckInInput, Gender, ReservationDetail, RoomAvailability } from "@/lib/api/types-m2";
 import { deskAction } from "@/lib/offline/desk-action";
 import { useOnline } from "@/lib/offline/network";
 import { useEntitlements } from "@/lib/auth";
 import { useCan } from "@/lib/permissions";
-import { formatDay, lagosHHMM } from "@/lib/dates";
+import { dayKeyOf, formatDay, lagosHHMM, todayKey } from "@/lib/dates";
 import { formatPhone, naira } from "@/lib/format";
 import { ID_TYPES, ID_TYPE_ORDER, PURPOSES, PURPOSE_ORDER, type IdType, type PaymentMethod, type Purpose } from "@/lib/catalog-m2";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -110,12 +110,17 @@ function CheckIn({ r, registerOnly }: { r: ReservationDetail; registerOnly: bool
     registerOnly
       ? null
       : r.stayType === "DAY_USE"
-        ? { roomTypeId: r.roomType.id, stayType: "DAY_USE", arrivalAt: r.arrivalAt, departureAt: r.departureAt, excludeReservationId: r.id }
-        : { roomTypeId: r.roomType.id, stayType: "NIGHTLY", arrivalDate: r.arrivalDate, departureDate: r.departureDate, excludeReservationId: r.id },
+        ? { roomTypeId: r.roomType.id, stayType: "DAY_USE", arrivalAt: r.arrivalAt, departureAt: r.departureAt, excludeReservationId: r.id, forCheckIn: true }
+        : { roomTypeId: r.roomType.id, stayType: "NIGHTLY", arrivalDate: r.arrivalDate, departureDate: r.departureDate, excludeReservationId: r.id, forCheckIn: true },
   );
   const shift = useCurrentShift(can("shift.own"));
-  const chosen = rooms.data?.rooms.find((x) => x.id === roomId);
-  const dirty = chosen && !chosen.clean;
+  // check-in now: offer rooms that are ready; a manager may also pick a dirty one with a reason
+  const allRooms = rooms.data?.rooms ?? [];
+  const readyRooms = allRooms.filter(isReady).sort(byNumber);
+  const overridable = can("override") ? allRooms.filter((x) => !isReady(x) && isDirtyOnly(x)).sort(byNumber) : [];
+  const notReady = allRooms.filter((x) => !isReady(x) && !overridable.includes(x)).sort(byNumber);
+  const chosen = [...readyRooms, ...overridable].find((x) => x.id === roomId);
+  const dirty = chosen && !isReady(chosen);
   const hasId = !!card.idType && (card.idNumber.trim().length >= 4 || !!g.idNumberMasked);
 
   const missing = useMemo(() => {
@@ -172,13 +177,13 @@ function CheckIn({ r, registerOnly }: { r: ReservationDetail; registerOnly: bool
   const checkIn = useMutation({
     mutationFn: async () => {
       setShowErrors(true);
-      if (!roomId) throw new Error("Choose a room for the guest");
+      if (!chosen) throw new Error("Choose a room that is ready for the guest");
       if (missing.length && !registerLater) throw new Error("Complete the register card, or tick “complete it later”");
       if (!card.consent) throw new Error("The guest needs to consent to the register being kept");
       if (dirty && !overrideReason.trim()) throw new Error("Give a reason for checking into a room that isn't clean");
-      const room = rooms.data?.rooms.find((x) => x.id === roomId);
+      const room = chosen;
       const body: CheckInInput = {
-        roomId,
+        roomId: chosen.id,
         guest: guestPatch(),
         registration: registration(),
         registerLater: missing.length ? true : undefined,
@@ -421,46 +426,34 @@ function CheckIn({ r, registerOnly }: { r: ReservationDetail; registerOnly: bool
                 {rooms.isLoading ? (
                   <Skeleton className="h-24 w-full" />
                 ) : (
-                  <div role="radiogroup" aria-label="Room" className="grid grid-cols-3 gap-2">
-                    {rooms.data?.rooms
-                      .filter((x) => x.free)
-                      .sort(
-                        (a, b) =>
-                          roomRank(a) - roomRank(b) || a.number.localeCompare(b.number, undefined, { numeric: true }),
-                      )
-                      .map((x) => {
-                        const on = x.id === roomId;
-                        const occupied = x.status === "OCCUPIED" || x.status === "OUT_OF_ORDER";
-                        const lockedDirty = occupied || (!x.clean && !can("override"));
-                        return (
-                          <button
-                            key={x.id}
-                            type="button"
-                            role="radio"
-                            aria-checked={on}
-                            disabled={lockedDirty}
-                            onClick={() => setRoomId(x.id)}
-                            title={
-                              occupied
-                                ? "The last guest hasn't checked out yet"
-                                : x.clean
-                                  ? "Clean and ready"
-                                  : lockedDirty
-                                    ? "Not clean. A manager can override."
-                                    : "Not clean. Needs a manager's reason."
-                            }
-                            className={cn(
-                              "flex items-center justify-center gap-1.5 rounded-md border py-2.5 font-mono text-[15px] transition-colors disabled:cursor-not-allowed disabled:opacity-45",
-                              on ? "border-laterite bg-laterite-wash text-ink shadow-[inset_0_-2px_0_var(--laterite)]" : "border-line-strong bg-surface text-ink hover:border-ink-faint",
-                            )}
-                          >
-                            <StatusSwatch status={x.status} size={13} />
-                            {x.number}
-                          </button>
-                        );
-                      })}
-                    {rooms.data && !rooms.data.rooms.some((x) => x.free) && (
-                      <p className="col-span-3 text-[12.5px] text-danger">No {r.roomType.name} is free for this stay. Move the booking on the Ledger.</p>
+                  <div className="flex flex-col gap-4">
+                    {readyRooms.length > 0 ? (
+                      <RoomGrid label="Room" rooms={readyRooms} value={roomId} onPick={setRoomId} />
+                    ) : (
+                      <p className="text-[12.5px] text-ink-muted">
+                        No {r.roomType.name} is ready right now.
+                        {overridable.length ? " A manager can check in to one that still needs cleaning." : " Move the booking on the Ledger, or wait for housekeeping."}
+                      </p>
+                    )}
+                    {overridable.length > 0 && (
+                      <div>
+                        <p className="mb-2 text-[11.5px] font-medium text-ochre">Needs cleaning (manager override)</p>
+                        <RoomGrid label="Needs cleaning" rooms={overridable} value={roomId} onPick={setRoomId} />
+                      </div>
+                    )}
+                    {notReady.length > 0 && (
+                      <div>
+                        <p className="eyebrow mb-1.5 text-[9.5px]">Not ready</p>
+                        <ul className="flex flex-col gap-1">
+                          {notReady.map((x) => (
+                            <li key={x.id} className="flex items-center gap-2 text-[12.5px] text-ink-muted">
+                              <StatusSwatch status={x.status} size={12} />
+                              <span className="w-9 font-mono text-ink">{x.number}</span>
+                              <span>{notReadyText(x)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                   </div>
                 )}
@@ -584,10 +577,59 @@ function CheckedIn({
   );
 }
 
-function roomRank(x: { clean: boolean; status: string }) {
-  if (x.clean) return 0;
-  if (x.status === "VACANT_DIRTY") return 1;
-  return 2;
+type PickRoom = RoomAvailability["rooms"][number];
+
+/** checkInReady from the API (M2.1), with a conservative fallback. */
+function isReady(x: PickRoom) {
+  return x.checkInReady ?? (x.free && x.clean && x.status !== "OCCUPIED" && x.status !== "OUT_OF_ORDER");
+}
+/** Free for the stay and only held back because it isn't clean yet. */
+function isDirtyOnly(x: PickRoom) {
+  return x.reason ? x.reason === "DIRTY" : x.free && !x.clean && x.status === "VACANT_DIRTY";
+}
+function byNumber(a: PickRoom, b: PickRoom) {
+  return a.number.localeCompare(b.number, undefined, { numeric: true });
+}
+function notReadyText(x: PickRoom) {
+  switch (x.reason) {
+    case "OCCUPIED":
+      return x.occupiedUntil ? `occupied, guest leaves ${lagosHHMM(x.occupiedUntil)}${dayKeyOf(x.occupiedUntil) !== todayKey() ? ` ${formatDay(dayKeyOf(x.occupiedUntil), { day: "numeric", month: "short" })}` : ""}` : "occupied";
+    case "BOOKED":
+      return "booked for part of this stay";
+    case "OUT_OF_ORDER":
+      return "out of order";
+    case "DIRTY":
+      return "needs cleaning";
+    default:
+      return x.status === "OCCUPIED" ? "occupied" : !x.clean ? "needs cleaning" : "not free for this stay";
+  }
+}
+
+function RoomGrid({ label, rooms, value, onPick }: { label: string; rooms: PickRoom[]; value: string; onPick: (id: string) => void }) {
+  return (
+    <div role="radiogroup" aria-label={label} className="grid grid-cols-3 gap-2">
+      {rooms.map((x) => {
+        const on = x.id === value;
+        return (
+          <button
+            key={x.id}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            onClick={() => onPick(x.id)}
+            title={isReady(x) ? "Clean and ready" : "Needs cleaning: a manager's reason is required"}
+            className={cn(
+              "flex items-center justify-center gap-1.5 rounded-md border py-2.5 font-mono text-[15px] transition-colors",
+              on ? "border-laterite bg-laterite-wash text-ink shadow-[inset_0_-2px_0_var(--laterite)]" : "border-line-strong bg-surface text-ink hover:border-ink-faint",
+            )}
+          >
+            <StatusSwatch status={x.status} size={13} />
+            {x.number}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 function CardSection({ title, children }: { title: string; children: React.ReactNode }) {

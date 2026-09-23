@@ -45,6 +45,9 @@ export async function deskAction<T>(opts: {
     return { queued: false, result };
   } catch (e) {
     if (isApiError(e) && e.code === "NETWORK" && opts.offlineAllowed) return queue();
+    // the same key is still being worked on (or already applied): hand it to the outbox,
+    // which retries with this key and reconciles by refetching once it has landed
+    if (isApiError(e) && e.code === "IDEMPOTENCY_IN_PROGRESS") return queue();
     throw e;
   }
 }

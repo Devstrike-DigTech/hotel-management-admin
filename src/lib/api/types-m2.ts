@@ -175,10 +175,20 @@ export interface Availability {
   }[];
 }
 
+export type NotReadyReason = "OUT_OF_ORDER" | "OCCUPIED" | "BOOKED" | "DIRTY";
+
 export interface RoomAvailability {
   roomTypeId: string;
+  forCheckIn?: boolean;
   available: number;
-  rooms: (RoomRef & { free: boolean; clean: boolean })[];
+  rooms: (RoomRef & {
+    free: boolean;
+    clean: boolean;
+    /** M2.1: free && clean && nobody checked in right now */
+    checkInReady?: boolean;
+    occupiedUntil?: string | null;
+    reason?: NotReadyReason | null;
+  })[];
 }
 
 export interface TapeStay {
@@ -706,8 +716,12 @@ export interface DailyFlash {
   roomsTotal: number;
   roomsOutOfOrder: number;
   roomsAvailable: number;
+  /** M2.1: in-house nightly stays for the night */
   roomsSold: number;
   occupancyRate: number;
+  /** M2.1: room nights with a posted ROOM charge, and their revenue (ADR uses these) */
+  roomNightsPosted?: number;
+  roomRevenuePostedKobo?: number;
   adrKobo: number;
   revparKobo: number;
   roomRevenueKobo: number;

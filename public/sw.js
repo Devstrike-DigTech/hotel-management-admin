@@ -1,13 +1,17 @@
 /*
  * Front-desk service worker: keeps the app shell available when the line drops.
  *  - /_next/static and fonts: cache first (immutable, content-hashed)
- *  - page navigations: network first, fall back to the cached page, then to /today
+ *  - page navigations: network first, fall back to the cached page, then /offline.html
+ *  - RSC payloads (client-side navigations): network first, own cache
  *  - API calls are not touched here; data is cached in IndexedDB by the app and
  *    offline writes go through the IndexedDB outbox with Idempotency-Keys.
  */
-const VERSION = "desk-v1";
+const VERSION = "desk-v2";
 const SHELL = `${VERSION}-shell`;
 const STATIC = `${VERSION}-static`;
+// React Server Component payloads live in their own cache so a page
+// navigation can never be answered with one (they share URLs with pages).
+const RSC = `${VERSION}-rsc`;
 const PRECACHE = ["/today", "/ledger", "/reservations", "/login", "/offline.html"];
 
 self.addEventListener("install", (event) => {
@@ -52,9 +56,9 @@ self.addEventListener("fetch", (event) => {
 });
 
 async function networkFirstRsc(req) {
-  const cache = await caches.open(SHELL);
+  const cache = await caches.open(RSC);
   const url = new URL(req.url);
-  const key = `${url.pathname}?__rsc`;
+  const key = new Request(`${url.origin}${url.pathname}`);
   try {
     const res = await fetch(req);
     if (res.ok) cache.put(key, res.clone());
@@ -75,16 +79,16 @@ async function cacheFirst(req, cacheName) {
 
 async function networkFirstPage(req) {
   const cache = await caches.open(SHELL);
+  const url = new URL(req.url);
+  const key = new Request(`${url.origin}${url.pathname}`);
   try {
     const res = await fetch(req);
-    if (res.ok) cache.put(req, res.clone());
+    // only ever keep real HTML documents as pages
+    if (res.ok && (res.headers.get("content-type") || "").includes("text/html")) cache.put(key, res.clone());
     return res;
   } catch {
-    const url = new URL(req.url);
     return (
-      (await cache.match(req, { ignoreSearch: true })) ||
-      (await cache.match(url.pathname)) ||
-      (await cache.match("/today")) ||
+      (await cache.match(key)) ||
       (await cache.match("/offline.html")) ||
       new Response("Offline", { status: 503, headers: { "Content-Type": "text/plain" } })
     );

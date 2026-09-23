@@ -91,6 +91,11 @@ export async function retry(id: string) {
   void syncOutbox();
 }
 
+/** 409 IDEMPOTENCY_IN_PROGRESS with details.applied: the action already committed. */
+export function isAlreadyApplied(e: unknown) {
+  return isApiError(e) && e.code === "IDEMPOTENCY_IN_PROGRESS" && e.details?.applied === true;
+}
+
 let running: Promise<void> | null = null;
 
 /** Replay queued actions in the order they happened. Stops at the first network failure. */
@@ -119,7 +124,16 @@ export function syncOutbox(): Promise<void> {
           await save({ ...item, status: "queued", attempts: item.attempts + 1 });
           break;
         }
+        if (isAlreadyApplied(err)) {
+          // the server did the work but never stored its reply: it will not run again,
+          // so treat it as landed and let the refetch show the real state
+          await remove(item.id);
+          landed++;
+          onLanded?.(item, null);
+          continue;
+        }
         if (err.code === "IDEMPOTENCY_IN_PROGRESS") {
+          // the first attempt is still running on the server: leave it queued for the next pass
           await save({ ...item, status: "queued", attempts: item.attempts + 1 });
           continue;
         }

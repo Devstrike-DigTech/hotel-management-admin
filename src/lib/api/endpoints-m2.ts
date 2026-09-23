@@ -96,6 +96,7 @@ export const availabilityApi = {
     arrivalAt?: string;
     departureAt?: string;
     excludeReservationId?: string;
+    forCheckIn?: boolean;
   }) => api<RoomAvailability>("/availability/rooms", { query: q }),
   tapeChart: (from: string, to: string) => api<TapeChart>("/tape-chart", { query: { from, to } }),
 };
@@ -165,7 +166,8 @@ export const documentsApi = {
 };
 
 export const shiftsApi = {
-  current: () => api<Shift | null>("/shifts/current"),
+  /** The caller's open shift; `null` (or an empty body) when none is open. */
+  current: async () => (await api<Shift | null | undefined>("/shifts/current")) ?? null,
   open: (openingFloatKobo: number, notes?: string) =>
     api<Shift>("/shifts/open", { method: "POST", body: { openingFloatKobo, notes } }),
   close: (id: string, input: ShiftCloseInput) => api<ShiftDetail>(`/shifts/${id}/close`, { method: "POST", body: input }),

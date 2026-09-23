@@ -119,13 +119,18 @@ function FlashBody({ d }: { d: DailyFlash }) {
               {percent(occ)}
             </p>
             <p className="mt-1 text-[12.5px] text-ink-muted">
-              <span className="font-mono text-ink">{d.roomsSold}</span> of <span className="font-mono text-ink">{d.roomsAvailable}</span> rooms sold
+              <span className="font-mono text-ink">{d.roomsSold}</span> of <span className="font-mono text-ink">{d.roomsAvailable}</span> rooms occupied
             </p>
+            <p className="text-[11.5px] text-ink-faint">guests in house for the night</p>
           </div>
         </div>
         <div className="grid grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x [&>*]:border-line max-sm:[&>*:nth-child(-n+2)]:border-b max-sm:[&>*:nth-child(odd)]:border-r">
           <Tile label="Revenue" value={nairaCompact(d.totalRevenueKobo)} sub="excl. tax" />
-          <Tile label="ADR" value={nairaCompact(d.adrKobo)} sub="average daily rate" />
+          <Tile
+            label="ADR"
+            value={nairaCompact(d.adrKobo)}
+            sub={d.roomNightsPosted != null ? `on ${d.roomNightsPosted} posted night${d.roomNightsPosted === 1 ? "" : "s"}` : "average daily rate"}
+          />
           <Tile label="RevPAR" value={nairaCompact(d.revparKobo)} sub="per available room" />
           <Tile label="Collected" value={nairaCompact(d.paymentsTotalKobo)} sub={d.refundsKobo ? `${naira(d.refundsKobo)} refunded` : "all methods"} />
         </div>
@@ -146,7 +151,7 @@ function FlashBody({ d }: { d: DailyFlash }) {
               ["Arrivals", d.arrivals],
               ["Departures", d.departures],
               ["Day use", d.dayUseCount],
-              ["In house", d.guestsInHouse],
+              ["Guests in house", d.guestsInHouse],
               ["No-shows", d.noShows],
               ["Cancellations", d.cancellations],
             ].map(([k, v]) => (
@@ -162,7 +167,10 @@ function FlashBody({ d }: { d: DailyFlash }) {
         <PanelHeader eyebrow="Revenue build-up" title="From rooms to the bottom line" />
         <dl className="grid gap-x-10 px-5 py-4 text-[13.5px] sm:grid-cols-2">
           {[
-            ["Room revenue", d.roomRevenueKobo],
+            [
+              d.roomNightsPosted != null ? `Room revenue posted (${d.roomNightsPosted} night${d.roomNightsPosted === 1 ? "" : "s"})` : "Room revenue",
+              d.roomRevenuePostedKobo ?? d.roomRevenueKobo,
+            ],
             ["Day-use revenue", d.dayUseRevenueKobo],
             ["Other charges", d.otherRevenueKobo],
             ["Discounts", -d.discountKobo],
@@ -256,8 +264,12 @@ function Trends() {
       ) : (
         <>
           <Panel className="grid grid-cols-2 divide-line md:grid-cols-4 md:divide-x [&>*]:border-line max-md:[&>*:nth-child(-n+2)]:border-b max-md:[&>*:nth-child(odd)]:border-r">
-            <Tile label="Occupancy" value={percent(d.totals.occupancyRate)} sub={`${d.totals.roomsSold} room-nights sold`} />
-            <Tile label="ADR" value={nairaCompact(d.totals.adrKobo)} />
+            <Tile label="Occupancy" value={percent(d.totals.occupancyRate)} sub={`${d.totals.roomsSold} room-nights occupied`} />
+            <Tile
+              label="ADR"
+              value={nairaCompact(d.totals.adrKobo)}
+              sub={d.totals.roomNightsPosted != null ? `on ${d.totals.roomNightsPosted} posted nights` : undefined}
+            />
             <Tile label="RevPAR" value={nairaCompact(d.totals.revparKobo)} />
             <Tile label="Revenue" value={nairaCompact(d.totals.totalRevenueKobo)} sub={`${d.totals.dayUseCount} day-use stays`} />
           </Panel>

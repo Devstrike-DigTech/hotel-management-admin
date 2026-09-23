@@ -95,6 +95,7 @@ export const useRoomAvailability = (
     arrivalAt?: string;
     departureAt?: string;
     excludeReservationId?: string;
+    forCheckIn?: boolean;
   } | null,
 ) =>
   useQuery({

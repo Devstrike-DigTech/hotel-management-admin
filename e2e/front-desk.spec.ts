@@ -113,9 +113,12 @@ test("checks the guest in on the register card", async () => {
   });
   await card.getByRole("checkbox", { name: /I confirm these details are correct/ }).check({ force: true });
   // a clean room of the booked type
-  const rooms = page.getByRole("radiogroup", { name: "Room" }).getByRole("radio");
-  await expect(rooms.first()).toBeVisible();
-  await rooms.first().click();
+  // (the picker asks for rooms with forCheckIn=true: ready rooms first, dirty ones as a manager override)
+  const ready = page.getByRole("radiogroup", { name: "Room", exact: true }).getByRole("radio");
+  const dirty = page.getByRole("radiogroup", { name: "Needs cleaning" }).getByRole("radio");
+  await expect(ready.or(dirty).first()).toBeVisible();
+  if (await ready.count()) await ready.first().click();
+  else await dirty.first().click();
   // if every free room still needs cleaning, the owner overrides with a reason
   const override = page.getByLabel("Override reason");
   if (await override.isVisible()) await override.fill("Inspected by the supervisor, status not updated yet");
