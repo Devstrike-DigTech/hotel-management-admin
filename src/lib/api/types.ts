@@ -84,6 +84,8 @@ export interface StaffUser {
   email: string;
   phone?: string | null;
   role: Role;
+  /** M2: owners and managers with a discount-approval PIN */
+  hasApprovalPin?: boolean;
 }
 
 export interface AuthResponse {

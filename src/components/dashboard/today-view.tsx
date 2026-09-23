@@ -124,7 +124,7 @@ export function TodayView() {
 
       {/* headline ledger */}
       {deskOn ? (
-        <Panel className="mb-6 grid grid-cols-2 divide-line md:grid-cols-5 md:divide-x [&>*]:border-line max-md:[&>*:nth-child(-n+4)]:border-b max-md:[&>*:nth-child(odd)]:border-r max-md:[&>*:last-child]:col-span-2">
+        <Panel className="mb-6 grid grid-cols-2 divide-line md:grid-cols-5 md:divide-x [&>*]:border-line max-md:[&>*]:gap-1 max-md:[&>*]:py-3.5 max-md:[&>*:nth-child(-n+4)]:border-b max-md:[&>*:nth-child(odd)]:border-r max-md:[&>*:last-child]:col-span-2 max-md:[&>*:last-child]:border-r-0 max-md:[&_.font-mono]:text-[28px]">
           <LedgerStat label="Arriving" value={desk.data?.counts.arrivals ?? 0} loading={desk.isLoading} sub={`${desk.data?.counts.arrivalsPending ?? 0} still to come`} />
           <LedgerStat label="In the house" value={desk.data?.counts.inHouse ?? 0} loading={desk.isLoading} sub={`${occupied} of ${total} rooms occupied`} swatch="OCCUPIED" />
           <LedgerStat label="Leaving" value={desk.data?.counts.departures ?? 0} loading={desk.isLoading} sub={`${desk.data?.counts.departuresPending ?? 0} still to go`} />

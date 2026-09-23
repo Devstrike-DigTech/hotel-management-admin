@@ -8,7 +8,7 @@ import type { HotelHeader, InvoiceDocument, ReceiptDocument } from "@/lib/api/ty
 import { isApiError } from "@/lib/api/client";
 import { PAYMENT_METHODS } from "@/lib/catalog-m2";
 import { formatDate, formatDateTime, formatPhone, naira } from "@/lib/format";
-import { dayKeyOf, formatDay, lagosHHMM } from "@/lib/dates";
+import { dayKeyOf, formatDay, lagosHHMM, prettyDates } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { config } from "@/lib/config";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import { DocumentActions } from "./share";
 export function InvoicePrint({ id }: { id: string }) {
   const q = useInvoice(id);
   return (
-    <PrintFrame kind="invoice" loading={q.isLoading} error={q.error} actions={q.data && <DocumentActions kind="invoice" id={id} size="sm" />}>
+    <PrintFrame kind="invoice" loading={q.isLoading} error={q.error} actions={q.data && <DocumentActions kind="invoice" id={id} size="sm" noPrint />}>
       {q.data && <InvoiceSheet doc={q.data} />}
     </PrintFrame>
   );
@@ -30,7 +30,7 @@ export function InvoicePrint({ id }: { id: string }) {
 export function ReceiptPrint({ id }: { id: string }) {
   const q = useReceipt(id);
   return (
-    <PrintFrame kind="receipt" loading={q.isLoading} error={q.error} actions={q.data && <DocumentActions kind="receipt" id={id} size="sm" />}>
+    <PrintFrame kind="receipt" loading={q.isLoading} error={q.error} actions={q.data && <DocumentActions kind="receipt" id={id} size="sm" noPrint />}>
       {q.data && <ReceiptSlip doc={q.data} />}
     </PrintFrame>
   );
@@ -72,7 +72,7 @@ function PrintFrame({
   publicView?: boolean;
 }) {
   return (
-    <div className="min-h-dvh bg-surface-2/60 print:bg-white">
+    <div className="min-h-dvh bg-surface-2/60 print:bg-[#ffffff]">
       <style>{kind === "invoice" ? `@media print { @page { size: A4; margin: 0; } }` : `@media print { @page { size: 80mm auto; margin: 0; } }`}</style>
       <div className="no-print sticky top-0 z-10 border-b border-line bg-[color-mix(in_oklab,var(--paper)_92%,transparent)] backdrop-blur-[6px]">
         <div className="mx-auto flex max-w-[900px] flex-wrap items-center gap-2 px-4 py-2.5">
@@ -105,14 +105,21 @@ function PrintFrame({
 
 /* ---------------- A4 invoice ---------------- */
 
+/** Area, city and state, without repeating what the street address already says. */
+function placeLine(h: HotelHeader) {
+  const addr = (h.address ?? "").toLowerCase();
+  const parts = [h.area, h.city, h.state].filter((p, i, a) => p && !addr.includes(p.toLowerCase()) && a.indexOf(p) === i);
+  return parts.join(", ");
+}
+
 function HotelBlock({ h, compact }: { h: HotelHeader; compact?: boolean }) {
   return (
     <div className={cn("text-[11.5px] leading-relaxed text-[#5b544a]", compact && "text-center")}>
       <p className="display-sm text-[22px] leading-tight text-[#1b1a17]" style={{ fontVariationSettings: '"opsz" 72, "SOFT" 60' }}>
         {h.name}
       </p>
-      <p>{[h.address, h.area].filter(Boolean).join(", ")}</p>
-      <p>{[h.city, h.state].filter(Boolean).join(", ")}</p>
+      <p>{h.address}</p>
+      <p>{placeLine(h)}</p>
       <p className="font-mono">
         {formatPhone(h.phone)}
         {h.email ? ` · ${h.email}` : ""}
@@ -127,7 +134,7 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
   const t = doc.totals;
   return (
     <article
-      className="relative w-full max-w-[794px] overflow-hidden bg-white text-[#1b1a17] shadow-[0_1px_0_rgb(0_0_0/0.04),0_24px_60px_-28px_rgb(60_40_20/0.45)] print:max-w-none print:shadow-none"
+      className="relative w-full max-w-[794px] overflow-hidden bg-[#ffffff] text-[#1b1a17] shadow-[0_1px_0_rgb(0_0_0/0.04),0_24px_60px_-28px_rgb(60_40_20/0.45)] print:max-w-none print:shadow-none"
       style={{ minHeight: 1123, colorScheme: "light" }}
       aria-label={`Invoice ${doc.number}`}
     >
@@ -203,7 +210,7 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
             {doc.lines.map((l, i) => (
               <tr key={i} className="border-b border-[#ece5d8]">
                 <td className="py-2 font-mono text-[11.5px] text-[#5b544a]">{formatDay(l.date, { day: "2-digit", month: "short" })}</td>
-                <td className={cn("py-2", l.type === "DISCOUNT" && "italic text-[#2f5a43]")}>{l.description}</td>
+                <td className={cn("py-2", l.type === "DISCOUNT" && "italic text-[#2f5a43]")}>{prettyDates(l.description)}</td>
                 <td className={cn("py-2 text-right font-mono", l.amountKobo < 0 && "text-[#2f5a43]")}>
                   {l.amountKobo < 0 ? "−" : ""}
                   {naira(Math.abs(l.amountKobo)).replace("₦", "")}
@@ -287,7 +294,7 @@ export function ReceiptSlip({ doc }: { doc: ReceiptDocument }) {
   const line = "- ".repeat(24);
   return (
     <article
-      className="relative w-[302px] bg-white px-[14px] pb-8 pt-6 font-mono text-[12px] leading-[1.45] text-[#111] shadow-[0_24px_50px_-28px_rgb(60_40_20/0.5)] print:w-[80mm] print:px-[4mm] print:shadow-none"
+      className="relative w-[302px] bg-[#ffffff] px-[14px] pb-8 pt-6 font-mono text-[12px] leading-[1.45] text-[#111] shadow-[0_24px_50px_-28px_rgb(60_40_20/0.5)] print:w-[80mm] print:px-[4mm] print:shadow-none"
       style={{ colorScheme: "light" }}
       aria-label={`Receipt ${doc.number}`}
     >
@@ -299,8 +306,8 @@ export function ReceiptSlip({ doc }: { doc: ReceiptDocument }) {
       />
       <div className="text-center">
         <p className="text-[15px] font-semibold uppercase tracking-wide">{doc.hotel.name}</p>
-        <p className="text-[11px]">{[doc.hotel.address, doc.hotel.area].filter(Boolean).join(", ")}</p>
-        <p className="text-[11px]">{[doc.hotel.city, doc.hotel.state].filter(Boolean).join(", ")}</p>
+        <p className="text-[11px]">{doc.hotel.address}</p>
+        <p className="text-[11px]">{placeLine(doc.hotel)}</p>
         <p className="text-[11px]">{formatPhone(doc.hotel.phone)}</p>
       </div>
       <p className="my-2 overflow-hidden whitespace-nowrap text-[#777]">{line}</p>

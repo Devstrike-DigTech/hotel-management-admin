@@ -40,9 +40,9 @@ export function DenominationCounter({
           <div key={d} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-dashed border-line py-3 sm:grid-cols-[112px_1fr_120px]">
             <Note value={d} tone={tone} stack={Math.min(4, Math.ceil(n / 25))} />
             <div className="flex items-center gap-1.5">
-              <span className="font-mono text-[13px] text-ink-faint">&times;</span>
+              <span className="hidden font-mono text-[13px] text-ink-faint sm:inline">&times;</span>
               <div className="inline-flex h-11 items-stretch overflow-hidden rounded-md border border-line-strong bg-surface">
-                <button type="button" onClick={() => set(d, n - 1)} className="grid w-10 place-items-center text-ink-muted hover:bg-surface-2 hover:text-ink" aria-label={`One fewer ₦${d} note`}>
+                <button type="button" onClick={() => set(d, n - 1)} className="grid w-8 place-items-center sm:w-10 text-ink-muted hover:bg-surface-2 hover:text-ink" aria-label={`One fewer ₦${d} note`}>
                   <Minus size={14} weight="bold" />
                 </button>
                 <input
@@ -53,9 +53,9 @@ export function DenominationCounter({
                   placeholder="0"
                   onChange={(e) => set(d, Number(e.target.value.replace(/\D/g, "")))}
                   onFocus={(e) => e.target.select()}
-                  className="w-16 border-x border-line bg-transparent text-center font-mono text-[18px] text-ink outline-none focus:bg-laterite-wash/40"
+                  className="w-12 border-x sm:w-16 border-line bg-transparent text-center font-mono text-[18px] text-ink outline-none focus:bg-laterite-wash/40"
                 />
-                <button type="button" onClick={() => set(d, n + 1)} className="grid w-10 place-items-center text-ink-muted hover:bg-surface-2 hover:text-ink" aria-label={`One more ₦${d} note`}>
+                <button type="button" onClick={() => set(d, n + 1)} className="grid w-8 place-items-center sm:w-10 text-ink-muted hover:bg-surface-2 hover:text-ink" aria-label={`One more ₦${d} note`}>
                   <Plus size={14} weight="bold" />
                 </button>
               </div>
@@ -90,11 +90,11 @@ export function DenominationCounter({
 /** A small banknote glyph; stacks up as the count grows. */
 function Note({ value, tone, stack }: { value: number; tone: string; stack: number }) {
   return (
-    <span className="relative inline-block h-[38px] w-[86px] shrink-0 sm:w-[96px]" aria-hidden>
+    <span className="relative inline-block h-[38px] w-[64px] shrink-0 sm:w-[96px]" aria-hidden>
       {Array.from({ length: stack }, (_, i) => (
         <span
           key={i}
-          className="absolute h-[30px] w-[78px] rounded-[3px] border sm:w-[88px]"
+          className="absolute h-[30px] w-[58px] rounded-[3px] border sm:w-[88px]"
           style={{
             left: (stack - i) * 2,
             top: 6 - (stack - i) * 1.5,
@@ -104,17 +104,17 @@ function Note({ value, tone, stack }: { value: number; tone: string; stack: numb
         />
       ))}
       <span
-        className="absolute left-0 top-[6px] flex h-[30px] w-[78px] items-center justify-between overflow-hidden rounded-[3px] border px-1.5 sm:w-[88px]"
+        className="absolute left-0 top-[6px] flex h-[30px] w-[58px] items-center justify-center overflow-hidden rounded-[3px] border px-1.5 sm:w-[88px] sm:justify-between"
         style={{
           borderColor: `color-mix(in oklab, ${tone} 60%, transparent)`,
           background: `linear-gradient(90deg, color-mix(in oklab, ${tone} 22%, var(--surface)), color-mix(in oklab, ${tone} 8%, var(--surface)))`,
           color: tone,
         }}
       >
-        <span className="grid h-5 w-5 place-items-center rounded-full border" style={{ borderColor: `color-mix(in oklab, ${tone} 50%, transparent)` }}>
+        <span className="hidden h-5 w-5 place-items-center rounded-full border sm:grid" style={{ borderColor: `color-mix(in oklab, ${tone} 50%, transparent)` }}>
           <span className="h-2 w-2 rounded-full" style={{ background: `color-mix(in oklab, ${tone} 60%, transparent)` }} />
         </span>
-        <span className="font-mono text-[12.5px] font-semibold tracking-tight">₦{value.toLocaleString("en-NG")}</span>
+        <span className="font-mono text-[11px] font-semibold tracking-tight sm:text-[12.5px]">₦{value.toLocaleString("en-NG")}</span>
       </span>
     </span>
   );

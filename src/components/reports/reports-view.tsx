@@ -478,7 +478,7 @@ function DigestView() {
                   <span>
                     <span className="block text-[14px] text-ink">{formatDay(d.businessDate, { weekday: "short", day: "numeric", month: "short" })}</span>
                     <span className="block text-[12px] text-ink-muted">
-                      {percent(d.data.occupancyRate)} occupied &middot; {nairaCompact(d.data.totalRevenueKobo)} &middot; {d.data.openFlags} flags
+                      {percent(d.data.occupancyRate)} occupied &middot; {nairaCompact(d.data.totalRevenueKobo)} &middot; {d.data.openFlags} {d.data.openFlags === 1 ? "flag" : "flags"}
                     </span>
                   </span>
                   <Badge tone={d.status === "SENT" ? "palm" : d.status === "FAILED" ? "danger" : "neutral"}>{d.status === "SENT" ? "Sent" : d.status === "FAILED" ? "Failed" : "Logged"}</Badge>

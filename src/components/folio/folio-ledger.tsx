@@ -5,7 +5,7 @@ import * as Menu from "@radix-ui/react-dropdown-menu";
 import { ArrowBendDownRight, DotsThreeVertical, Prohibit, Receipt, SealCheck } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { naira } from "@/lib/format";
-import { formatDay } from "@/lib/dates";
+import { formatDay, prettyDates } from "@/lib/dates";
 import { ENTRY_TYPES, PAYMENT_METHODS } from "@/lib/catalog-m2";
 import type { Folio, FolioEntry } from "@/lib/api/types-m2";
 
@@ -171,9 +171,10 @@ function groupEntries(entries: FolioEntry[]) {
 function particulars(e: FolioEntry) {
   if (e.type === "PAYMENT" || e.type === "REFUND") {
     const m = e.paymentMethod ? PAYMENT_METHODS[e.paymentMethod].label : "";
-    return `${e.type === "REFUND" ? "Refund" : e.description && e.description !== "Payment" ? e.description : "Payment"}${m ? `, ${m.toLowerCase()}` : ""}`;
+    const base = e.type === "REFUND" ? "Refund" : e.description && e.description !== "Payment" ? e.description : "Payment";
+    return /cash|transfer|pos|card|ledger/i.test(base) || !m ? base : `${base}, ${m.toLowerCase()}`;
   }
-  return e.description;
+  return prettyDates(e.description);
 }
 
 function EntryRow({

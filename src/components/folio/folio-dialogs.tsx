@@ -6,6 +6,7 @@ import { Key, LockKey, Percent, Prohibit, SealCheck, ShieldCheck } from "@phosph
 import { cn } from "@/lib/cn";
 import { toast } from "@/lib/store";
 import { naira } from "@/lib/format";
+import { prettyDates } from "@/lib/dates";
 import { isApiError } from "@/lib/api/client";
 import { foliosApi } from "@/lib/api/endpoints-m2";
 import { useApprovers, useTaxSettings } from "@/lib/api/hooks-m2";
@@ -308,7 +309,10 @@ export function DiscountDialog({ folio, open, onOpenChange }: { folio: Folio; op
               onChange={setTarget}
               options={[
                 { value: "ALL", label: "Whole stay" },
-                ...charges.slice(0, 6).map((c) => ({ value: c.id, label: c.description.length > 28 ? c.description.slice(0, 26) + "..." : c.description })),
+                ...charges.slice(0, 6).map((c) => {
+                  const d = prettyDates(c.description).replace(/^Room \d+, /, "");
+                  return { value: c.id, label: d.length > 28 ? d.slice(0, 26) + "..." : d };
+                }),
               ]}
             />
           </div>

@@ -23,6 +23,18 @@ import { DenominationCounter, countsTotalKobo, emptyCounts, type Counts } from "
 import { PaymentsList, VarianceChip, VarianceHeadline, VarianceTable } from "./shift-parts";
 
 export function ShiftsView() {
+  const { can, ready } = useCan();
+  if (ready && !can("shift.own"))
+    return (
+      <>
+        <PageHeader eyebrow="Cashiers" title={<><em>Shifts</em></>} description="Every cashier shift with its count against the books." />
+        <History />
+      </>
+    );
+  return <MyShift />;
+}
+
+function MyShift() {
   const current = useCurrentShift();
   const [closing, setClosing] = useState(false);
   const [result, setResult] = useState<ShiftDetail | null>(null);

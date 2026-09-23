@@ -128,7 +128,7 @@ export function OutboxChip({ className }: { className?: string }) {
   const sync = useSyncState();
   const [open, setOpen] = useState(false);
   const conflicts = items.filter((i) => i.status === "conflict").length;
-  if (!items.length && net.online) return null;
+  if (!items.length && net.online && !open) return null;
   const tone = conflicts ? "danger" : !net.online ? "ochre" : "brass";
   const color = `var(--${tone})`;
   return (
@@ -263,6 +263,11 @@ function OutboxRow({ item }: { item: OutboxItem }) {
       </div>
       {conflict && (
         <div className="mt-3 flex justify-end gap-2">
+          {item.error?.code === "SHIFT_REQUIRED" && (
+            <a href="/shifts" className="mr-auto inline-flex h-8 items-center text-[12.5px] font-medium text-laterite underline-offset-4 hover:underline">
+              Open my shift, then retry
+            </a>
+          )}
           <Button size="sm" variant="ghost" onClick={() => void discard(item.id)}>
             <Trash size={14} /> Discard
           </Button>

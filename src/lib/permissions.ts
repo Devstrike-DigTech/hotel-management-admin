@@ -25,6 +25,7 @@ export type Capability =
   | "reports.read"
   | "audit.run"
   | "tax.write"
+  | "tax.read"
   | "guest.read"
   | "guest.write"
   | "guest.ndpa"
@@ -52,6 +53,7 @@ const MANAGER: Capability[] = [
   "reports.read",
   "audit.run",
   "tax.write",
+  "tax.read",
   "guest.read",
   "guest.write",
   "guest.ndpa",
@@ -75,8 +77,9 @@ const CAPS: Record<Role, Capability[]> = {
     "guest.write",
     "id.reveal",
     "folio.read",
+    "tax.read",
   ],
-  ACCOUNTANT: ["reservations.read", "shift.viewAll", "guard.read", "reports.read", "guest.read", "folio.read"],
+  ACCOUNTANT: ["reservations.read", "shift.viewAll", "guard.read", "reports.read", "guest.read", "folio.read", "tax.read"],
   HOUSEKEEPING: [],
 };
 

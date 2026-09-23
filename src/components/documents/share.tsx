@@ -12,11 +12,13 @@ export function DocumentActions({
   id,
   size = "md",
   className,
+  noPrint,
 }: {
   kind: "invoice" | "receipt";
   id: string;
   size?: "sm" | "md";
   className?: string;
+  noPrint?: boolean;
 }) {
   const share = useMutation({
     mutationFn: (mode: "whatsapp" | "copy") =>
@@ -36,9 +38,11 @@ export function DocumentActions({
   });
   return (
     <div className={className ?? "flex flex-wrap gap-2"}>
-      <Button size={size} variant="secondary" onClick={() => window.open(`/print/${kind}/${id}`, "_blank", "noopener")}>
-        <Printer size={15} weight="duotone" /> Print
-      </Button>
+      {!noPrint && (
+        <Button size={size} variant="secondary" onClick={() => window.open(`/print/${kind}/${id}`, "_blank", "noopener")}>
+          <Printer size={15} weight="duotone" /> Print
+        </Button>
+      )}
       <Button size={size} variant="secondary" onClick={() => share.mutate("whatsapp")} loading={share.isPending && share.variables === "whatsapp"}>
         <WhatsappLogo size={15} weight="duotone" /> WhatsApp
       </Button>

@@ -78,7 +78,7 @@ function FolioList({ status }: { status: "OPEN" | "CLOSED" }) {
         <EmptyState glyph="dots" title="No folios here" />
       ) : (
         <ul className="divide-y divide-line">
-          {q.data.items.map((f) => (
+          {[...q.data.items].sort((a, b) => b.balanceKobo - a.balanceKobo || b.chargesKobo - a.chargesKobo).map((f) => (
             <li key={f.id}>
               <button
                 onClick={() => router.push(f.kind === "WALK_IN" ? `/folios/${f.id}` : `/folios/${f.id}`)}
@@ -97,7 +97,11 @@ function FolioList({ status }: { status: "OPEN" | "CLOSED" }) {
                 <Money kobo={f.chargesKobo} className="hidden text-right text-[13px] text-ink-muted md:block" />
                 <Money kobo={-f.paymentsKobo} className="hidden text-right text-[13px] text-ink-muted md:block" />
                 <span className="text-right">
-                  <BalancePill kobo={f.balanceKobo} />
+                  {f.chargesKobo === 0 && f.paymentsKobo === 0 ? (
+                    <span className="text-[12px] italic text-ink-faint">nothing posted</span>
+                  ) : (
+                    <BalancePill kobo={f.balanceKobo} />
+                  )}
                 </span>
               </button>
             </li>

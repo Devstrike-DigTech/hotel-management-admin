@@ -103,6 +103,8 @@
   --color-*: initial;
   --color-transparent: transparent;
   --color-current: currentColor;
+  --color-white: #ffffff;
+  --color-black: #000000;
   --color-paper: var(--paper);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);

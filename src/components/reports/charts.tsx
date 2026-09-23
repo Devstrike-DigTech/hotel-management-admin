@@ -99,7 +99,7 @@ export function StackedColumns({
                   : `M${x0} ${y0} V${y0 - h} H${x0 + barW} V${y0} Z`;
                 return <path key={s.key} d={path} style={{ fill: s.color, opacity: hover === null || hover === i ? 1 : 0.45, transition: "opacity 150ms" }} />;
               })}
-              {(i % every === 0 || i === data.length - 1) && (
+              {(i === data.length - 1 || (i % every === 0 && data.length - 1 - i >= every * 0.7)) && (
                 <text x={cx} y={height - 7} textAnchor="middle" style={{ ...axisText, fill: "var(--ink-muted)" }}>
                   {formatX(d.x)}
                 </text>
@@ -201,7 +201,7 @@ export function LineChart({
         <path d={area} style={{ fill: `url(#lg-${seriesLabel.replace(/\W/g, "")})` }} />
         <path d={line} fill="none" style={{ stroke: color }} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         {data.map((d, i) =>
-          i % every === 0 || i === data.length - 1 ? (
+          i === data.length - 1 || (i % every === 0 && data.length - 1 - i >= every * 0.7) ? (
             <text key={d.x} x={xAt(i)} y={height - 7} textAnchor="middle" style={{ ...axisText, fill: "var(--ink-muted)" }}>
               {formatX(d.x)}
             </text>

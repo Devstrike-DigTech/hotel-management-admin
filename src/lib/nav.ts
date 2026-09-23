@@ -83,7 +83,7 @@ export const HOTEL_NAV: NavGroup[] = [
     items: [
       { href: "/staff", label: "Staff", icon: UsersThree, keywords: "team people users roles pin", shortcut: "G S" },
       { href: "/property", label: "Property", icon: Buildings, keywords: "settings details hotel branding amenities" },
-      { href: "/settings/taxes", label: "Taxes & charges", icon: Percent, keywords: "vat consumption tax service charge discount threshold" },
+      { href: "/settings/taxes", label: "Taxes & charges", icon: Percent, cap: "tax.read", keywords: "vat consumption tax service charge discount threshold" },
       { href: "/billing", label: "Billing & plan", icon: Receipt, keywords: "subscription upgrade invoices plan", shortcut: "G B" },
       { href: "/audit", label: "Audit log", icon: ClockCounterClockwise, keywords: "history activity trail" },
     ],

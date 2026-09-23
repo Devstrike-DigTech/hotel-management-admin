@@ -115,6 +115,11 @@ export function formatDuration(ms: number): string {
   return `${m}m`;
 }
 
+/** "Room 108, night of 2026-09-20" -> "Room 108, night of 20 Sept". */
+export function prettyDates(text: string): string {
+  return text.replace(/\b(\d{4}-\d{2}-\d{2})\b/g, (k) => formatDay(k, { day: "numeric", month: "short" }));
+}
+
 /** Stay window label: "23 Sep 14:00 to 25 Sep 12:00", compact when same day. */
 export function stayWindow(arrivalIso: string, departureIso: string): string {
   const a = dayKeyOf(arrivalIso);

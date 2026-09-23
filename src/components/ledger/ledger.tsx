@@ -437,7 +437,7 @@ export const Ledger = forwardRef<LedgerHandle, LedgerProps>(function Ledger(
     const stay = d.stay!;
     const changed = g.roomId !== stay.roomId || g.arrivalAt !== stay.arrivalAt || g.departureAt !== stay.departureAt;
     if (!changed) return;
-    void commit(stay, g, g.mode === "extend" ? "extend" : !stay.roomId ? "assign" : "move");
+    void commit(stay, g, g.mode === "extend" ? "extend" : !stay.roomId && g.roomId ? "assign" : "move");
   }
 
   function onWindowCancel() {
@@ -559,7 +559,7 @@ export const Ledger = forwardRef<LedgerHandle, LedgerProps>(function Ledger(
     }
     const changed = kb.roomId !== kbStay.roomId || kb.arrivalAt !== kbStay.arrivalAt || kb.departureAt !== kbStay.departureAt;
     const kind: LedgerChange["kind"] =
-      kb.arrivalAt === kbStay.arrivalAt && kb.roomId === kbStay.roomId ? "extend" : !kbStay.roomId ? "assign" : "move";
+      kb.arrivalAt === kbStay.arrivalAt && kb.roomId === kbStay.roomId ? "extend" : !kbStay.roomId && kb.roomId ? "assign" : "move";
     const stay = kbStay;
     const target = { roomId: kb.roomId, arrivalAt: kb.arrivalAt, departureAt: kb.departureAt };
     setKb(null);
@@ -873,7 +873,7 @@ export const Ledger = forwardRef<LedgerHandle, LedgerProps>(function Ledger(
             )}
 
             {/* drag ghost */}
-            {ghost && (ghostRow || ghost.mode !== "move") && (
+            {ghost && (
               <GhostBar
                 x={labelW + xOf(ghost.arrivalAt, from, dw)}
                 w={Math.max(MIN_BAR_PX, xOf(ghost.departureAt, from, dw) - xOf(ghost.arrivalAt, from, dw))}
@@ -1132,7 +1132,7 @@ function MovePanel({
   onCancel: () => void;
 }) {
   const btn =
-    "grid h-9 w-9 place-items-center rounded-md border border-line-strong bg-surface text-ink hover:bg-surface-2 disabled:opacity-40";
+    "inline-flex h-9 min-w-9 items-center justify-center rounded-md border border-line-strong bg-surface text-ink hover:bg-surface-2 disabled:opacity-40";
   return (
     <div
       role="toolbar"

@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { CaretUpDown, LockSimple, SignOut, SidebarSimple, Buildings, Receipt } from "@phosphor-icons/react";
+import { useState } from "react";
+import { CaretUpDown, Key, LockSimple, SignOut, SidebarSimple, Buildings, Receipt } from "@phosphor-icons/react";
+import { ApprovalPinDialog } from "@/components/staff/approval-pin";
 import { HOTEL_NAV, isActive, type NavItem } from "@/lib/nav";
 import { useEntitlements, useLogout } from "@/lib/auth";
 import { useCan } from "@/lib/permissions";
@@ -196,7 +198,10 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
   const { me } = useEntitlements();
   const logout = useLogout();
   const name = me?.user.fullName ?? "";
+  const [pinOpen, setPinOpen] = useState(false);
   return (
+    <>
+    <ApprovalPinDialog open={pinOpen} onOpenChange={setPinOpen} hasPin={me?.user.hasApprovalPin} />
     <Menu.Root>
       <Menu.Trigger asChild>
         <button
@@ -243,6 +248,16 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
           <MenuLink href="/billing" icon={<Receipt size={16} weight="duotone" />}>
             Billing & plan
           </MenuLink>
+          {me && (me.user.role === "OWNER" || me.user.role === "MANAGER") && (
+            <Menu.Item
+              onSelect={() => setPinOpen(true)}
+              className="flex h-8 cursor-pointer items-center gap-2.5 rounded-sm px-2.5 text-[13px] text-ink outline-none data-[highlighted]:bg-surface-2"
+            >
+              <Key size={16} weight="duotone" />
+              Approval PIN
+              <span className="ml-auto text-[11px] text-ink-faint">{me.user.hasApprovalPin ? "set" : "not set"}</span>
+            </Menu.Item>
+          )}
           <Menu.Separator className="my-1 h-px bg-line" />
           <Menu.Item
             onSelect={() => void logout()}
@@ -254,6 +269,7 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
         </Menu.Content>
       </Menu.Portal>
     </Menu.Root>
+    </>
   );
 }
 

@@ -108,7 +108,7 @@ export function RegisterView() {
           <EmptyState glyph="ladder" title="No check-ins in these dates" />
         ) : (
           <div className="scrollbar-thin overflow-x-auto">
-            <table className="w-full min-w-[1080px] text-[12.5px]">
+            <table className="w-full min-w-[1000px] text-[12.5px] [&_td:first-child]:pl-5 [&_td:nth-child(3)]:whitespace-nowrap [&_td]:px-2.5 [&_th:first-child]:pl-5 [&_th]:px-2.5">
               <thead>
                 <tr className="border-b-2 border-double border-line-strong text-left">
                   {["In", "Room", "Guest", "Phone", "Nationality", "ID", "From", "To", "Purpose", "Vehicle", "Pax", "Out"].map((h) => (

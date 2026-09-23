@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useCan } from "@/lib/permissions";
 import { PencilSimple } from "@phosphor-icons/react";
 import type { Room, RoomStatus } from "@/lib/api/types";
 import { ROOM_STATUS, ROOM_STATUS_ORDER } from "@/lib/catalog";
@@ -26,6 +27,16 @@ export function RoomSheet({
   const [status, setStatus] = useState<RoomStatus>("VACANT_CLEAN");
   const [note, setNote] = useState("");
   const mutation = useRoomStatus();
+  const { role } = useCan();
+  // Housekeeping may only turn a dirty room clean (API-M2 section 10).
+  const allowed = useCallback(
+    (s: RoomStatus) => role !== "HOUSEKEEPING" || !room || s === room.status || (room.status === "VACANT_DIRTY" && s === "VACANT_CLEAN"),
+    [role, room],
+  );
+  const allowedRef = useRef(allowed);
+  useEffect(() => {
+    allowedRef.current = allowed;
+  }, [allowed]);
 
   const [lastId, setLastId] = useState<string | null>(null);
   if (room && room.id !== lastId) {
@@ -40,7 +51,7 @@ export function RoomSheet({
       const t = e.target as HTMLElement;
       if (t.tagName === "TEXTAREA" || t.tagName === "INPUT") return;
       const s = ROOM_STATUS_ORDER.find((k) => ROOM_STATUS[k].key === e.key);
-      if (s) {
+      if (s && allowedRef.current(s)) {
         e.preventDefault();
         setStatus(s);
       }
@@ -128,11 +139,15 @@ export function RoomSheet({
               {ROOM_STATUS_ORDER.map((s) => {
                 const sm = ROOM_STATUS[s];
                 const on = status === s;
+                const blocked = !allowed(s);
                 return (
                   <label
                     key={s}
+                    aria-disabled={blocked || undefined}
+                    title={blocked ? "Housekeeping can only mark a dirty room clean" : undefined}
                     className={cn(
                       "flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 transition-colors duration-150",
+                      blocked && "pointer-events-none opacity-40",
                       on ? "bg-surface" : "border-line hover:border-line-strong hover:bg-surface-2/50",
                     )}
                     style={on ? { borderColor: sm.color, boxShadow: `inset 3px 0 0 ${sm.color}` } : undefined}
@@ -142,6 +157,7 @@ export function RoomSheet({
                       name="room-status"
                       value={s}
                       checked={on}
+                      disabled={blocked}
                       onChange={() => setStatus(s)}
                       className="sr-only"
                     />
