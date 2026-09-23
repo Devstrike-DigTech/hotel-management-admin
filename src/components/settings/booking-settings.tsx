@@ -224,6 +224,18 @@ export function BookingSettingsView() {
           </aside>
         </div>
       )}
+      {editable && dirty && (
+        <div className="fixed inset-x-3 bottom-[calc(72px+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-md items-center gap-3 rounded-md border border-line bg-surface px-4 py-2.5 shadow-float animate-[rise_200ms_ease-out] lg:bottom-5 lg:left-auto lg:right-8 lg:mx-0">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-laterite" aria-hidden />
+          <p className="flex-1 text-[13px] text-ink">Unsaved changes</p>
+          <Button size="sm" variant="ghost" onClick={() => setDraft(q.data ?? null)}>
+            Discard
+          </Button>
+          <Button size="sm" onClick={() => save.mutate()} loading={save.isPending}>
+            Save
+          </Button>
+        </div>
+      )}
     </>
   );
 }
