@@ -82,15 +82,31 @@ test("a housekeeper finishes a room and a supervisor passes it: the room is clea
   expect(musa).toBeTruthy();
 
   // a clean vacant room with no open task, made dirty as if a guest just left
-  const rooms = await get<{ id: string; number: string; status: string }[]>("/rooms?status=VACANT_CLEAN");
-  const open = await get<{ room: { id: string } }[]>("/housekeeping/tasks");
-  const room = rooms.find((r) => !open.some((t) => t.room.id === r.id))!;
-  expect(room).toBeTruthy();
-  await call("PATCH", `/rooms/${room.id}/status`, { status: "VACANT_DIRTY", note: "e2e turnaround" });
-  const task = await call<{ id: string; checklistTotal: number }>("POST", "/housekeeping/tasks", { roomId: room.id, type: "CHECKOUT_CLEAN", assigneeId: musa.id });
+  // (or, when the demo house is busy, a dirty one, or a room already waiting for a clean)
+  type T = { id: string; status: string; checklistTotal: number; room: { id: string; number: string } };
+  const rooms = await get<{ id: string; number: string; status: string }[]>("/rooms");
+  const open = await get<T[]>("/housekeeping/tasks");
+  const free = (s: string) => rooms.find((r) => r.status === s && !open.some((t) => t.room.id === r.id));
+  let room = free("VACANT_CLEAN") ?? free("VACANT_DIRTY");
+  let task: { id: string; checklistTotal: number };
+  if (room) {
+    if (room.status === "VACANT_CLEAN") await call("PATCH", `/rooms/${room.id}/status`, { status: "VACANT_DIRTY", note: "e2e turnaround" });
+    task = await call<T>("POST", "/housekeeping/tasks", { roomId: room.id, type: "CHECKOUT_CLEAN", assigneeId: musa.id });
+  } else {
+    const waiting = open.find((t) => (t.status === "OPEN" || t.status === "ASSIGNED") && rooms.find((r) => r.id === t.room.id)?.status === "VACANT_DIRTY");
+    expect(waiting).toBeTruthy();
+    await call("POST", "/housekeeping/assign", { assigneeId: musa.id, taskIds: [waiting!.id] });
+    room = rooms.find((r) => r.id === waiting!.room.id)!;
+    task = await get<T>(`/housekeeping/tasks/${waiting!.id}`);
+  }
+
+  // the housekeeper is in one room at a time: close any room left open from before
+  const musaTokens = await login(HOUSEKEEPER);
+  const mine = await get<{ tasks: T[] }>("/housekeeping/my-tasks", musaTokens);
+  for (const t of mine.tasks.filter((x) => x.status === "IN_PROGRESS" && x.id !== task.id)) await call("POST", `/housekeeping/tasks/${t.id}/finish`, {}, musaTokens);
 
   // the housekeeper's phone
-  const hk = await signedIn(browser, await login(HOUSEKEEPER), { width: 390, height: 844 });
+  const hk = await signedIn(browser, musaTokens, { width: 390, height: 844 });
   const phone = await hk.newPage();
   await phone.goto("/hk");
   const card = phone.getByTestId(`hk-card-${room.number}`);
