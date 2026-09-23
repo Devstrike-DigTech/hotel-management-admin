@@ -79,6 +79,18 @@ export interface LedgerProps {
   onUndoChange?: (n: number) => void;
   /** day scrolled into view on mount (default today) */
   initialDay?: DayKey;
+  /** M4: out-of-order windows from maintenance */
+  blocks?: LedgerBlock[];
+}
+
+export interface LedgerBlock {
+  id: string;
+  roomId: string;
+  from: string;
+  to: string;
+  reason: string;
+  ticketId: string | null;
+  ticketNumber: string | null;
 }
 
 interface Placement {
@@ -128,6 +140,7 @@ export const Ledger = forwardRef<LedgerHandle, LedgerProps>(function Ledger(
     style,
     onUndoChange,
     initialDay,
+    blocks,
   },
   ref,
 ) {
@@ -835,7 +848,8 @@ export const Ledger = forwardRef<LedgerHandle, LedgerProps>(function Ledger(
               }
               const room = row.room;
               const list = staysByRoom.get(room.id) ?? [];
-              const ooo = room.status === "OUT_OF_ORDER";
+              const roomBlocks = (blocks ?? []).filter((b) => b.roomId === room.id);
+              const ooo = room.status === "OUT_OF_ORDER" && !roomBlocks.length;
               return (
                 <div key={row.key} className="group/row absolute left-0 border-b border-line" style={{ top: row.y, height: row.h, width: totalW }}>
                   <div
@@ -864,6 +878,28 @@ export const Ledger = forwardRef<LedgerHandle, LedgerProps>(function Ledger(
                         style={{ maskImage: "linear-gradient(to right, black, black)" }}
                       />
                     )}
+                    {roomBlocks.map((b) => {
+                      const x1 = Math.max(0, xOf(b.from, from, dw));
+                      const x2 = Math.min(trackW, xOf(b.to, from, dw));
+                      if (x2 <= x1 || x2 < xMin || x1 > xMax) return null;
+                      const shift = Math.max(0, Math.min(x2 - x1 - 60, view.left - x1));
+                      return (
+                        <a
+                          key={b.id}
+                          href={b.ticketId ? `/maintenance/${b.ticketId}` : "/maintenance"}
+                          data-testid={`ledger-block-${room.number}`}
+                          className="absolute inset-y-[5px] z-[2] flex items-center overflow-hidden rounded-[3px] border border-[color-mix(in_oklab,var(--danger)_45%,transparent)] bg-[color-mix(in_oklab,var(--danger-wash)_85%,transparent)] text-[11px] text-danger"
+                          style={{ left: x1, width: x2 - x1 }}
+                          title={`Out of order: ${b.reason}${b.ticketNumber ? ` (${b.ticketNumber})` : ""}`}
+                          aria-label={`Room ${room.number} out of order: ${b.reason}`}
+                        >
+                          <span aria-hidden className="hatch absolute inset-0 opacity-60" />
+                          <span className="relative truncate px-2 font-medium" style={{ marginLeft: shift }}>
+                            <span className="font-mono">OOO</span> {b.ticketNumber && <span className="font-mono text-[10.5px] opacity-80">{b.ticketNumber}</span>} {b.reason}
+                          </span>
+                        </a>
+                      );
+                    })}
                     {list.map((s) => renderBar(s, 6))}
                   </div>
                 </div>

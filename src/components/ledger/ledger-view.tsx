@@ -251,6 +251,7 @@ export function LedgerView() {
           groupBy={groupBy}
           checkInTime={q.data.checkInTime}
           checkOutTime={q.data.checkOutTime}
+          blocks={q.data.blocks}
           editable={editable}
           onChange={onChange}
           onCreate={(p) => openNewReservation({ roomId: p.roomId, roomTypeId: p.roomTypeId, arrival: p.arrival, departure: p.departure })}
