@@ -232,6 +232,8 @@ export interface Staff {
   isActive?: boolean;
   lastLoginAt?: string | null;
   createdAt?: string;
+  /** M2: owner/manager has a discount-approval PIN */
+  hasApprovalPin?: boolean;
 }
 
 export interface StaffInput {

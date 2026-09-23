@@ -6,7 +6,7 @@ import * as Menu from "@radix-ui/react-dropdown-menu";
 import { useState } from "react";
 import { CaretUpDown, Key, LockSimple, SignOut, SidebarSimple, Buildings, Receipt } from "@phosphor-icons/react";
 import { ApprovalPinDialog } from "@/components/staff/approval-pin";
-import { HOTEL_NAV, isActive, type NavItem } from "@/lib/nav";
+import { HOTEL_NAV, isActive, navVisible, type NavItem } from "@/lib/nav";
 import { useEntitlements, useLogout } from "@/lib/auth";
 import { useCan } from "@/lib/permissions";
 import { useGuardSummary, useShifts } from "@/lib/api/hooks-m2";
@@ -72,7 +72,7 @@ export function Sidebar({
       )}
 
       <nav aria-label="Main" className="scrollbar-thin flex-1 overflow-y-auto overflow-x-hidden px-3 pb-4">
-        {HOTEL_NAV.map((g) => ({ ...g, items: g.items.filter((i) => !i.cap || !ready || can(i.cap)) }))
+        {HOTEL_NAV.map((g) => ({ ...g, items: g.items.filter((i) => navVisible(i, can, ready)) }))
           .filter((g) => g.items.length)
           .map((group) => (
           <div key={group.label} className="mt-3 first:mt-1">

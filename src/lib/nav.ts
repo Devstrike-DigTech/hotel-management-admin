@@ -38,6 +38,8 @@ export interface NavItem {
   badge?: "flags" | "approvals";
   /** label on the phone tab bar */
   short?: string;
+  /** hidden for roles that have this capability (avoids duplicates) */
+  hideCap?: Capability;
 }
 
 export interface NavGroup {
@@ -62,6 +64,7 @@ export const HOTEL_NAV: NavGroup[] = [
     label: "Money",
     items: [
       { href: "/shifts", label: "My shift", short: "Shift", icon: Coins, cap: "shift.own", keywords: "cashier till float blind count close shift open shift" },
+      { href: "/shifts", label: "Shifts", short: "Shifts", icon: Coins, cap: "shift.viewAll", hideCap: "shift.own", keywords: "cashier shifts variance counts all" },
       { href: "/folios", label: "Folios & invoices", icon: Wallet, feature: "invoicing", cap: "folio.read", keywords: "bills invoices receipts balances walk-in" },
       { href: "/approvals", label: "Approvals", icon: SealCheck, cap: "shift.approve", badge: "approvals", keywords: "approve shifts manager variance" },
       { href: "/guard", label: "Revenue Guard", icon: ShieldWarning, feature: "revenue_guard_basic", cap: "guard.read", badge: "flags", keywords: "flags leakage fraud alerts triage" },
@@ -94,6 +97,12 @@ export const MOBILE_TABS = ["/today", "/ledger", "/reservations", "/shifts"];
 
 export function allNavItems() {
   return HOTEL_NAV.flatMap((g) => g.items);
+}
+
+/** Whether a role (through its capability check) should see a nav item. */
+export function navVisible(item: NavItem, can: (c: Capability) => boolean, ready = true) {
+  if (!ready) return !item.hideCap;
+  return (!item.cap || can(item.cap)) && (!item.hideCap || !can(item.hideCap));
 }
 
 export function isActive(pathname: string, href: string) {

@@ -18,7 +18,7 @@ import {
   ArrowCircleUp,
 } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
-import { allNavItems } from "@/lib/nav";
+import { allNavItems, navVisible } from "@/lib/nav";
 import { useEntitlements, useLogout } from "@/lib/auth";
 import { hotelApi } from "@/lib/api/endpoints";
 import { qk } from "@/lib/api/hooks";
@@ -215,7 +215,7 @@ export function CommandPalette() {
         </Command.Group>
 
         <Command.Group heading="Go to" className={groupCls}>
-          {allNavItems().filter((i) => !i.cap || can(i.cap)).map((item) => {
+          {allNavItems().filter((i) => navVisible(i, can)).map((item) => {
             const I = item.icon;
             const locked = !!item.feature && !has(item.feature);
             return (

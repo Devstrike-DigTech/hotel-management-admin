@@ -12,7 +12,10 @@ const EMAIL = process.env.E2E_EMAIL || "demo@palmwine.ng";
 const PASSWORD = process.env.E2E_PASSWORD || "Demo1234!";
 
 const stamp = Date.now().toString().slice(-7);
-const guestName = `Temitope Ajala ${stamp}`;
+const FIRST = ["Temitope", "Chiamaka", "Babatunde", "Nkechi", "Ifeanyi", "Oluwaseyi", "Zainab", "Kunle"];
+const LAST = ["Ajala", "Okeke", "Adewale", "Eze", "Bello", "Nwankwo", "Olatunde", "Ibrahim"];
+// a real-looking name (no digits); the booking is found again by its code
+const guestName = `${FIRST[Number(stamp) % FIRST.length]} ${LAST[Math.floor(Number(stamp) / 8) % LAST.length]}`;
 const phone = `0809${stamp}`;
 
 let context: BrowserContext;

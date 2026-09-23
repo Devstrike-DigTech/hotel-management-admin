@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowsClockwise, UserPlus, UsersThree } from "@phosphor-icons/react";
+import { ArrowsClockwise, Key, UserPlus, UsersThree } from "@phosphor-icons/react";
 import { hotelApi } from "@/lib/api/endpoints";
 import { qk, useMe, useStaff } from "@/lib/api/hooks";
 import type { Role, Staff } from "@/lib/api/types";
@@ -101,6 +101,7 @@ export function StaffView() {
                       </p>
                       <p className="mt-0.5 flex items-center gap-2 text-[12px] text-ink-muted">
                         <Badge tone={ROLE_TONE[s.role]}>{ROLES[s.role]?.label ?? s.role}</Badge>
+                        <PinMark s={s} />
                         <span className="truncate">{s.lastLoginAt ? relativeTime(s.lastLoginAt) : "Never signed in"}</span>
                       </p>
                     </div>
@@ -141,7 +142,10 @@ export function StaffView() {
                           </div>
                         </td>
                         <td className="py-3">
-                          <Badge tone={ROLE_TONE[s.role]}>{ROLES[s.role]?.label ?? s.role}</Badge>
+                          <span className="flex items-center gap-2">
+                            <Badge tone={ROLE_TONE[s.role]}>{ROLES[s.role]?.label ?? s.role}</Badge>
+                            <PinMark s={s} />
+                          </span>
                         </td>
                         <td className="py-3 font-mono text-[12.5px] text-ink-muted">{formatPhone(s.phone)}</td>
                         <td className="py-3 text-[12.5px] text-ink-muted">
@@ -212,6 +216,20 @@ export function StaffView() {
 function sortStaff(list: Staff[]) {
   return [...list].sort(
     (a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role) || a.fullName.localeCompare(b.fullName),
+  );
+}
+
+/** Owners and managers: whether they can act as the second key on large discounts. */
+function PinMark({ s }: { s: Staff }) {
+  if (s.role !== "OWNER" && s.role !== "MANAGER") return null;
+  return s.hasApprovalPin ? (
+    <span className="inline-flex items-center gap-1 whitespace-nowrap text-[11.5px] font-medium text-palm" title="Can approve discounts with a PIN">
+      <Key size={12} weight="duotone" /> PIN set
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 whitespace-nowrap text-[11.5px] text-ink-faint" title="Has not set an approval PIN yet">
+      <Key size={12} /> no PIN
+    </span>
   );
 }
 

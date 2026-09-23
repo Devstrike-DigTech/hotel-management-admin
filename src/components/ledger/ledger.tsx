@@ -980,7 +980,6 @@ const StayBar = memo(
     const owes = (stay.balanceKobo ?? 0) > 0;
     const h = ROW_H - 12;
     const label = `${stay.code}, ${stay.guestName}, ${room ? `room ${room.number}` : "unassigned"}, ${stayWindow(stay.arrivalAt, stay.departureAt)}, ${m.label}${dayUse ? ", day use" : ""}${owes ? `, owes ${naira(stay.balanceKobo)}` : ""}`;
-    const surname = stay.guestName.split(/\s+/).slice(-1)[0] ?? stay.guestName;
     return (
       <button
         ref={ref}
@@ -1022,7 +1021,7 @@ const StayBar = memo(
                 stay.status === "NO_SHOW" && "line-through decoration-danger",
               )}
             >
-              {w < 34 ? surname.slice(0, 1) : w < 90 ? surname : stay.guestName}
+              {barLabel(stay.guestName, w - (stay.vip && w > 60 ? 30 : 16))}
             </span>
             {w > 150 && <span className="shrink-0 font-mono text-[10px] leading-none text-ink-faint">{stay.code}</span>}
           </span>
@@ -1053,6 +1052,24 @@ const StayBar = memo(
     );
   }),
 );
+
+/**
+ * The longest label that fits a bar without being cut: full name, then the
+ * surname, then initials, otherwise nothing (the hover card and the
+ * accessible label carry the full name and code). Never a clipped fragment.
+ */
+export function barLabel(name: string, availablePx: number): string {
+  const CH = 6.7; // average advance of 12px Schibsted Grotesk
+  const words = name.split(/\s+/).filter((w) => /\p{L}/u.test(w));
+  if (!words.length) return "";
+  const full = words.join(" ");
+  if (full.length * CH <= availablePx) return full;
+  const surname = words[words.length - 1];
+  if (surname.length * CH <= availablePx) return surname;
+  const initials = (words[0][0] + (words.length > 1 ? words[words.length - 1][0] : "")).toUpperCase();
+  if (initials.length * 8 <= availablePx) return initials;
+  return "";
+}
 
 function GhostBar({ x, w, top, verdict, label }: { x: number; w: number; top: number; verdict: Verdict; label: string }) {
   const color = verdict.ok ? "var(--laterite)" : "var(--danger)";

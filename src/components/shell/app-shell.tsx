@@ -8,7 +8,7 @@ import { DotsThreeOutline, MagnifyingGlass, WarningOctagon, ClockCountdown, X } 
 import { useHotelSession, useHydrated, useSilentRefresh } from "@/lib/auth";
 import { onSessionExpired } from "@/lib/api/client";
 import { useMe } from "@/lib/api/hooks";
-import { MOBILE_TABS, allNavItems, isActive } from "@/lib/nav";
+import { MOBILE_TABS, allNavItems, isActive, navVisible } from "@/lib/nav";
 import { daysUntil, formatDate } from "@/lib/format";
 import { paletteStore, readOnlyStore, useStore } from "@/lib/store";
 import { cn } from "@/lib/cn";
@@ -198,7 +198,7 @@ function MobileTabs({ onMore }: { onMore: () => void }) {
   const { can, ready } = useCan();
   const items = allNavItems()
     .filter((i) => MOBILE_TABS.includes(i.href) || (i.href === "/rooms" && ready && !can("reservations.read")))
-    .filter((i) => !i.cap || !ready || can(i.cap));
+    .filter((i) => navVisible(i, can, ready));
   const moreActive = !items.some((i) => isActive(pathname, i.href));
   return (
     <nav
