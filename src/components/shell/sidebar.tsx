@@ -6,6 +6,8 @@ import * as Menu from "@radix-ui/react-dropdown-menu";
 import { CaretUpDown, LockSimple, SignOut, SidebarSimple, Buildings, Receipt } from "@phosphor-icons/react";
 import { HOTEL_NAV, isActive, type NavItem } from "@/lib/nav";
 import { useEntitlements, useLogout } from "@/lib/auth";
+import { useCan } from "@/lib/permissions";
+import { useGuardSummary, useShifts } from "@/lib/api/hooks-m2";
 import { ROLES } from "@/lib/catalog";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -27,7 +29,15 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const { me, has, loading } = useEntitlements();
+  const { can, ready } = useCan();
   const c = variant === "desktop" && collapsed;
+  const guardOn = ready && can("guard.read") && has("revenue_guard_basic");
+  const summary = useGuardSummary(guardOn);
+  const pending = useShifts({ status: "CLOSED", pageSize: 1 }, ready && can("shift.approve"));
+  const badges: Record<string, number | undefined> = {
+    flags: summary.data?.open,
+    approvals: pending.data?.total,
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -60,7 +70,9 @@ export function Sidebar({
       )}
 
       <nav aria-label="Main" className="scrollbar-thin flex-1 overflow-y-auto overflow-x-hidden px-3 pb-4">
-        {HOTEL_NAV.map((group) => (
+        {HOTEL_NAV.map((g) => ({ ...g, items: g.items.filter((i) => !i.cap || !ready || can(i.cap)) }))
+          .filter((g) => g.items.length)
+          .map((group) => (
           <div key={group.label} className="mt-3 first:mt-1">
             {c ? (
               <div className="mx-auto my-2 h-px w-6 bg-line" aria-hidden />
@@ -76,6 +88,7 @@ export function Sidebar({
                     locked={!!item.feature && !loading && !has(item.feature)}
                     collapsed={c}
                     onNavigate={onNavigate}
+                    count={item.badge ? badges[item.badge] : undefined}
                   />
                 </li>
               ))}
@@ -116,12 +129,14 @@ function NavLink({
   locked,
   collapsed,
   onNavigate,
+  count,
 }: {
   item: NavItem;
   active: boolean;
   locked: boolean;
   collapsed: boolean;
   onNavigate?: () => void;
+  count?: number;
 }) {
   const I = item.icon;
   const link = (
@@ -148,6 +163,20 @@ function NavLink({
         <span className="ml-auto inline-flex items-center text-brass" aria-label="Locked on your plan">
           <LockSimple size={12} weight="bold" />
         </span>
+      )}
+      {!locked && !!count && !collapsed && (
+        <span
+          className={cn(
+            "ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1.5 font-mono text-[10.5px] font-medium",
+            item.badge === "flags" ? "bg-laterite text-laterite-ink" : "bg-brass-wash text-brass",
+          )}
+          aria-label={`${count} ${item.badge === "flags" ? "open flags" : "waiting"}`}
+        >
+          {count}
+        </span>
+      )}
+      {!locked && !!count && collapsed && (
+        <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-laterite" aria-hidden />
       )}
       {locked && collapsed && (
         <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-brass" aria-label="Locked" />

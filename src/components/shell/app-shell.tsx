@@ -19,6 +19,11 @@ import { TrialPill } from "./trial-pill";
 import { LagosClock } from "./lagos-clock";
 import { ThemeToggle } from "./theme-toggle";
 import { ModKeyHint } from "./mod-key";
+import { OfflineBanner, OfflineRuntime, OutboxChip } from "@/components/offline/offline";
+import { ShiftChip } from "./shift-chip";
+import { useCan } from "@/lib/permissions";
+import { NewReservationHost } from "@/components/reservations/new-reservation";
+import { PaymentHost } from "@/components/folio/take-payment";
 
 const COLLAPSE_KEY = "admin.sidebar.collapsed";
 
@@ -158,7 +163,9 @@ function Shell({ children }: { children: React.ReactNode }) {
             >
               <MagnifyingGlass size={19} />
             </button>
-            <div className="hidden md:block">
+            <OutboxChip />
+            <ShiftChip className="hidden sm:inline-flex" />
+            <div className="hidden 2xl:block">
               <TrialPill sub={me.data?.subscription} />
             </div>
             <LagosClock className="hidden xl:flex" />
@@ -166,6 +173,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
+        <OfflineBanner />
         <Banners />
 
         <main id="main" className="flex-1 px-4 pb-28 pt-6 sm:px-6 md:pt-9 lg:px-10 lg:pb-16">
@@ -178,20 +186,26 @@ function Shell({ children }: { children: React.ReactNode }) {
       </div>
 
       <CommandPalette />
+      <OfflineRuntime />
+      <NewReservationHost />
+      <PaymentHost />
     </div>
   );
 }
 
 function MobileTabs({ onMore }: { onMore: () => void }) {
   const pathname = usePathname();
-  const items = allNavItems().filter((i) => MOBILE_TABS.includes(i.href));
+  const { can, ready } = useCan();
+  const items = allNavItems()
+    .filter((i) => MOBILE_TABS.includes(i.href) || (i.href === "/rooms" && ready && !can("reservations.read")))
+    .filter((i) => !i.cap || !ready || can(i.cap));
   const moreActive = !items.some((i) => isActive(pathname, i.href));
   return (
     <nav
       aria-label="Primary"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-[color-mix(in_oklab,var(--surface)_94%,transparent)] pb-[env(safe-area-inset-bottom)] backdrop-blur-[6px] lg:hidden"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-5">
+      <ul className="mx-auto grid max-w-lg auto-cols-fr grid-flow-col">
         {items.map((item) => {
           const I = item.icon;
           const active = isActive(pathname, item.href);
@@ -207,7 +221,7 @@ function MobileTabs({ onMore }: { onMore: () => void }) {
               >
                 {active && <span className="absolute top-0 h-[2px] w-8 rounded-b-xs bg-laterite" aria-hidden />}
                 <I size={22} weight={active ? "fill" : "duotone"} />
-                {item.label.split(" ")[0]}
+                {item.short ?? item.label.split(" ")[0]}
               </Link>
             </li>
           );

@@ -26,6 +26,12 @@ import { useRoomStatus } from "@/lib/api/mutations";
 import { ROOM_STATUS, ROOM_STATUS_ORDER } from "@/lib/catalog";
 import { paletteStore, useStore } from "@/lib/store";
 import { setThemePref } from "./theme-toggle";
+import { BookBookmark, BookOpenText, CalendarPlus, ChartBar, Coins, Door, Money, ShieldWarning, SignIn } from "@phosphor-icons/react";
+import { useCan } from "@/lib/permissions";
+import { useReservations } from "@/lib/api/hooks-m2";
+import { openNewReservation, openPayment } from "@/lib/store-m2";
+import { STAY_STATUS } from "@/lib/catalog-m2";
+import { naira } from "@/lib/format";
 import { StatusSwatch } from "@/components/keyrack/status-swatch";
 
 const itemCls =
@@ -41,6 +47,7 @@ export function CommandPalette() {
   const router = useRouter();
   const logout = useLogout();
   const { has } = useEntitlements();
+  const { can } = useCan();
   const setStatus = useRoomStatus();
 
   const rooms = useQuery({ queryKey: qk.rooms({}), queryFn: () => hotelApi.rooms({}), enabled: open });
@@ -56,7 +63,15 @@ export function CommandPalette() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const digits = search.match(/\d+/)?.[0] ?? "";
+  const term = search
+    .replace(/^\s*(check\s*in|check\s*out|take\s*payment|pay|open)\s*/i, "")
+    .trim();
+  const resQ = useReservations(
+    { q: term, pageSize: 5, status: "PENDING,CONFIRMED,CHECKED_IN" },
+    open && term.length >= 3 && /[a-z]/i.test(term) && can("reservations.read"),
+  );
+  const stays = term.length >= 3 ? (resQ.data?.items ?? []) : [];
+  const digits = /^\d+(\s|$)/.test(search.trim()) ? (search.match(/\d+/)?.[0] ?? "") : "";
   const matchedRooms = useMemo(() => {
     if (!digits || !rooms.data) return [];
     return rooms.data.filter((r) => r.number.includes(digits)).slice(0, 4);
@@ -85,7 +100,7 @@ export function CommandPalette() {
         <Command.Input
           value={search}
           onValueChange={setSearch}
-          placeholder="Jump to, or try &ldquo;204 dirty&rdquo;"
+          placeholder="Jump to, a booking code, or &ldquo;204 dirty&rdquo;"
           className="h-14 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-faint"
         />
         <span className="kbd">esc</span>
@@ -119,6 +134,78 @@ export function CommandPalette() {
           </Command.Group>
         )}
 
+        {stays.length > 0 && (
+          <Command.Group heading="Reservations" className={groupCls}>
+            {stays.flatMap((r) => {
+              const base = `${r.code} ${r.guest.fullName} ${r.room?.number ?? ""} ${term}`;
+              const out: React.ReactNode[] = [];
+              if (["PENDING", "CONFIRMED"].includes(r.status) && can("frontdesk.act"))
+                out.push(
+                  <Command.Item key={`${r.id}-in`} value={`check in ${base}`} onSelect={() => run(() => router.push(`/reservations/${r.id}/check-in`))} className={itemCls}>
+                    <SignIn size={17} weight="duotone" className="text-ink-muted group-data-[selected=true]:text-laterite" />
+                    <span>
+                      Check in <span className="font-mono">{r.code}</span> <span className="text-ink-muted">{r.guest.fullName}</span>
+                    </span>
+                    <span className="ml-auto text-[12px] text-ink-faint">{r.room ? `room ${r.room.number}` : r.roomType.name}</span>
+                  </Command.Item>,
+                );
+              if (r.status === "CHECKED_IN" && can("frontdesk.act")) {
+                out.push(
+                  <Command.Item
+                    key={`${r.id}-pay`}
+                    value={`take payment pay ${base}`}
+                    onSelect={() => run(() => openPayment({ folioId: r.folioId, label: r.guest.fullName, balanceKobo: r.balanceKobo, reservationCode: r.code }))}
+                    className={itemCls}
+                  >
+                    <Money size={17} weight="duotone" className="text-ink-muted group-data-[selected=true]:text-laterite" />
+                    <span>
+                      Take payment from <span className="text-ink-muted">{r.guest.fullName}</span>
+                    </span>
+                    <span className="ml-auto font-mono text-[12px] text-ink-faint">{r.balanceKobo > 0 ? `owes ${naira(r.balanceKobo)}` : r.code}</span>
+                  </Command.Item>,
+                );
+                out.push(
+                  <Command.Item key={`${r.id}-out`} value={`check out ${base}`} onSelect={() => run(() => router.push(`/reservations/${r.id}?checkout=1`))} className={itemCls}>
+                    <Door size={17} weight="duotone" className="text-ink-muted group-data-[selected=true]:text-laterite" />
+                    <span>
+                      Check out <span className="font-mono">{r.code}</span> <span className="text-ink-muted">{r.guest.fullName}</span>
+                    </span>
+                  </Command.Item>,
+                );
+              }
+              out.push(
+                <Command.Item key={`${r.id}-open`} value={`open reservation ${base}`} onSelect={() => run(() => router.push(`/reservations/${r.id}`))} className={itemCls}>
+                  <BookBookmark size={17} weight="duotone" className="text-ink-muted group-data-[selected=true]:text-laterite" />
+                  <span>
+                    Open <span className="font-mono">{r.code}</span> <span className="text-ink-muted">{r.guest.fullName}</span>
+                  </span>
+                  <span className="ml-auto text-[12px] text-ink-faint">{STAY_STATUS[r.status].label}</span>
+                </Command.Item>,
+              );
+              return out;
+            })}
+          </Command.Group>
+        )}
+
+        <Command.Group heading="Front desk" className={groupCls}>
+          {can("reservations.write") && (
+            <Action icon={<CalendarPlus size={17} weight="duotone" />} label="New reservation" hint="walk-in or phone" keywords="book booking walk in create stay" onSelect={() => run(() => openNewReservation({}))} />
+          )}
+          {can("frontdesk.act") && (
+            <Action icon={<SignIn size={17} weight="duotone" />} label="Check in a guest" hint="type a code or name" keywords="arrival register card" onSelect={() => setSearch("check in ")} />
+          )}
+          {can("frontdesk.act") && (
+            <Action icon={<Money size={17} weight="duotone" />} label="Take payment" hint="type a guest or code" keywords="cash pos transfer receipt folio" onSelect={() => setSearch("pay ")} />
+          )}
+          {can("shift.own") && (
+            <Action icon={<Coins size={17} weight="duotone" />} label="Close my shift" hint="blind count" keywords="cashier till count end shift variance" onSelect={() => run(() => router.push("/shifts"))} />
+          )}
+          {can("shift.own") && <Action icon={<Coins size={17} weight="duotone" />} label="Open my shift" keywords="cashier till float start" onSelect={() => run(() => router.push("/shifts"))} />}
+          {can("guard.read") && <Action icon={<ShieldWarning size={17} weight="duotone" />} label="Review Revenue Guard flags" keywords="fraud leakage alerts" onSelect={() => run(() => router.push("/guard"))} />}
+          {can("reports.read") && <Action icon={<ChartBar size={17} weight="duotone" />} label="Today's flash report" keywords="occupancy adr revpar revenue" onSelect={() => run(() => router.push("/reports"))} />}
+          {can("guest.write") && <Action icon={<BookOpenText size={17} weight="duotone" />} label="Download the guest register" keywords="police csv export" onSelect={() => run(() => router.push("/register"))} />}
+        </Command.Group>
+
         <Command.Group heading="Actions" className={groupCls}>
           <Action icon={<Rows size={17} weight="duotone" />} label="Add rooms in bulk" hint="e.g. 101 to 120" keywords="add rooms bulk range create" onSelect={() => run(() => router.push("/rooms?new=bulk"))} />
           <Action icon={<Plus size={17} weight="duotone" />} label="Add a room" keywords="new room create" onSelect={() => run(() => router.push("/rooms?new=room"))} />
@@ -128,7 +215,7 @@ export function CommandPalette() {
         </Command.Group>
 
         <Command.Group heading="Go to" className={groupCls}>
-          {allNavItems().map((item) => {
+          {allNavItems().filter((i) => !i.cap || can(i.cap)).map((item) => {
             const I = item.icon;
             const locked = !!item.feature && !has(item.feature);
             return (

@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, ArrowUpRight, Broom, Plus, SunHorizon, MoonStars } from "@phosphor-icons/react";
+import { ArrowRight, ArrowUpRight, Broom, Coins, Plus, Rows, ShieldWarning, SunHorizon, MoonStars } from "@phosphor-icons/react";
+import { cn } from "@/lib/cn";
+import { useEntitlements } from "@/lib/auth";
+import { useCan } from "@/lib/permissions";
+import { useCurrentShift, useFrontDeskToday } from "@/lib/api/hooks-m2";
+import { openNewReservation } from "@/lib/store-m2";
+import { lagosHHMM } from "@/lib/dates";
+import { naira } from "@/lib/format";
+import { ReservationPeek } from "@/components/reservations/peek";
+import { FrontDeskBoard } from "./front-desk-board";
 import { useDashboard, useMe, useRooms } from "@/lib/api/hooks";
 import { useRoomStatus } from "@/lib/api/mutations";
 import type { Room, RoomStatus } from "@/lib/api/types";
@@ -20,6 +29,11 @@ export function TodayView() {
   const me = useMe();
   const dash = useDashboard();
   const rooms = useRooms();
+  const { can, ready } = useCan();
+  const { has } = useEntitlements();
+  const deskOn = ready && can("reservations.read") && has("front_desk");
+  const desk = useFrontDeskToday(deskOn);
+  const [peek, setPeek] = useState<string | null>(null);
   const [selected, setSelected] = useState<Room | null>(null);
   const [filter, setFilter] = useState<Set<RoomStatus>>(new Set());
 
@@ -86,46 +100,51 @@ export function TodayView() {
           ) : undefined
         }
         actions={
-          <>
-            <ButtonLink href="/rooms?new=bulk" variant="secondary">
-              <Plus size={15} weight="bold" />
-              Add rooms
-            </ButtonLink>
+          deskOn ? (
+            <>
+              <ButtonLink href="/ledger" variant="secondary">
+                <Rows size={15} weight="duotone" />
+                The Ledger
+              </ButtonLink>
+              {can("reservations.write") && (
+                <Button onClick={() => openNewReservation({})}>
+                  <Plus size={15} weight="bold" />
+                  New reservation
+                </Button>
+              )}
+            </>
+          ) : (
             <ButtonLink href="/rooms">
               Open key rack
               <ArrowRight size={15} weight="bold" />
             </ButtonLink>
-          </>
+          )
         }
       />
 
       {/* headline ledger */}
-      <Panel className="mb-6 grid grid-cols-2 divide-line md:grid-cols-4 md:divide-x [&>*]:border-line max-md:[&>*:nth-child(-n+2)]:border-b max-md:[&>*:nth-child(odd)]:border-r">
-        <LedgerStat
-          label="Rooms on the rack"
-          value={total}
-          loading={rooms.isLoading}
-          sub={
-            me.data?.entitlements.limits.max_rooms !== undefined && me.data.entitlements.limits.max_rooms >= 0
-              ? `of ${me.data.entitlements.limits.max_rooms} on your plan`
-              : "unlimited on your plan"
-          }
-        />
-        <LedgerStat label="Ready to sell" value={clean} loading={rooms.isLoading} sub="vacant and clean" swatch="VACANT_CLEAN" />
-        <LedgerStat
-          label="Needs attention"
-          value={dirty + ooo}
-          loading={rooms.isLoading}
-          sub={`${dirty} dirty, ${ooo} out of order`}
-          swatch={dirty + ooo > 0 ? "VACANT_DIRTY" : undefined}
-        />
-        <LedgerStat
-          label="Team"
-          value={dash.data?.staffCount ?? me.data?.entitlements.usage.staff ?? 0}
-          loading={dash.isLoading}
-          sub="staff with access"
-        />
-      </Panel>
+      {deskOn ? (
+        <Panel className="mb-6 grid grid-cols-2 divide-line md:grid-cols-5 md:divide-x [&>*]:border-line max-md:[&>*:nth-child(-n+4)]:border-b max-md:[&>*:nth-child(odd)]:border-r max-md:[&>*:last-child]:col-span-2">
+          <LedgerStat label="Arriving" value={desk.data?.counts.arrivals ?? 0} loading={desk.isLoading} sub={`${desk.data?.counts.arrivalsPending ?? 0} still to come`} />
+          <LedgerStat label="In the house" value={desk.data?.counts.inHouse ?? 0} loading={desk.isLoading} sub={`${occupied} of ${total} rooms occupied`} swatch="OCCUPIED" />
+          <LedgerStat label="Leaving" value={desk.data?.counts.departures ?? 0} loading={desk.isLoading} sub={`${desk.data?.counts.departuresPending ?? 0} still to go`} />
+          <LedgerStat label="Ready to sell" value={clean} loading={rooms.isLoading} sub={`${dirty} dirty, ${ooo} out of order`} swatch="VACANT_CLEAN" />
+          <FlagsStat count={desk.data?.openFlags ?? null} loading={desk.isLoading} canSee={can("guard.read")} />
+        </Panel>
+      ) : (
+        <Panel className="mb-6 grid grid-cols-2 divide-line md:grid-cols-4 md:divide-x [&>*]:border-line max-md:[&>*:nth-child(-n+2)]:border-b max-md:[&>*:nth-child(odd)]:border-r">
+          <LedgerStat label="Rooms on the rack" value={total} loading={rooms.isLoading} sub="on your plan" />
+          <LedgerStat label="Ready to sell" value={clean} loading={rooms.isLoading} sub="vacant and clean" swatch="VACANT_CLEAN" />
+          <LedgerStat label="Needs attention" value={dirty + ooo} loading={rooms.isLoading} sub={`${dirty} dirty, ${ooo} out of order`} swatch={dirty + ooo > 0 ? "VACANT_DIRTY" : undefined} />
+          <LedgerStat label="Team" value={dash.data?.staffCount ?? me.data?.entitlements.usage.staff ?? 0} loading={dash.isLoading} sub="staff with access" />
+        </Panel>
+      )}
+
+      {deskOn && (
+        <div className="mb-6">
+          <FrontDeskBoard data={desk.data} loading={desk.isLoading} onPeek={setPeek} />
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-12">
         {/* key rack */}
@@ -179,6 +198,7 @@ export function TodayView() {
         </Panel>
 
         <div className="flex flex-col gap-6 lg:col-span-4">
+          {can("shift.own") && <ShiftCard />}
           {/* tonight */}
           <Panel>
             <PanelHeader eyebrow="Tonight" title="Occupancy" />
@@ -241,7 +261,78 @@ export function TodayView() {
       </div>
 
       <RoomSheet room={selectedLive} onOpenChange={(o) => !o && setSelected(null)} />
+      <ReservationPeek id={peek} onOpenChange={(o) => !o && setPeek(null)} />
     </>
+  );
+}
+
+function FlagsStat({ count, loading, canSee }: { count: number | null; loading: boolean; canSee: boolean }) {
+  const inner = (
+    <>
+      <span className="display-sm flex items-center gap-2 text-[14.5px] italic text-ink-muted">
+        <ShieldWarning size={15} weight="duotone" className={count ? "text-laterite" : ""} />
+        Revenue Guard
+      </span>
+      {loading ? (
+        <Skeleton className="h-9 w-16" />
+      ) : (
+        <span className={cn("font-mono text-[34px] leading-none tracking-tight md:text-[40px]", count ? "text-laterite" : "text-ink")}>
+          {count ?? "-"}
+        </span>
+      )}
+      <span className="text-[12.5px] text-ink-muted">{count === null ? "not on your plan" : count ? "open flags to review" : "nothing to review"}</span>
+    </>
+  );
+  if (canSee && count !== null)
+    return (
+      <Link href="/guard" className="relative flex flex-col gap-2 px-5 py-5 transition-colors hover:bg-surface-2/50 md:px-6" data-testid="flags-stat">
+        {inner}
+      </Link>
+    );
+  return <div className="relative flex flex-col gap-2 px-5 py-5 md:px-6">{inner}</div>;
+}
+
+function ShiftCard() {
+  const shift = useCurrentShift();
+  const s = shift.data;
+  return (
+    <Panel className="overflow-hidden">
+      <div className="flex items-start gap-3 px-5 py-4">
+        <span
+          className={cn(
+            "mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full border",
+            s ? "border-[color-mix(in_oklab,var(--palm)_40%,transparent)] bg-palm-wash text-palm" : "border-line-strong bg-surface-2 text-ink-muted",
+          )}
+        >
+          <Coins size={18} weight="duotone" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="eyebrow mb-0.5">Your till</p>
+          {shift.isLoading ? (
+            <Skeleton className="h-5 w-40" />
+          ) : s ? (
+            <>
+              <p className="text-[14px] font-medium text-ink" suppressHydrationWarning>
+                Shift open since <span className="font-mono">{lagosHHMM(s.openedAt)}</span>
+              </p>
+              <p className="text-[12.5px] text-ink-muted">
+                Float <span className="font-mono">{naira(s.openingFloatKobo)}</span>. Totals stay hidden until you count.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-[14px] font-medium text-ink">No shift open</p>
+              <p className="text-[12.5px] text-ink-muted">Open one before taking cash, transfer or POS.</p>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="border-t border-line bg-surface-2/40 px-5 py-2.5">
+        <Link href="/shifts" className="inline-flex items-center gap-1 text-[13px] font-medium text-laterite hover:underline">
+          {s ? "Close my shift" : "Open a shift"} <ArrowRight size={13} weight="bold" />
+        </Link>
+      </div>
+    </Panel>
   );
 }
 
