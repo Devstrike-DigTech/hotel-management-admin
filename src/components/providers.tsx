@@ -2,7 +2,8 @@
 
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { setupQueryPersistence } from "@/lib/offline/persist";
 import { isApiError } from "@/lib/api/client";
 import { openUpgrade, readOnlyStore, toast } from "@/lib/store";
 import { Toaster } from "@/components/ui/toaster";
@@ -14,6 +15,8 @@ export interface MutationMeta extends Record<string, unknown> {
   errorTitle?: string;
   /** Suppress the global error toast (the component handles it). */
   silent?: boolean;
+  /** API error codes the component shows inline instead of as a toast */
+  silentCodes?: string[];
 }
 
 /** Route entitlement errors to the upgrade dialog; everything else to a toast. */
@@ -47,7 +50,11 @@ function handleMutationError(error: unknown, meta?: MutationMeta) {
     }
   }
   if (meta?.silent) return;
-  toast.error(meta?.errorTitle ?? "That didn't save", isApiError(error) ? error.message : undefined);
+  if (isApiError(error) && meta?.silentCodes?.includes(error.code)) return;
+  toast.error(
+    meta?.errorTitle ?? "That didn't save",
+    isApiError(error) ? error.message : error instanceof Error ? error.message : undefined,
+  );
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -63,6 +70,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
           onError: (error, _v, _c, mutation) => handleMutationError(error, mutation.meta as MutationMeta | undefined),
         }),
         defaultOptions: {
+          // desk actions decide themselves whether to queue offline; never pause them
+          mutations: { networkMode: "always" },
           queries: {
             staleTime: 15_000,
             refetchOnWindowFocus: true,
@@ -74,6 +83,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         },
       }),
   );
+  useEffect(() => setupQueryPersistence(client), [client]);
   return (
     <QueryClientProvider client={client}>
       <TooltipPrimitive.Provider delayDuration={250}>

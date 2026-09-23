@@ -1,5 +1,6 @@
 import { config } from "@/lib/config";
 import { session, type Audience } from "./session";
+import { isForcedOffline, reportNetworkFailure, reportNetworkSuccess } from "@/lib/offline/network";
 import type { ApiErrorBody, AuthResponse } from "./types";
 
 export class ApiError extends Error {
@@ -33,6 +34,8 @@ export interface RequestOptions {
   query?: Query;
   auth?: Audience | "none";
   signal?: AbortSignal;
+  /** Extra headers, e.g. Idempotency-Key for offline-safe writes. */
+  headers?: Record<string, string>;
 }
 
 /* ---- session-expiry signal (the shell listens and redirects) ---- */
@@ -122,11 +125,24 @@ export function refreshHotelSession(): Promise<boolean> {
 }
 
 export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+  const res = await request(path, opts);
+  if (res.status === 204) return undefined as T;
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
+}
+
+/** Like `api` but returns the raw Response (downloads such as CSV). */
+export async function apiRaw(path: string, opts: RequestOptions = {}): Promise<Response> {
+  return request(path, opts);
+}
+
+async function request(path: string, opts: RequestOptions): Promise<Response> {
   const { method = "GET", body, query, auth = "hotel", signal } = opts;
+  const isForm = typeof FormData !== "undefined" && body instanceof FormData;
 
   const send = async () => {
-    const headers: Record<string, string> = { Accept: "application/json" };
-    if (body !== undefined) headers["Content-Type"] = "application/json";
+    const headers: Record<string, string> = { Accept: "application/json", ...(opts.headers ?? {}) };
+    if (body !== undefined && !isForm) headers["Content-Type"] = "application/json";
     if (auth === "hotel") {
       const t = session.hotel()?.accessToken;
       if (t) headers.Authorization = `Bearer ${t}`;
@@ -135,14 +151,18 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
       if (t) headers.Authorization = `Bearer ${t}`;
     }
     try {
-      return await fetch(buildUrl(path, query), {
+      if (isForcedOffline()) throw new TypeError("Simulated outage");
+      const r = await fetch(buildUrl(path, query), {
         method,
         headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
+        body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
         signal,
       });
+      reportNetworkSuccess();
+      return r;
     } catch (e) {
       if ((e as Error)?.name === "AbortError") throw e;
+      reportNetworkFailure();
       throw new ApiError(0, "NETWORK", "We couldn't reach the server. Check your connection and try again.");
     }
   };
@@ -163,9 +183,7 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
   }
 
   if (!res.ok) throw await parseError(res);
-  if (res.status === 204) return undefined as T;
-  const text = await res.text();
-  return (text ? JSON.parse(text) : undefined) as T;
+  return res;
 }
 
 /** Human-friendly message for any thrown value. */
