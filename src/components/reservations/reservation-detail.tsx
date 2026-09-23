@@ -22,6 +22,7 @@ import { reservationsApi } from "@/lib/api/endpoints-m2";
 import { useDeskRefresh } from "@/lib/api/mutations-m2";
 import type { ReservationDetail } from "@/lib/api/types-m2";
 import { useCan } from "@/lib/permissions";
+import { useNow } from "@/lib/use-now";
 import { toast } from "@/lib/store";
 import { formatDuration, lagosHHMM, todayKey } from "@/lib/dates";
 import { formatDate, formatDateTime, formatPhone, naira, relativeTime } from "@/lib/format";
@@ -33,6 +34,9 @@ import { Field, Textarea } from "@/components/ui/form";
 import { ErrorState, Panel, PanelHeader, Skeleton } from "@/components/ui/primitives";
 import { BalancePill, Code, GuestName, KV, NairaInput, SourceTag, StayBadge } from "@/components/m2/bits";
 import { FolioPanel } from "@/components/folio/folio-panel";
+import { HoldCountdown } from "@/components/m3/bits";
+import { OnlineBookingCard, paidOnline } from "@/components/reservations/online-card";
+import { NotificationLog } from "@/components/notifications/notification-log";
 import { CheckOutDialog } from "./check-out";
 
 export function ReservationDetailView({ id }: { id: string }) {
@@ -42,6 +46,7 @@ export function ReservationDetailView({ id }: { id: string }) {
   const [cancel, setCancel] = useState<"cancel" | "no-show" | null>(null);
   const { can } = useCan();
   const refresh = useDeskRefresh();
+  const nowMs = useNow(15_000);
   const r = q.data;
 
   useEffect(() => {
@@ -84,6 +89,8 @@ export function ReservationDetailView({ id }: { id: string }) {
     ["PENDING", "CONFIRMED"].includes(r.status) &&
     (r.stayType === "DAY_USE" ? r.arrivalDate === today : r.arrivalDate <= today && today < r.departureDate);
   const act = can("frontdesk.act");
+  // an unpaid online hold belongs to the guest's checkout: no manual confirm or check-in until it is paid or lapses
+  const onlineHold = !!r.online && r.status === "PENDING" && !!r.holdExpiresAt && +new Date(r.holdExpiresAt) > nowMs;
 
   return (
     <>
@@ -99,6 +106,7 @@ export function ReservationDetailView({ id }: { id: string }) {
               <span className="hatch inline-flex h-[22px] items-center rounded-full border border-line-strong px-2 text-[11.5px] font-medium text-ink-muted">Day use</span>
             )}
             <SourceTag source={r.source} />
+            {r.status === "PENDING" && r.holdExpiresAt && <HoldCountdown expiresAt={r.holdExpiresAt} />}
           </div>
           <h1 className="display text-[34px] leading-[1.02] text-ink md:text-[44px]">
             <GuestName name={r.guest.fullName} vip={r.guest.vip} />
@@ -118,7 +126,7 @@ export function ReservationDetailView({ id }: { id: string }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {r.status === "PENDING" && can("reservations.write") && (
+          {r.status === "PENDING" && !onlineHold && can("reservations.write") && (
             <Button variant="secondary" onClick={() => confirm.mutate()} loading={confirm.isPending}>
               <CalendarCheck size={15} weight="duotone" /> Confirm
             </Button>
@@ -133,7 +141,7 @@ export function ReservationDetailView({ id }: { id: string }) {
               <MoonStars size={15} weight="duotone" /> Make it overnight
             </Button>
           )}
-          {canCheckIn && act && (
+          {canCheckIn && act && !onlineHold && (
             <ButtonLink href={`/reservations/${r.id}/check-in`} size="lg">
               <SignIn size={16} weight="bold" /> Check in
             </ButtonLink>
@@ -160,10 +168,17 @@ export function ReservationDetailView({ id }: { id: string }) {
 
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="flex min-w-0 flex-col gap-6 lg:col-span-8">
+          {r.online && r.status === "PENDING" && r.holdExpiresAt && (
+            <Panel className="px-5 py-4" data-testid="hold-panel">
+              <HoldCountdown expiresAt={r.holdExpiresAt} variant="block" />
+            </Panel>
+          )}
           <FolioPanel folioId={r.folioId} title="Guest folio" reservationCode={r.code} />
           <Invoices folioId={r.folioId} />
+          <NotificationLog reservationId={r.id} />
         </div>
         <aside className="flex flex-col gap-6 lg:col-span-4">
+          {r.online && <OnlineBookingCard r={r} />}
           <StayCard r={r} />
           <GuestCard r={r} />
           <RegisterCard r={r} />
@@ -207,7 +222,7 @@ function StayCard({ r }: { r: ReservationDetail }) {
         <KV k="Rate" v={<span className="font-mono">{naira(r.rateKobo)} / {r.stayType === "DAY_USE" ? "hr" : "night"}</span>} />
         <KV k="Estimate" v={<span className="font-mono">{naira(r.estimatedTotalKobo)}</span>} />
         <KV k="Guests" v={`${r.adults} ${r.adults === 1 ? "adult" : "adults"}${r.children ? `, ${r.children} ${r.children === 1 ? "child" : "children"}` : ""}`} />
-        <KV k="Source" v={SOURCES[r.source]} />
+        <KV k="Source" v={r.online ? <SourceTag source={r.source} size="sm" /> : SOURCES[r.source]} />
         <KV k="Balance" v={<BalancePill kobo={r.balanceKobo} />} />
         {r.checkedInAt && <KV k="Checked in" v={<span className="font-mono text-[12.5px]">{formatDateTime(r.checkedInAt)}</span>} />}
         {r.checkedOutAt && <KV k="Checked out" v={<span className="font-mono text-[12.5px]">{formatDateTime(r.checkedOutAt)}</span>} />}
@@ -298,10 +313,12 @@ function Invoices({ folioId }: { folioId: string }) {
 
 function CancelDialog({ r, mode, onOpenChange }: { r: ReservationDetail; mode: "cancel" | "no-show" | null; onOpenChange: (o: boolean) => void }) {
   const refresh = useDeskRefresh();
+  const { can } = useCan();
   const [kind, setKind] = useState<"cancel" | "no-show">("cancel");
   const [reason, setReason] = useState("");
   const [fee, setFee] = useState<number | null>(null);
   const k = mode === "no-show" ? kind : "cancel";
+  const paid = paidOnline(r);
   const m = useMutation({
     mutationFn: () =>
       k === "cancel" ? reservationsApi.cancel(r.id, reason.trim() || "Cancelled at the desk", fee ?? undefined) : reservationsApi.noShow(r.id, reason.trim() || undefined, fee ?? undefined),
@@ -312,6 +329,7 @@ function CancelDialog({ r, mode, onOpenChange }: { r: ReservationDetail; mode: "
     },
     meta: { errorTitle: "Not changed" },
   });
+  if (paid > 0 && k === "cancel") return <RefundCancelDialog r={r} paid={paid} open={!!mode} onOpenChange={onOpenChange} allowed={can("cancel.refund")} onNoShow={mode === "no-show" ? () => setKind("no-show") : undefined} />;
   return (
     <Dialog
       open={!!mode}
@@ -348,9 +366,100 @@ function CancelDialog({ r, mode, onOpenChange }: { r: ReservationDetail; mode: "
         <Field label="Reason" htmlFor="cx-reason" optional={k === "no-show"}>
           <Textarea id="cx-reason" value={reason} onChange={(e) => setReason(e.target.value)} className="min-h-16" />
         </Field>
-        <Field label="Fee" htmlFor="cx-fee" optional hint={`One night is ${naira(r.rateKobo)}.`}>
-          <NairaInput id="cx-fee" kobo={fee} onChange={setFee} />
-        </Field>
+        {r.status === "PENDING" && r.holdExpiresAt ? (
+          <p className="text-[12.5px] text-ink-muted">This is an unpaid online hold. Cancelling releases the room; the guest is told and nothing is charged.</p>
+        ) : (
+          <Field label="Fee" htmlFor="cx-fee" optional hint={`One night is ${naira(r.rateKobo)}.`}>
+            <NairaInput id="cx-fee" kobo={fee} onChange={setFee} />
+          </Field>
+        )}
+      </div>
+    </Dialog>
+  );
+}
+
+/** Hotel-initiated cancel of a booking paid online: always a full refund. */
+function RefundCancelDialog({
+  r,
+  paid,
+  open,
+  onOpenChange,
+  allowed,
+  onNoShow,
+}: {
+  r: ReservationDetail;
+  paid: number;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  allowed: boolean;
+  onNoShow?: () => void;
+}) {
+  const refresh = useDeskRefresh();
+  const [reason, setReason] = useState("");
+  const [sure, setSure] = useState(false);
+  const commission = r.online?.commission.collectedKobo ?? 0;
+  const m = useMutation({
+    mutationFn: () => reservationsApi.cancel(r.id, reason.trim() || "Cancelled by the hotel"),
+    onSuccess: async () => {
+      await refresh();
+      toast.success(`${r.code} cancelled`, `${naira(paid)} is on its way back to the guest. They have been told by email and SMS.`);
+      onOpenChange(false);
+    },
+    meta: { errorTitle: "Not cancelled" },
+  });
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      eyebrow={`${r.code} · paid online`}
+      title="Cancel and refund in full?"
+      description="When the hotel cancels, the guest gets back everything they paid. No fee, whatever the policy says."
+      footer={
+        <>
+          <Button variant="secondary" onClick={() => onOpenChange(false)}>
+            Keep the booking
+          </Button>
+          <Button variant="danger" onClick={() => m.mutate()} loading={m.isPending} disabled={!allowed || !sure || reason.trim().length < 3} data-testid="confirm-refund-cancel">
+            Cancel and refund {naira(paid)}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        <dl className="rounded-md border border-line bg-surface-2/40 px-4 py-3 text-[13.5px]">
+          <div className="flex justify-between py-1">
+            <dt className="text-ink-muted">Guest paid online</dt>
+            <dd className="font-mono text-ink">{naira(paid)}</dd>
+          </div>
+          <div className="flex justify-between py-1">
+            <dt className="text-ink-muted">Refunded to their card or account</dt>
+            <dd className="font-mono text-palm">{naira(paid)}</dd>
+          </div>
+          {commission > 0 && (
+            <div className="flex justify-between py-1">
+              <dt className="text-ink-muted">Commission given back to you</dt>
+              <dd className="font-mono text-ink">{naira(commission)}</dd>
+            </div>
+          )}
+        </dl>
+        {!allowed ? (
+          <p className="rounded-sm bg-brass-wash px-3 py-2 text-[13px] text-ink">Only an owner or manager can cancel a booking that was paid online.</p>
+        ) : (
+          <>
+            <Field label="Reason, for the guest and the audit log" htmlFor="rf-reason">
+              <Textarea id="rf-reason" value={reason} onChange={(e) => setReason(e.target.value)} className="min-h-16" placeholder="Burst pipe on the second floor; we couldn't offer an equal room." />
+            </Field>
+            <label className="flex items-start gap-2.5 text-[13px] text-ink">
+              <input type="checkbox" checked={sure} onChange={(e) => setSure(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--danger)]" />
+              I understand the refund can&rsquo;t be taken back.
+            </label>
+          </>
+        )}
+        {onNoShow && (
+          <button type="button" onClick={onNoShow} className="self-start text-[12.5px] text-ink-muted underline-offset-4 hover:underline">
+            The guest didn&rsquo;t arrive? Mark a no-show instead.
+          </button>
+        )}
       </div>
     </Dialog>
   );

@@ -17,6 +17,7 @@ import { useDeskRefresh } from "@/lib/api/mutations-m2";
 import { useCan } from "@/lib/permissions";
 import { openNewReservation } from "@/lib/store-m2";
 import { addDays, dayKeyOf, formatDay, todayKey, type DayKey } from "@/lib/dates";
+import { ChannelBadge } from "@/components/m3/bits";
 import { STAY_STATUS } from "@/lib/catalog-m2";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
@@ -76,6 +77,8 @@ export function LedgerView() {
         vip: s.vip,
         adults: s.adults,
         source: s.source,
+        paymentMode: s.paymentMode ?? null,
+        holdExpiresAt: s.holdExpiresAt ?? null,
       })),
     [q.data],
   );
@@ -211,6 +214,11 @@ export function LedgerView() {
               <span className="absolute right-0 top-0 h-0 w-0 border-l-[5px] border-t-[5px] border-l-transparent" style={{ borderTopColor: "var(--ochre)" }} />
             </span>
             Owes
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <ChannelBadge source="MARKETPLACE" size="sm" />
+            <ChannelBadge source="BOOKING_SITE" size="sm" />
+            <span>booked online</span>
           </span>
         </div>
       </div>

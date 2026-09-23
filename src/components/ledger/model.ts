@@ -32,6 +32,9 @@ export interface LedgerStay {
   vip?: boolean;
   adults?: number;
   source?: string;
+  /** M3: online bookings */
+  paymentMode?: "ONLINE" | "PAY_AT_HOTEL" | null;
+  holdExpiresAt?: string | null;
 }
 
 export interface LedgerChange {

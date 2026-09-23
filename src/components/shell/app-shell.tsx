@@ -24,6 +24,7 @@ import { ShiftChip } from "./shift-chip";
 import { useCan } from "@/lib/permissions";
 import { NewReservationHost } from "@/components/reservations/new-reservation";
 import { PaymentHost } from "@/components/folio/take-payment";
+import { OnlineFeedRuntime } from "@/components/online/online-feed";
 
 const COLLAPSE_KEY = "admin.sidebar.collapsed";
 
@@ -189,6 +190,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <OfflineRuntime />
       <NewReservationHost />
       <PaymentHost />
+      <OnlineFeedRuntime />
     </div>
   );
 }

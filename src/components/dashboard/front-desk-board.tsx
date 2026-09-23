@@ -24,6 +24,7 @@ import { naira, relativeTime } from "@/lib/format";
 import { STAY_STATUS } from "@/lib/catalog-m2";
 import { Segmented, Skeleton } from "@/components/ui/primitives";
 import { GuestName } from "@/components/m2/bits";
+import { ChannelBadge, HoldCountdown, isOnlineSource } from "@/components/m3/bits";
 
 type Col = "arrivals" | "inHouse" | "departures";
 
@@ -106,6 +107,7 @@ function sortArrivals(list: TodayStay[]) {
 
 function StayCard({ s, col, onPeek }: { s: TodayStay; col: Col; onPeek: (id: string) => void }) {
   const { can } = useCan();
+  const now = useNow(15_000);
   const act = can("frontdesk.act");
   const done = (col === "arrivals" && s.status === "CHECKED_IN") || (col === "departures" && s.status === "CHECKED_OUT");
   const m = STAY_STATUS[s.status];
@@ -114,8 +116,9 @@ function StayCard({ s, col, onPeek }: { s: TodayStay; col: Col; onPeek: (id: str
       <span aria-hidden className="absolute bottom-2.5 left-0 top-2.5 w-[3px] rounded-r-full" style={{ background: s.overdue ? "var(--danger)" : m.color }} />
       <div className="flex items-start gap-3 pl-1">
         <button onClick={() => onPeek(s.id)} className="min-w-0 flex-1 text-left">
-          <span className="flex items-center gap-2">
+          <span className="flex min-w-0 items-center gap-2">
             <GuestName name={s.guest.fullName} vip={s.guest.vip} className={cn("text-[14px] font-medium text-ink", done && "line-through decoration-ink-faint")} />
+            {isOnlineSource(s.source) && <ChannelBadge source={s.source} size="sm" compact />}
           </span>
           <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-ink-muted">
             <span className="font-mono">{s.room ? s.room.number : "no room"}</span>
@@ -131,6 +134,8 @@ function StayCard({ s, col, onPeek }: { s: TodayStay; col: Col; onPeek: (id: str
             )}
           </span>
           <span className="mt-1 flex flex-wrap items-center gap-2">
+            {s.status === "PENDING" && s.holdExpiresAt && <HoldCountdown expiresAt={s.holdExpiresAt} variant="inline" />}
+            {s.paymentMode === "PAY_AT_HOTEL" && s.status !== "CHECKED_OUT" && <span className="text-[11.5px] text-ink-muted">pays at hotel</span>}
             {s.balanceKobo > 0 && <span className="font-mono text-[11.5px] text-ochre">owes {naira(s.balanceKobo)}</span>}
             {s.balanceKobo < 0 && <span className="font-mono text-[11.5px] text-palm">credit {naira(-s.balanceKobo)}</span>}
             {!s.registrationComplete && s.status === "CHECKED_IN" && (
@@ -143,7 +148,13 @@ function StayCard({ s, col, onPeek }: { s: TodayStay; col: Col; onPeek: (id: str
         </button>
         {act && !done && (
           <div className="flex shrink-0 items-center gap-1">
-            {col === "arrivals" && (
+            {col === "arrivals" && s.status === "PENDING" && s.holdExpiresAt && +new Date(s.holdExpiresAt) > now ? (
+              <span className="px-1 text-right text-[11.5px] leading-tight text-ink-muted">
+                paying
+                <br />
+                online
+              </span>
+            ) : col === "arrivals" && (
               <Link
                 href={`/reservations/${s.id}/check-in`}
                 className="inline-flex h-8 items-center gap-1.5 rounded-sm bg-laterite px-2.5 text-[12.5px] font-medium text-laterite-ink hover:bg-laterite-hover"

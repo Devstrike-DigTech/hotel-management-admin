@@ -24,7 +24,8 @@ import { SOURCES } from "@/lib/catalog-m2";
 import { Sheet } from "@/components/ui/overlay";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { ErrorState, Skeleton } from "@/components/ui/primitives";
-import { BalancePill, Code, GuestName, KV, StayBadge } from "@/components/m2/bits";
+import { BalancePill, Code, GuestName, KV, SourceTag, StayBadge } from "@/components/m2/bits";
+import { HoldCountdown } from "@/components/m3/bits";
 
 /** Quick look at a reservation from the Ledger or Today, with the next sensible actions. */
 export function ReservationPeek({
@@ -110,6 +111,8 @@ export function ReservationPeek({
         <div className="flex flex-col gap-5">
           <div className="flex flex-wrap items-center gap-2">
             <StayBadge status={r.status} />
+            <SourceTag source={r.source} size="sm" />
+            {r.status === "PENDING" && r.holdExpiresAt && <HoldCountdown expiresAt={r.holdExpiresAt} />}
             {r.stayType === "DAY_USE" && (
               <span className="hatch inline-flex h-[22px] items-center rounded-full border border-line-strong px-2 text-[11.5px] font-medium text-ink-muted">
                 Day use
@@ -151,7 +154,7 @@ export function ReservationPeek({
               }
             />
             <KV k="Rate" v={<span className="font-mono">{naira(r.rateKobo)} / {r.stayType === "DAY_USE" ? "hour" : "night"}</span>} />
-            <KV k="Source" v={SOURCES[r.source]} />
+            <KV k="Source" v={r.online ? `${SOURCES[r.source]}, ${r.online.paymentMode === "PAY_AT_HOTEL" ? "pays at hotel" : "paid online"}` : SOURCES[r.source]} />
             <KV
               k="Register"
               v={

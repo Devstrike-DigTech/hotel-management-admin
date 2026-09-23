@@ -6,6 +6,7 @@ import { cn } from "@/lib/cn";
 import { naira } from "@/lib/format";
 import { SOURCES, STAY_STATUS, type ReservationSource, type ReservationStatus } from "@/lib/catalog-m2";
 import { Badge } from "@/components/ui/primitives";
+import { ChannelBadge, isOnlineSource } from "@/components/m3/bits";
 
 export function StayBadge({ status, className }: { status: ReservationStatus; className?: string }) {
   const m = STAY_STATUS[status];
@@ -16,7 +17,8 @@ export function StayBadge({ status, className }: { status: ReservationStatus; cl
   );
 }
 
-export function SourceTag({ source }: { source: ReservationSource }) {
+export function SourceTag({ source, size }: { source: ReservationSource; size?: "sm" | "md" }) {
+  if (isOnlineSource(source)) return <ChannelBadge source={source} size={size} />;
   return <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-ink-faint">{SOURCES[source]}</span>;
 }
 

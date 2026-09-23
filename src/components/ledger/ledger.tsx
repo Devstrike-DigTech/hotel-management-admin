@@ -11,6 +11,8 @@ import {
   Crown,
   LockSimple,
   X,
+  Globe,
+  Storefront,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { errorMessage } from "@/lib/api/client";
@@ -31,6 +33,7 @@ import {
   type DayKey,
 } from "@/lib/dates";
 import { STAY_STATUS } from "@/lib/catalog-m2";
+import { CHANNEL_META, HoldCountdown, isOnlineSource } from "@/components/m3/bits";
 import { ROOM_STATUS } from "@/lib/catalog";
 import { StatusSwatch } from "@/components/keyrack/status-swatch";
 import {
@@ -983,7 +986,9 @@ const StayBar = memo(
     const owes = (stay.balanceKobo ?? 0) > 0;
     const h = ROW_H - 12;
     const vw = w - hidden; // the part of the bar in view
-    const label = `${stay.code}, ${stay.guestName}, ${room ? `room ${room.number}` : "unassigned"}, ${stayWindow(stay.arrivalAt, stay.departureAt)}, ${m.label}${dayUse ? ", day use" : ""}${owes ? `, owes ${naira(stay.balanceKobo)}` : ""}`;
+    const online = isOnlineSource(stay.source) ? CHANNEL_META[stay.source] : null;
+    const hold = stay.status === "PENDING" && !!stay.holdExpiresAt;
+    const label = `${stay.code}, ${stay.guestName}, ${room ? `room ${room.number}` : "unassigned"}, ${stayWindow(stay.arrivalAt, stay.departureAt)}, ${m.label}${dayUse ? ", day use" : ""}${owes ? `, owes ${naira(stay.balanceKobo)}` : ""}${online ? `, booked on ${online.label.toLowerCase()}` : ""}${hold ? ", unpaid online hold" : ""}`;
     return (
       <button
         ref={ref}
@@ -1028,9 +1033,20 @@ const StayBar = memo(
                 stay.status === "NO_SHOW" && "line-through decoration-danger",
               )}
             >
-              {barLabel(stay.guestName, vw - (stay.vip && vw > 60 ? 30 : 16))}
+              {barLabel(stay.guestName, vw - (stay.vip && vw > 60 ? 30 : 16) - (online && vw > 40 ? (vw > 118 ? 48 : 22) : 0))}
             </span>
-            {vw > 150 &&<span className="shrink-0 font-mono text-[10px] leading-none text-ink-faint">{stay.code}</span>}
+            {vw > (online ? 220 : 150) && <span className="shrink-0 font-mono text-[10px] leading-none text-ink-faint">{stay.code}</span>}
+          </span>
+        )}
+        {online && !dayUse && vw > 40 && (
+          <span
+            aria-hidden
+            data-channel={stay.source}
+            className="mr-1.5 inline-flex h-[15px] shrink-0 items-center gap-[3px] rounded-[2px] border px-[3px] font-mono text-[8.5px] font-medium uppercase leading-none tracking-[0.08em]"
+            style={{ color: online.color, borderColor: `color-mix(in oklab, ${online.color} 50%, transparent)`, background: "var(--surface)" }}
+          >
+            {stay.source === "MARKETPLACE" ? <Storefront size={9} weight="bold" /> : <Globe size={9} weight="bold" />}
+            {vw > 118 && online.short}
           </span>
         )}
         {owes && !dayUse && w > 24 && (
@@ -1127,6 +1143,23 @@ function HoverCard({ stay, rect, room }: { stay: LedgerStay; rect: DOMRect; room
             ? `${lagosHHMM(stay.arrivalAt)} to ${lagosHHMM(stay.departureAt)}`
             : `${stayWindow(stay.arrivalAt, stay.departureAt)}, ${nights}n`}
         </dd>
+        {isOnlineSource(stay.source) && (
+          <>
+            <dt className="text-ink-muted">Booked</dt>
+            <dd className="text-ink">
+              {CHANNEL_META[stay.source].label}
+              {stay.paymentMode === "PAY_AT_HOTEL" ? ", pays at hotel" : stay.paymentMode === "ONLINE" && stay.status !== "PENDING" ? ", paid online" : ""}
+            </dd>
+          </>
+        )}
+        {stay.status === "PENDING" && stay.holdExpiresAt && (
+          <>
+            <dt className="text-ink-muted">Hold</dt>
+            <dd>
+              <HoldCountdown expiresAt={stay.holdExpiresAt} variant="inline" />
+            </dd>
+          </>
+        )}
         {(stay.balanceKobo ?? 0) !== 0 && stay.balanceKobo != null && (
           <>
             <dt className="text-ink-muted">Balance</dt>

@@ -12,6 +12,7 @@ import { lagosHHMM } from "@/lib/dates";
 import { naira } from "@/lib/format";
 import { ReservationPeek } from "@/components/reservations/peek";
 import { FrontDeskBoard } from "./front-desk-board";
+import { OnlineTodayCard } from "@/components/online/online-feed";
 import { useDashboard, useMe, useRooms } from "@/lib/api/hooks";
 import { useRoomStatus } from "@/lib/api/mutations";
 import type { Room, RoomStatus } from "@/lib/api/types";
@@ -143,6 +144,12 @@ export function TodayView() {
       {deskOn && (
         <div className="mb-6">
           <FrontDeskBoard data={desk.data} loading={desk.isLoading} onPeek={setPeek} />
+        </div>
+      )}
+
+      {deskOn && can("online.feed") && (
+        <div className="mb-6">
+          <OnlineTodayCard counts={desk.data?.online} enabled />
         </div>
       )}
 

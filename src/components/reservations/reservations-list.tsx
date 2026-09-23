@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/form";
 import { EmptyState, ErrorState, PageHeader, Panel, Skeleton } from "@/components/ui/primitives";
 import { BalancePill, Code, GuestName, StayBadge } from "@/components/m2/bits";
+import { ChannelBadge, HoldCountdown, isOnlineSource } from "@/components/m3/bits";
 
 const VIEWS = [
   { value: "upcoming", label: "Upcoming", status: "PENDING,CONFIRMED" },
@@ -39,12 +40,15 @@ export function ReservationsList() {
   const router = useRouter();
   const search = useSearchParams();
   const { can } = useCan();
-  const [view, setView] = useState<View>("upcoming");
+  const [view, setView] = useState<View>(() => (VIEWS.some((v) => v.value === search.get("view")) ? (search.get("view") as View) : "upcoming"));
   const [range, setRange] = useState<Range>("any");
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
   const [stayType, setStayType] = useState<StayType | "">("");
-  const [source, setSource] = useState<ReservationSource | "">("");
+  const [source, setSource] = useState<ReservationSource | "">(() => {
+    const v = search.get("source");
+    return v && v in SOURCES ? (v as ReservationSource) : "";
+  });
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -201,6 +205,11 @@ export function ReservationsList() {
                       <Link href={`/reservations/${r.id}`} className="font-mono text-[13px] tracking-wide text-ink" onClick={(e) => e.stopPropagation()}>
                         {r.code}
                       </Link>
+                      {isOnlineSource(r.source) && (
+                        <span className="mt-1 block">
+                          <ChannelBadge source={r.source} size="sm" />
+                        </span>
+                      )}
                     </td>
                     <td className="max-w-[220px] py-3 pr-3">
                       <GuestName name={r.guest.fullName} vip={r.guest.vip} className="text-ink" />
@@ -227,7 +236,11 @@ export function ReservationsList() {
                       <span className="block text-[12px] text-ink-muted">{r.roomType.name}</span>
                     </td>
                     <td className="py-3 pr-3">
-                      <StayBadge status={r.status} />
+                      {r.status === "PENDING" && r.holdExpiresAt ? <HoldCountdown expiresAt={r.holdExpiresAt} /> : <StayBadge status={r.status} />}
+                      {r.paymentMode === "PAY_AT_HOTEL" && ["CONFIRMED", "PENDING"].includes(r.status) && (
+                        <span className="mt-1 block text-[11.5px] text-ink-muted">pays at hotel</span>
+                      )}
+                      {r.paymentMode === "ONLINE" && r.status === "CONFIRMED" && <span className="mt-1 block text-[11.5px] text-palm">paid online</span>}
                     </td>
                     <td className="py-3 pr-5 text-right">
                       <span className="inline-flex items-center gap-2">
@@ -248,9 +261,10 @@ export function ReservationsList() {
                 <li key={r.id}>
                   <Link href={`/reservations/${r.id}`} className="flex items-start gap-3 px-4 py-3.5 active:bg-surface-2">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Code value={r.code} className="text-[12px] text-ink-muted" />
-                        <StayBadge status={r.status} />
+                        {r.status === "PENDING" && r.holdExpiresAt ? <HoldCountdown expiresAt={r.holdExpiresAt} /> : <StayBadge status={r.status} />}
+                        {isOnlineSource(r.source) && <ChannelBadge source={r.source} size="sm" />}
                       </div>
                       <GuestName name={r.guest.fullName} vip={r.guest.vip} className="mt-1 text-[15px] font-medium text-ink" />
                       <p className="mt-0.5 text-[12.5px] text-ink-muted">
