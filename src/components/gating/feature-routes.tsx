@@ -2,15 +2,16 @@
 
 import { useState } from "react";
 import { Broom, CashRegister, ChartLineUp, Crown, Plugs } from "@phosphor-icons/react";
-import { useHousekeeping, useRooms } from "@/lib/api/hooks";
+import { useRooms } from "@/lib/api/hooks";
 import type { Room, RoomStatus } from "@/lib/api/types";
 import { useEntitlements } from "@/lib/auth";
 import { ROOM_STATUS } from "@/lib/catalog";
 import { relativeTime } from "@/lib/format";
-import { EmptyState, ErrorState, PageHeader, Panel, PanelHeader, Skeleton } from "@/components/ui/primitives";
+import { ErrorState, PageHeader, Panel, PanelHeader, Skeleton } from "@/components/ui/primitives";
 import { RoomSheet } from "@/components/keyrack/room-sheet";
 import { StatusSwatch } from "@/components/keyrack/status-swatch";
 import { FeaturePage } from "./feature-page";
+import { HousekeepingTasks } from "@/components/housekeeping/tasks";
 import { ChannelPreview, HousekeepingPreview, LoyaltyPreview, PosPreview, PricingPreview } from "./feature-previews";
 
 export function PosRoute() {
@@ -138,7 +139,6 @@ const COLUMNS: { status: RoomStatus; title: string; body: string }[] = [
 
 function HousekeepingWorkspace() {
   const { has } = useEntitlements();
-  const tasks = useHousekeeping(has("housekeeping"));
   const rooms = useRooms();
   const [selected, setSelected] = useState<Room | null>(null);
   const selectedLive = selected ? (rooms.data?.find((r) => r.id === selected.id) ?? selected) : null;
@@ -206,26 +206,7 @@ function HousekeepingWorkspace() {
           })}
         </div>
       )}
-      <Panel className="mt-6">
-        <PanelHeader eyebrow="Assignments" title="Tasks" />
-        {tasks.isLoading ? (
-          <div className="p-5">
-            <Skeleton className="h-10" />
-          </div>
-        ) : tasks.isError ? (
-          <ErrorState error={tasks.error} onRetry={() => tasks.refetch()} />
-        ) : tasks.data?.length ? (
-          <ul className="divide-y divide-line">
-            {tasks.data.map((t) => (
-              <li key={t.id} className="px-5 py-3 text-[13.5px] text-ink">
-                {t.title ?? t.id} <span className="text-ink-muted">{t.status}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <EmptyState compact glyph="frond" title="No tasks assigned" body="Attendant assignments and inspections arrive in the next release. Status changes above work today." />
-        )}
-      </Panel>
+      <HousekeepingTasks enabled={has("housekeeping")} />
       <RoomSheet room={selectedLive} onOpenChange={(o) => !o && setSelected(null)} />
     </>
   );
