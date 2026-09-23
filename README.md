@@ -21,6 +21,85 @@ On a phone: [Today](docs/screenshots/today-390-light.png), [Rooms, dark](docs/sc
 [status sheet](docs/screenshots/key-rack-sheet-390-light.png).
 All screenshots (1440px and 390px, light and dark) are in [`docs/screenshots`](docs/screenshots).
 
+## Milestone 2: running the front desk
+
+Reservations, the guest register, check-in and check-out, folios with Nigerian taxes, payments inside
+cashier shifts, Revenue Guard, reports and an offline front desk. Screenshots were taken against the
+live API and its seeded demo hotel.
+
+![The Ledger, a tape chart of every room and night](docs/screenshots/m2-ledger-1440-light.png)
+
+| | |
+|---|---|
+| ![Check-in on the paper registration card](docs/screenshots/m2-check-in-1440-light.png) | ![Today: arriving, in the house, leaving](docs/screenshots/m2-today-1440-dark.png) |
+| ![Folio and the discount second key](docs/screenshots/m2-discount-second-key-1440-light.png) | ![Blind count, note by note](docs/screenshots/m2-shift-blind-count-1440-dark.png) |
+| ![Revenue Guard triage](docs/screenshots/m2-guard-1440-light.png) | ![Owner digest as it lands on WhatsApp](docs/screenshots/m2-reports-digest-1440-dark.png) |
+| ![A4 invoice](docs/screenshots/m2-invoice-a4-1440-light.png) | ![Working offline](docs/screenshots/m2-offline-1440-light.png) |
+
+On a phone: [Today](docs/screenshots/m2-today-390-light.png), [the Ledger](docs/screenshots/m2-ledger-390-dark.png),
+[register card](docs/screenshots/m2-check-in-390-dark.png), [blind count](docs/screenshots/m2-shift-blind-count-390-light.png),
+[80mm receipt](docs/screenshots/m2-receipt-80mm-390-light.png). Every M2 page is in `docs/screenshots/m2-*`.
+
+### M2 routes
+
+| Route | |
+|---|---|
+| `/today` | Arriving, in the house and leaving with the next action on each card (check in, take payment, check out), a day-use rail with overstays, open flags and the cashier's shift |
+| `/ledger` | **The Ledger** (tape chart): rooms by floor or type, 60 Lagos days, a today line and a rooms-free strip. Drag to move or extend, drag across empty nights to book, undo with Ctrl/Cmd+Z; `M` and the arrow keys (or the move panel on touch) do the same without a mouse |
+| `/reservations`, `/reservations/[id]` | Views by status, dates, stay type and source; the reservation with its folio, stay, guest and register |
+| `/reservations/[id]/check-in` | The **register card**: guest, ID capture (camera on phones via `capture`, or upload, downscaled first), travel, purpose and consent; clean-room assignment with a manager override; optional deposit. `?register=1` completes the register for a guest already in |
+| `/guests`, `/guests/[id]` | Profiles with masked ID (reveal is audited), stays, edit, and NDPA **export** (JSON) and **anonymise** (typed confirmation) |
+| `/register` | The police / security guest register for a date range; CSV download (full ID numbers for managers, audited) and print |
+| `/shifts` | Open a shift with a float; close with a **blind count** (naira notes ₦1000 to ₦50, POS and transfer totals), then the variance is revealed |
+| `/approvals` | Managers approve closed shifts after reading the count, payments and the cashier's note |
+| `/folios`, `/folios/[id]` | Open and closed folios, walk-in folios, invoices and receipts |
+| `/guard` | **Revenue Guard** inbox: severity, evidence, suggestion, resolve or dismiss with a note; locked rules shown with the upgrade path on Starter |
+| `/reports` | Daily flash, trends (occupancy, ADR, payments by method in custom SVG), payments by method and staff, shifts, night audit runs, and the **owner digest** rendered on a phone |
+| `/settings/taxes` | VAT, consumption tax and service charge (inclusive or on top) with a worked example; discount approval threshold |
+| `/print/invoice/[id]`, `/print/receipt/[id]` | A4 invoice and 80mm thermal receipt with print CSS; WhatsApp share and copy link |
+| `/share/[token]` | The public, signed page a guest opens from WhatsApp |
+
+Anywhere: the **new-reservation drawer** (live availability per type and night, returning-guest lookup
+by phone, optional room), the **take-payment sheet** (cash, transfer, POS; privileged methods for
+managers; opens a shift inline if needed; receipt, print and WhatsApp), and the **discount dialog**
+whose second key is a manager choosing their name and entering their PIN on the same screen. Managers
+set that PIN from the account menu. The palette finds bookings by code or name ("check in PWH-7K3Q",
+"pay Okafor") and adds *New reservation*, *Take payment* and *Close my shift*.
+
+### Roles
+
+The UI follows the M2 role matrix (`src/lib/permissions.ts`); the API enforces it regardless. Front desk
+has no approvals, Revenue Guard, reports, voids, refunds or overrides; accountants read folios, shifts,
+flags and reports; housekeeping sees rooms and can only turn a dirty room clean.
+
+### Offline front desk
+
+- `public/sw.js` keeps the app shell, static assets and page payloads (production builds only).
+- Last-known Today, rooms, the tape chart, the current shift and open folios persist in IndexedDB and are
+  restored on start, so a reload with no line still shows the house.
+- **Check-in, payment, room status and check-out** go through `deskAction()`: each action gets its own
+  `Idempotency-Key` and `clientCreatedAt` when the button is pressed. Offline (or if the request dies on
+  the network) it is queued in an IndexedDB outbox with the same key and replayed in order on
+  reconnect, so a request that did reach the server is never applied twice.
+- An ochre banner shows while offline, a chip counts queued actions, and the sync sheet lists them with
+  any conflicts (for example `SHIFT_REQUIRED`: open a shift, then retry) and lets you retry or discard.
+- To try it without pulling a cable: `window.__offline(true)` in the console, and `false` to reconnect.
+
+### End-to-end tests
+
+```bash
+pnpm test:e2e      # Playwright, Chromium from /opt/pw-browsers (or PW_CHROMIUM_PATH)
+```
+
+Runs against the dev server on :3001 and the live API on :4000 with the demo seed: sign in, book a
+walk-in, check in on the register card with an ID image, take a cash payment inside a shift, check
+out and get the final invoice, close the shift with a blind count, and find the variance in Revenue
+Guard. Override with `E2E_BASE_URL`, `E2E_API_URL`, `E2E_EMAIL`, `E2E_PASSWORD`. A run writes real
+bookings, payments and a shift to the demo hotel.
+
+Development only: `localStorage["admin.apiOrigin"] = "http://localhost:4020"` points the app at another
+API (such as a contract mock) without a restart; production builds ignore it.
+
 ---
 
 ## Stack
@@ -65,6 +144,7 @@ In development the sign-in pages show a small "Dev" button that fills the demo c
 | `pnpm start` | Serve the build on port 3001 |
 | `pnpm lint` | ESLint (flat config, `eslint-config-next`) |
 | `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm test:e2e` | Playwright end-to-end tests against the live API |
 
 ### Environment
 
@@ -134,6 +214,36 @@ src/
     catalog.ts                     statuses, roles, plans and feature fallbacks
     format.ts                      naira, Lagos dates, relative time
 ```
+
+M2 adds:
+
+```
+src/
+  app/(hotel)/ledger, reservations, guests, register, shifts, approvals, folios, guard, reports, settings/taxes
+  app/(print)/print/invoice/[id], print/receipt/[id]     signed-in print views, no chrome
+  app/share/[token]                                      public signed document page
+  app/manifest.ts                                        PWA manifest
+  components/
+    ledger/          model.ts (rows, lanes, geometry, validation) and ledger.tsx (virtualised chart)
+    reservations/    list, detail, new-reservation drawer, quick peek, check-out
+    checkin/         register card, ID capture
+    folio/           folio ledger, charge / void / discount (second key), take-payment sheet
+    documents/       A4 invoice, 80mm receipt, share actions
+    shifts/          denomination counter, blind count, variance, approvals
+    guard/ reports/ guests/ settings/ offline/
+  lib/
+    api/types-m2.ts, endpoints-m2.ts, hooks-m2.ts   the M2 contract
+    dates.ts                                        Lagos calendar arithmetic (UTC+1, no DST)
+    permissions.ts                                  role capabilities
+    offline/                                        IndexedDB, network state, outbox, desk actions, persistence
+public/sw.js, public/icons/                         service worker and app icons
+e2e/                                                Playwright tests
+```
+
+The Ledger renders only the rows and bars in view (plus overscan), draws the day grid with a single
+repeating gradient, and indexes stays by room, so 200 rooms by 60 days stays smooth. Payment-method
+colours (`--m-*`) were checked with a colour-vision validator for adjacent separation in both themes;
+every chart has a legend, direct values and a screen-reader table.
 
 ### Auth and sessions
 
