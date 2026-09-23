@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PushPin, Prohibit } from "@phosphor-icons/react";
+import { ChartLineUp, PushPin, Prohibit } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { addDays, formatDay, isWeekend, monthName, weekday, type DayKey } from "@/lib/dates";
 import { naira, percent } from "@/lib/format";
@@ -26,6 +26,18 @@ const LANE_H = 24;
 
 export type Preview = (typeId: string, cell: AlmanacCell, r: number, c: number) => { priceKobo: number; ruleId: string | null; overridden: boolean } | null;
 
+/** A pricing suggestion drawn as a ghost price over a cell (dynamic pricing). */
+export interface Ghost {
+  id: string;
+  suggestedKobo: number;
+  currentKobo: number;
+  /** plain-language reason, shown in the tooltip */
+  reason: string;
+  status?: "PENDING" | "ACCEPTED" | "REJECTED" | "APPLIED" | "EXPIRED";
+  /** clamped by a guardrail (floor, ceiling, max daily change) */
+  clamped?: string | null;
+}
+
 /**
  * The Rate Almanac grid: room types down, nights across. Each cell is the
  * resolved nightly price; season rules run above as coloured bands. Drag across
@@ -42,6 +54,8 @@ export function AlmanacGrid({
   activeRuleId,
   today,
   draftRule,
+  ghost,
+  onGhost,
 }: {
   data: AlmanacData;
   selection: Selection | null;
@@ -53,6 +67,9 @@ export function AlmanacGrid({
   today: DayKey;
   /** a season being painted, shown as a dashed band in its own lane */
   draftRule?: AlmanacRule | null;
+  /** dynamic pricing suggestions shown as ghost prices */
+  ghost?: (typeId: string, date: DayKey) => Ghost | null;
+  onGhost?: (g: Ghost, typeId: string, date: DayKey, anchor: HTMLElement) => void;
 }) {
   const { days, types } = data;
   const [focus, setFocus] = useState<{ r: number; c: number }>(() => ({ r: 0, c: Math.max(0, days.indexOf(today)) }));
@@ -394,6 +411,8 @@ export function AlmanacGrid({
                       edge={selection && inSel(selection, r, c) ? edges(selection, r, c) : null}
                       focused={fr === r && fc === c}
                       preview={cell && preview ? preview(t.id, cell, r, c) : null}
+                      ghost={ghost ? ghost(t.id, d) : null}
+                      onGhost={onGhost}
                     />
                   );
                 })}
@@ -426,6 +445,8 @@ function Cell({
   edge,
   focused,
   preview,
+  ghost,
+  onGhost,
 }: {
   r: number;
   c: number;
@@ -439,6 +460,8 @@ function Cell({
   edge: { t: boolean; b: boolean; l: boolean; rr: boolean } | null;
   focused: boolean;
   preview: ReturnType<Preview>;
+  ghost?: Ghost | null;
+  onGhost?: (g: Ghost, typeId: string, date: DayKey, anchor: HTMLElement) => void;
 }) {
   const weekend = isWeekend(date);
   const first = date.endsWith("-01");
@@ -455,13 +478,16 @@ function Cell({
   const label = [
     `${typeName}, night of ${formatDay(date, { weekday: "long", day: "numeric", month: "long" })}`,
     naira(price),
-    overridden ? "fixed for this night" : shownRule ? `${shownRule.name}` : "base rate",
+    overridden ? (cell.overrideSource === "PRICING" ? "set by dynamic pricing" : "fixed for this night") : shownRule ? `${shownRule.name}` : "base rate",
     cell.minNights && cell.minNights > 1 ? `minimum ${cell.minNights} nights` : "",
     cell.closedToArrival ? "closed to arrival" : "",
     cell.stopSell ? "stop sell" : "",
+    ghost && ghost.status === "PENDING" ? `suggested ${naira(ghost.suggestedKobo)}: ${ghost.reason}` : "",
   ]
     .filter(Boolean)
     .join(", ");
+  const g = ghost && ghost.status === "PENDING" && ghost.suggestedKobo !== price ? ghost : null;
+  const up = g ? g.suggestedKobo > price : false;
   return (
     <div
       role="gridcell"
@@ -503,7 +529,29 @@ function Cell({
         >
           {thousands(price)}
         </span>
-        <span className="flex h-3 items-center gap-1 font-mono text-[9.5px] leading-none text-ink-muted">
+        {g && (
+          <span
+            role="button"
+            tabIndex={-1}
+            data-ghost={g.id}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onGhost?.(g, typeId, date, e.currentTarget as HTMLElement);
+            }}
+            title={`Suggested ${naira(g.suggestedKobo)}: ${g.reason}`}
+            className={cn(
+              "my-[2px] inline-flex h-[15px] cursor-pointer items-center gap-[2px] rounded-[3px] border border-dashed px-[3px] font-mono text-[10px] leading-none transition-colors hover:border-solid",
+              up ? "border-[color-mix(in_oklab,var(--palm)_65%,transparent)] bg-palm-wash/70 text-palm" : "border-[color-mix(in_oklab,var(--ochre)_70%,transparent)] bg-ochre-wash/70 text-ochre",
+            )}
+          >
+            <svg width="7" height="7" viewBox="0 0 8 8" aria-hidden className={up ? "" : "rotate-90"}>
+              <path d="M1.5 6.5 6.5 1.5M2.5 1.5h4v4" fill="none" stroke="currentColor" strokeWidth="1.3" />
+            </svg>
+            {thousands(g.suggestedKobo)}
+          </span>
+        )}
+        <span className={cn("flex h-3 items-center gap-1 font-mono text-[9.5px] leading-none text-ink-muted", g && "hidden")}>
           {cell.minNights && cell.minNights > 1 ? (
             <span className="rounded-[2px] border border-line-strong px-[3px] py-[1px] text-ink" title={`Minimum ${cell.minNights} nights`}>
               {cell.minNights}N
@@ -512,11 +560,16 @@ function Cell({
           {delta !== 0 && !cell.stopSell && <span>{delta > 0 ? `+${delta}` : `−${Math.abs(delta)}`}%</span>}
         </span>
       </div>
-      {overridden && (
-        <span className="absolute right-0.5 top-0.5 text-brass" aria-hidden>
-          <PushPin size={10} weight="fill" />
-        </span>
-      )}
+      {overridden &&
+        (cell.overrideSource === "PRICING" && !preview ? (
+          <span className="absolute right-0.5 top-0.5 text-adire" aria-hidden>
+            <ChartLineUp size={10} weight="bold" />
+          </span>
+        ) : (
+          <span className="absolute right-0.5 top-0.5 text-brass" aria-hidden>
+            <PushPin size={10} weight="fill" />
+          </span>
+        ))}
       {cell.stopSell && (
         <span className="absolute left-1 top-1 text-danger" aria-hidden>
           <Prohibit size={10} weight="bold" />

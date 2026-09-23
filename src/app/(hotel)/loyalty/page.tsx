@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { LoyaltyRoute } from "@/components/gating/feature-routes";
+import { LoyaltyRoute } from "@/components/m5/routes";
 
 export const metadata: Metadata = { title: "Loyalty" };
 

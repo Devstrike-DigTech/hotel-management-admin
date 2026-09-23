@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, CalendarDots, CaretLeft, CaretRight, Lightning, PushPin, Keyboard } from "@phosphor-icons/react";
@@ -18,6 +18,9 @@ import { ConfirmDialog } from "@/components/ui/overlay";
 import { AlmanacGrid, selectionDates, type Preview } from "./almanac";
 import { PaintTray, type PaintDraft } from "./paint-tray";
 import { SLOT_VAR, previewCell, type AlmanacCell, type AlmanacData, type AlmanacRule, type Selection } from "./model";
+import { useEntitlements } from "@/lib/auth";
+import { SuggestionPopover, SuggestionsStrip, ghostOf, useAlmanacSuggestions } from "@/components/pricing/overlay";
+import type { Suggestion } from "@/lib/api/types-m5";
 
 const WINDOW = 42;
 const BAND_SLOT: Record<BandColor, number> = { laterite: 1, adire: 2, brass: 3, palm: 4, ochre: 5 };
@@ -50,6 +53,7 @@ function adapt(c: RateCalendar): AlmanacData {
         baseKobo: t.roomType.basePriceKobo,
         ruleId: d.ruleId,
         overrideKobo: d.override ? d.rateKobo : null,
+        overrideSource: d.override ? (d.overrideSource ?? "MANUAL") : null,
         minNights: d.restriction?.minNights ?? null,
         closedToArrival: !!d.restriction?.closedToArrival,
         stopSell: !!d.restriction?.stopSell,
@@ -178,6 +182,36 @@ export function RatesView() {
   const avgOcc = data ? [...data.demand.values()].reduce((s, d) => s + d.occupancy, 0) / Math.max(1, data.demand.size) : 0;
   const trayRange = tray?.sel && data ? selectionDates(data.days, tray.sel) : null;
 
+  // dynamic pricing: suggestions drawn as ghost prices on the best available rate
+  const { has } = useEntitlements();
+  const pricingOn = has("dynamic_pricing") && can("pricing.view");
+  const sugg = useAlmanacSuggestions(from, to, pricingOn && isBar);
+  const [showGhosts, setShowGhostsState] = useState(true);
+  const setShowGhosts = (v: boolean) => {
+    setShowGhostsState(v);
+    try {
+      localStorage.setItem("admin.rates.ghosts", v ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  };
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- remember the viewer's choice
+      if (localStorage.getItem("admin.rates.ghosts") === "0") setShowGhostsState(false);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const [openSugg, setOpenSugg] = useState<{ s: Suggestion; anchor: HTMLElement } | null>(null);
+  const inView = useMemo(() => (data ? sugg.list.filter((x) => data.days.includes(x.date)) : []), [sugg.list, data]);
+  const inSelection = useMemo(() => {
+    if (!data || !sel) return [];
+    const ids = new Set(data.types.slice(sel.r0, sel.r1 + 1).map((t) => t.id));
+    const days = new Set(data.days.slice(sel.c0, sel.c1 + 1));
+    return inView.filter((x) => ids.has(x.roomType.id) && days.has(x.date));
+  }, [data, sel, inView]);
+
   return (
     <>
       <PageHeader
@@ -246,6 +280,9 @@ export function RatesView() {
       </div>
 
       <Panel className="overflow-hidden">
+        {pricingOn && isBar && (
+          <SuggestionsStrip show={showGhosts} onShow={setShowGhosts} inView={inView} inSelection={inSelection} mode={sugg.settings?.mode} canManage={can("pricing.manage")} />
+        )}
         {/* legend */}
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-line px-4 py-2.5 text-[11.5px] text-ink-muted sm:px-5">
           <span className="eyebrow text-[10px]">Nightly rate, ₦</span>
@@ -305,6 +342,11 @@ export function RatesView() {
               activeRuleId={tray?.rule?.id ?? null}
               today={today}
               draftRule={draft?.kind === "rule" ? draft.rule : null}
+              ghost={pricingOn && isBar && showGhosts && !tray ? (typeId, date) => ghostOf(sugg.map.get(`${typeId}|${date}`)) : undefined}
+              onGhost={(g, typeId, date, anchor) => {
+                const s = sugg.map.get(`${typeId}|${date}`);
+                if (s) setOpenSugg({ s, anchor });
+              }}
             />
           </div>
         )}
@@ -377,6 +419,8 @@ export function RatesView() {
           </Panel>
         </div>
       )}
+
+      <SuggestionPopover s={openSugg?.s ?? null} anchor={openSugg?.anchor ?? null} onClose={() => setOpenSugg(null)} canManage={can("pricing.manage")} />
 
       <ConfirmDialog
         open={!!deleting}

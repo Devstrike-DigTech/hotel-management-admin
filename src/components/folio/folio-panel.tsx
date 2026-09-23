@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge, ErrorState, Panel, Skeleton } from "@/components/ui/primitives";
 import { FolioLedger } from "./folio-ledger";
 import { ChargeDialog, DiscountDialog, VoidDialog } from "./folio-dialogs";
+import { RedeemPointsButton } from "@/components/loyalty/redeem";
 
 /** The folio with its desk actions, as used on a reservation or a walk-in folio. */
 export function FolioPanel({ folioId, title, reservationCode }: { folioId: string; title?: string; reservationCode?: string | null }) {
@@ -62,6 +63,7 @@ export function FolioPanel({ folioId, title, reservationCode }: { folioId: strin
                     <Percent size={14} weight="bold" /> Discount
                   </Button>
                 )}
+                <RedeemPointsButton folio={f} />
               </>
             )}
             <Button size="sm" variant="ghost" onClick={() => proforma.mutate()} loading={proforma.isPending}>

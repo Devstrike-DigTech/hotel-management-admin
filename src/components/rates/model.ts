@@ -33,6 +33,8 @@ export interface AlmanacCell {
   baseKobo: number;
   ruleId: string | null;
   overrideKobo: number | null;
+  /** set by dynamic pricing rather than by hand */
+  overrideSource?: "MANUAL" | "PRICING" | null;
   minNights: number | null;
   closedToArrival: boolean;
   stopSell?: boolean;
