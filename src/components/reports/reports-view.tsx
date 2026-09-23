@@ -119,9 +119,8 @@ function FlashBody({ d }: { d: DailyFlash }) {
               {percent(occ)}
             </p>
             <p className="mt-1 text-[12.5px] text-ink-muted">
-              <span className="font-mono text-ink">{d.roomsSold}</span> of <span className="font-mono text-ink">{d.roomsAvailable}</span> rooms occupied
+              <span className="font-mono text-ink">{d.roomsSold}</span> of <span className="font-mono text-ink">{d.roomsAvailable}</span> rooms in house
             </p>
-            <p className="text-[11.5px] text-ink-faint">guests in house for the night</p>
           </div>
         </div>
         <div className="grid grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x [&>*]:border-line max-sm:[&>*:nth-child(-n+2)]:border-b max-sm:[&>*:nth-child(odd)]:border-r">

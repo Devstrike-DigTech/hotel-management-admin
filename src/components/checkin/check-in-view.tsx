@@ -593,7 +593,10 @@ function byNumber(a: PickRoom, b: PickRoom) {
 function notReadyText(x: PickRoom) {
   switch (x.reason) {
     case "OCCUPIED":
-      return x.occupiedUntil ? `occupied, guest leaves ${lagosHHMM(x.occupiedUntil)}${dayKeyOf(x.occupiedUntil) !== todayKey() ? ` ${formatDay(dayKeyOf(x.occupiedUntil), { day: "numeric", month: "short" })}` : ""}` : "occupied";
+      if (!x.occupiedUntil) return "occupied";
+      return `occupied, guest leaves ${
+        dayKeyOf(x.occupiedUntil) === todayKey() ? "today" : formatDay(dayKeyOf(x.occupiedUntil), { day: "numeric", month: "short" })
+      } at ${lagosHHMM(x.occupiedUntil)}`;
     case "BOOKED":
       return "booked for part of this stay";
     case "OUT_OF_ORDER":

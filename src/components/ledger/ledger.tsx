@@ -663,6 +663,8 @@ export const Ledger = forwardRef<LedgerHandle, LedgerProps>(function Ledger(
         room={s.roomId ? roomMap.get(s.roomId) : undefined}
         x={g.x}
         w={g.w}
+        // how much of the bar is scrolled under the room column, so its label starts where it can be read
+        hidden={Math.max(0, Math.min(g.w - 28, view.left - g.x))}
         top={top}
         dimmed={dragging}
         locked={locked(s)}
@@ -965,6 +967,7 @@ const StayBar = memo(
       room?: LedgerRoom;
       x: number;
       w: number;
+      hidden: number;
       top: number;
       dimmed: boolean;
       locked: boolean;
@@ -974,11 +977,12 @@ const StayBar = memo(
       onKeyDown: (e: React.KeyboardEvent) => void;
       onHover: (rect: DOMRect | null) => void;
     }
-  >(function StayBar({ stay, room, x, w, top, dimmed, locked, moving, onPointerDown, onClick, onKeyDown, onHover }, ref) {
+  >(function StayBar({ stay, room, x, w, hidden, top, dimmed, locked, moving, onPointerDown, onClick, onKeyDown, onHover }, ref) {
     const m = STAY_STATUS[stay.status];
     const dayUse = stay.stayType === "DAY_USE";
     const owes = (stay.balanceKobo ?? 0) > 0;
     const h = ROW_H - 12;
+    const vw = w - hidden; // the part of the bar in view
     const label = `${stay.code}, ${stay.guestName}, ${room ? `room ${room.number}` : "unassigned"}, ${stayWindow(stay.arrivalAt, stay.departureAt)}, ${m.label}${dayUse ? ", day use" : ""}${owes ? `, owes ${naira(stay.balanceKobo)}` : ""}`;
     return (
       <button
@@ -1012,8 +1016,11 @@ const StayBar = memo(
         {dayUse ? (
           <span aria-hidden className="hatch absolute inset-0" />
         ) : (
-          <span className={cn("flex min-w-0 flex-1 items-baseline gap-1.5 pl-2 pr-1.5", w < 34 && "justify-center pl-1 pr-1")}>
-            {stay.vip && w > 60 && <Crown size={11} weight="fill" className="shrink-0 self-center text-brass" aria-hidden />}
+          <span
+            className={cn("flex min-w-0 flex-1 items-baseline gap-1.5 pl-2 pr-1.5", vw < 34 && "justify-center pl-1 pr-1")}
+            style={hidden > 0 ? { paddingLeft: hidden + 8 } : undefined}
+          >
+            {stay.vip && vw > 60 && <Crown size={11} weight="fill" className="shrink-0 self-center text-brass" aria-hidden />}
             <span
               className={cn(
                 "truncate text-[12px] font-medium leading-none",
@@ -1021,9 +1028,9 @@ const StayBar = memo(
                 stay.status === "NO_SHOW" && "line-through decoration-danger",
               )}
             >
-              {barLabel(stay.guestName, w - (stay.vip && w > 60 ? 30 : 16))}
+              {barLabel(stay.guestName, vw - (stay.vip && vw > 60 ? 30 : 16))}
             </span>
-            {w > 150 && <span className="shrink-0 font-mono text-[10px] leading-none text-ink-faint">{stay.code}</span>}
+            {vw > 150 &&<span className="shrink-0 font-mono text-[10px] leading-none text-ink-faint">{stay.code}</span>}
           </span>
         )}
         {owes && !dayUse && w > 24 && (
