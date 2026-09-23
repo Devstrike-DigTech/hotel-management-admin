@@ -21,6 +21,7 @@ const PERSISTED: QueryKey[] = [
   ["tax-settings"],
   ["reservations", "detail"],
   ["folio"],
+  ["housekeeping", "mine"],
 ];
 
 const matches = (key: QueryKey) =>

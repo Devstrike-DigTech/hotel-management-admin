@@ -38,6 +38,7 @@ const KIND: Record<OutboxKind, { label: string; icon: React.ReactNode }> = {
   payment: { label: "Payment", icon: <Money size={16} weight="duotone" /> },
   "room-status": { label: "Room status", icon: <Broom size={16} weight="duotone" /> },
   "check-out": { label: "Check-out", icon: <Door size={16} weight="duotone" /> },
+  housekeeping: { label: "Housekeeping", icon: <Broom size={16} weight="duotone" /> },
 };
 
 /** Mount once inside the hotel shell: network watch, outbox load, auto-sync, service worker. */

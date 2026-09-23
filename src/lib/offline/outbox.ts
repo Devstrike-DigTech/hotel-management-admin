@@ -6,14 +6,15 @@ import { idb } from "./idb";
 import { networkStore } from "./network";
 
 /**
- * The offline outbox. Four desk actions can be taken without a connection:
- * check-in, payment, room status and check-out. Each action gets its own
+ * The offline outbox. Desk actions that can be taken without a connection:
+ * check-in, payment, room status, check-out, and a housekeeper's start,
+ * checklist ticks, finish and skip. Each action gets its own
  * Idempotency-Key the moment the clerk presses the button; the same key is
  * used for the first attempt and every replay, so an action that did reach
  * the server before the line dropped is never applied twice.
  */
 
-export type OutboxKind = "check-in" | "payment" | "room-status" | "check-out";
+export type OutboxKind = "check-in" | "payment" | "room-status" | "check-out" | "housekeeping";
 
 export interface OutboxItem {
   id: string; // also the Idempotency-Key

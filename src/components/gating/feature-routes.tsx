@@ -1,18 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { Broom, CashRegister, ChartLineUp, Crown, Plugs } from "@phosphor-icons/react";
-import { useRooms } from "@/lib/api/hooks";
-import type { Room, RoomStatus } from "@/lib/api/types";
-import { useEntitlements } from "@/lib/auth";
-import { ROOM_STATUS } from "@/lib/catalog";
-import { relativeTime } from "@/lib/format";
-import { ErrorState, PageHeader, Panel, PanelHeader, Skeleton } from "@/components/ui/primitives";
-import { RoomSheet } from "@/components/keyrack/room-sheet";
-import { StatusSwatch } from "@/components/keyrack/status-swatch";
 import { FeaturePage } from "./feature-page";
-import { HousekeepingTasks } from "@/components/housekeeping/tasks";
-import { ChannelPreview, HousekeepingPreview, LoyaltyPreview, PosPreview, PricingPreview } from "./feature-previews";
+import { RequireCap } from "./require-cap";
+import { ChannelPreview, LoyaltyPreview, PosPreview, PricingPreview } from "./feature-previews";
+import { HousekeepingBoardPreview } from "@/components/m4/previews";
+import { HousekeepingView } from "@/components/housekeeping/housekeeping-view";
 
 export function PosRoute() {
   return (
@@ -124,90 +117,12 @@ export function HousekeepingRoute() {
         "Inspection step before a room is sellable",
         "Lost-and-found and maintenance notes in one place",
       ]}
-      preview={<HousekeepingPreview />}
+      preview={<HousekeepingBoardPreview />}
     >
-      <HousekeepingWorkspace />
+      <RequireCap cap="housekeeping.view" what="The housekeeping board">
+        <HousekeepingView />
+      </RequireCap>
     </FeaturePage>
   );
 }
 
-const COLUMNS: { status: RoomStatus; title: string; body: string }[] = [
-  { status: "VACANT_DIRTY", title: "To clean", body: "Vacant rooms waiting on a turnaround." },
-  { status: "OUT_OF_ORDER", title: "Blocked", body: "Out of order until maintenance clears them." },
-  { status: "VACANT_CLEAN", title: "Ready", body: "Clean and back on sale." },
-];
-
-function HousekeepingWorkspace() {
-  const { has } = useEntitlements();
-  const rooms = useRooms();
-  const [selected, setSelected] = useState<Room | null>(null);
-  const selectedLive = selected ? (rooms.data?.find((r) => r.id === selected.id) ?? selected) : null;
-
-  return (
-    <>
-      <PageHeader
-        eyebrow={
-          <>
-            <Broom size={14} weight="duotone" /> Housekeeping
-          </>
-        }
-        title={
-          <>
-            Turn rooms around <em>before the next arrival</em>.
-          </>
-        }
-        description="Rooms flow from dirty to ready as your team works. Tap a room to change its status."
-      />
-      {rooms.isError ? (
-        <Panel>
-          <ErrorState error={rooms.error} onRetry={() => rooms.refetch()} />
-        </Panel>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-3">
-          {COLUMNS.map((c) => {
-            const list = (rooms.data ?? [])
-              .filter((r) => r.status === c.status)
-              .sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true }));
-            return (
-              <Panel key={c.status} className="flex flex-col">
-                <PanelHeader
-                  title={
-                    <span className="flex items-center gap-2">
-                      <StatusSwatch status={c.status} size={18} /> {c.title}
-                      <span className="font-mono text-[14px] text-ink-muted">{rooms.isLoading ? "" : list.length}</span>
-                    </span>
-                  }
-                  description={c.body}
-                />
-                <div className="flex flex-1 flex-col gap-1.5 p-3">
-                  {rooms.isLoading ? (
-                    Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-12" />)
-                  ) : list.length === 0 ? (
-                    <p className="px-2 py-6 text-center text-[13px] text-ink-faint">Nothing here.</p>
-                  ) : (
-                    list.map((r) => (
-                      <button
-                        key={r.id}
-                        onClick={() => setSelected(r)}
-                        className="flex items-center gap-3 rounded-md border border-line bg-surface px-3 py-2.5 text-left transition-colors hover:border-line-strong hover:bg-surface-2/50"
-                        style={{ boxShadow: `inset 3px 0 0 ${ROOM_STATUS[r.status].color}` }}
-                      >
-                        <span className="font-mono text-[15px] text-ink">{r.number}</span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[12.5px] text-ink-muted">{r.roomType?.name}</span>
-                          <span className="block truncate text-[11.5px] text-ink-faint">{r.notes || `since ${relativeTime(r.updatedAt)}`}</span>
-                        </span>
-                      </button>
-                    ))
-                  )}
-                </div>
-              </Panel>
-            );
-          })}
-        </div>
-      )}
-      <HousekeepingTasks enabled={has("housekeeping")} />
-      <RoomSheet room={selectedLive} onOpenChange={(o) => !o && setSelected(null)} />
-    </>
-  );
-}
