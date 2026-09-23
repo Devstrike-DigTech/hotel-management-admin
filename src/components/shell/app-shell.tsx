@@ -198,9 +198,14 @@ function Shell({ children }: { children: React.ReactNode }) {
 function MobileTabs({ onMore }: { onMore: () => void }) {
   const pathname = usePathname();
   const { can, ready } = useCan();
+  // desk roles get the desk tabs; housekeeping and maintenance roles get their own work first
+  const desk = !ready || can("reservations.read");
   const items = allNavItems()
-    .filter((i) => MOBILE_TABS.includes(i.href) || (i.href === "/rooms" && ready && !can("reservations.read")))
-    .filter((i) => navVisible(i, can, ready));
+    .filter((i) =>
+      desk ? MOBILE_TABS.includes(i.href) : ["/hk", "/housekeeping", "/maintenance", "/rooms"].includes(i.href),
+    )
+    .filter((i) => navVisible(i, can, ready))
+    .slice(0, 4);
   const moreActive = !items.some((i) => isActive(pathname, i.href));
   return (
     <nav

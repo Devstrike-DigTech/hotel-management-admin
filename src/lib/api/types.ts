@@ -35,7 +35,8 @@ export type BillingInterval = "MONTHLY" | "YEARLY";
 
 export type SubscriptionStatus = "TRIALING" | "ACTIVE" | "PAST_DUE" | "READ_ONLY" | "SUSPENDED" | "CANCELLED";
 
-export type Role = "OWNER" | "MANAGER" | "FRONT_DESK" | "HOUSEKEEPING" | "ACCOUNTANT";
+/** System roles; M4 adds SUPERVISOR and MAINTENANCE, and CUSTOM for a user on a custom role (see roleId / roleName). */
+export type Role = "OWNER" | "MANAGER" | "FRONT_DESK" | "HOUSEKEEPING" | "ACCOUNTANT" | "SUPERVISOR" | "MAINTENANCE" | "CUSTOM";
 
 export type RoomStatus = "VACANT_CLEAN" | "VACANT_DIRTY" | "OCCUPIED" | "RESERVED" | "OUT_OF_ORDER";
 
@@ -86,6 +87,9 @@ export interface StaffUser {
   role: Role;
   /** M2: owners and managers with a discount-approval PIN */
   hasApprovalPin?: boolean;
+  /** M4: system role key ("FRONT_DESK") or custom role id, and its display name */
+  roleId?: string;
+  roleName?: string;
 }
 
 export interface AuthResponse {
@@ -130,6 +134,8 @@ export interface Me {
   tenant: { id: string; name: string; slug: string };
   subscription: Subscription;
   entitlements: Entitlements;
+  /** M4: the user's effective permissions (OWNER: every permission) */
+  permissions?: string[];
 }
 
 /* ---------- hotel ---------- */
@@ -234,13 +240,19 @@ export interface Staff {
   createdAt?: string;
   /** M2: owner/manager has a discount-approval PIN */
   hasApprovalPin?: boolean;
+  /** M4 */
+  roleId?: string;
+  roleName?: string;
+  system?: boolean;
 }
 
 export interface StaffInput {
   fullName: string;
   email: string;
   phone: string;
-  role: Role;
+  role?: Role;
+  /** M4: system key or custom role id */
+  roleId?: string;
   password?: string;
 }
 

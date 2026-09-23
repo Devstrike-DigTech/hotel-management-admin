@@ -11,7 +11,7 @@ import { useEntitlements, useLogout } from "@/lib/auth";
 import { useCan } from "@/lib/permissions";
 import { useGuardSummary, useShifts } from "@/lib/api/hooks-m2";
 import { useReviewSummary } from "@/lib/api/hooks-m3";
-import { ROLES } from "@/lib/catalog";
+import { roleLabel } from "@/lib/catalog";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { LogoMark, Wordmark } from "@/components/brand";
@@ -199,6 +199,7 @@ function NavLink({
 
 function UserMenu({ collapsed }: { collapsed: boolean }) {
   const { me } = useEntitlements();
+  const { can } = useCan();
   const logout = useLogout();
   const name = me?.user.fullName ?? "";
   const [pinOpen, setPinOpen] = useState(false);
@@ -222,7 +223,7 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13px] font-medium text-ink">{name || " "}</span>
                 <span className="block truncate text-[11.5px] text-ink-muted">
-                  {me ? ROLES[me.user.role]?.label ?? me.user.role : " "}
+                  {me ? roleLabel(me.user) : " "}
                 </span>
               </span>
               <CaretUpDown size={14} className="text-ink-faint" />
@@ -248,10 +249,12 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
           <MenuLink href="/property" icon={<Buildings size={16} weight="duotone" />}>
             Property settings
           </MenuLink>
-          <MenuLink href="/billing" icon={<Receipt size={16} weight="duotone" />}>
-            Billing & plan
-          </MenuLink>
-          {me && (me.user.role === "OWNER" || me.user.role === "MANAGER") && (
+          {can("billing.manage") && (
+            <MenuLink href="/billing" icon={<Receipt size={16} weight="duotone" />}>
+              Billing & plan
+            </MenuLink>
+          )}
+          {me && can("approver") && (
             <Menu.Item
               onSelect={() => setPinOpen(true)}
               className="flex h-8 cursor-pointer items-center gap-2.5 rounded-sm px-2.5 text-[13px] text-ink outline-none data-[highlighted]:bg-surface-2"

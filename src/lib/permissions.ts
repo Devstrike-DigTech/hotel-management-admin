@@ -1,19 +1,23 @@
 "use client";
 
+import { useCallback, useMemo } from "react";
 import { useMe } from "./api/hooks";
 import type { Role } from "./api/types";
 
 /**
- * What each role may do in M2 (mirrors API-M2 0.5). The UI hides or disables
- * what a role can't do; the API enforces every rule regardless.
+ * UI gating by permission. Since M4 the API returns the signed-in user's
+ * effective permissions on `/me` (custom roles included), and every screen asks
+ * `can(...)`. The capability names the M2/M3 screens were written against are
+ * kept as aliases for the permission (or permissions) that now carry them, so
+ * the whole app reads one source. The API enforces every rule regardless.
  */
 export type Capability =
   | "reservations.read"
   | "reservations.write"
   | "rate.override"
-  | "frontdesk.act" // check-in / check-out / payments / charges
-  | "override" // dirty-room check-in, checkout with balance
-  | "payments.privileged" // CARD_ONLINE, COMPLIMENTARY, CITY_LEDGER
+  | "frontdesk.act"
+  | "override"
+  | "payments.privileged"
   | "void"
   | "refund"
   | "discount"
@@ -34,76 +38,127 @@ export type Capability =
   | "folio.read"
   | "digest.manage"
   | "approver"
-  // M3
-  | "payouts.read" // online revenue and commission
-  | "payouts.manage" // bank account onboarding (owner only)
-  | "booking.settings" // online booking, pay at hotel, cancellation policy
+  | "payouts.read"
+  | "payouts.manage"
+  | "booking.settings"
   | "reviews.read"
   | "reviews.reply"
-  | "cancel.refund" // hotel-initiated cancel with full refund
-  | "notifications.preview" // open the message body (email HTML) a guest was sent
-  | "online.feed"; // new online booking toasts
+  | "cancel.refund"
+  | "notifications.preview"
+  | "online.feed";
 
-const MANAGER: Capability[] = [
-  "reservations.read",
-  "reservations.write",
-  "rate.override",
-  "frontdesk.act",
-  "override",
-  "payments.privileged",
-  "void",
-  "refund",
-  "discount",
-  "shift.own",
-  "shift.viewAll",
-  "shift.approve",
-  "guard.read",
-  "guard.triage",
-  "reports.read",
-  "audit.run",
-  "tax.write",
-  "tax.read",
-  "guest.read",
-  "guest.write",
-  "guest.ndpa",
-  "register.fullIds",
-  "id.reveal",
-  "folio.read",
-  "digest.manage",
-  "approver",
-];
+/** Permission codes (API-M4 section 2.3). */
+export type Permission = string;
 
-const MANAGER_M3: Capability[] = ["payouts.read", "booking.settings", "reviews.read", "reviews.reply", "cancel.refund", "notifications.preview", "online.feed"];
+type Rule = Permission | { any: Permission[] } | { all: Permission[] };
 
-const CAPS: Record<Role, Capability[]> = {
-  OWNER: [...MANAGER, ...MANAGER_M3, "payouts.manage"],
-  MANAGER: [...MANAGER, ...MANAGER_M3],
-  FRONT_DESK: [
-    "reservations.read",
-    "reservations.write",
-    "frontdesk.act",
-    "discount",
-    "shift.own",
-    "guest.read",
-    "guest.write",
-    "id.reveal",
-    "folio.read",
-    "tax.read",
-    "reviews.read",
-    "notifications.preview",
-    "online.feed",
-  ],
-  ACCOUNTANT: ["reservations.read", "shift.viewAll", "guard.read", "reports.read", "guest.read", "folio.read", "tax.read", "payouts.read", "reviews.read", "online.feed"],
-  HOUSEKEEPING: [],
+const ALIAS: Record<Capability, Rule> = {
+  "reservations.read": "reservations.view",
+  "reservations.write": "reservations.create",
+  "rate.override": "rates.manage",
+  "frontdesk.act": { any: ["frontdesk.checkin", "frontdesk.checkout", "payments.take"] },
+  override: "frontdesk.override",
+  "payments.privileged": "payments.special",
+  void: "folio.void",
+  refund: "folio.refund",
+  discount: "folio.discount",
+  "shift.own": "shifts.own",
+  "shift.viewAll": "shifts.view_all",
+  "shift.approve": "shifts.approve",
+  "guard.read": "guard.view",
+  "guard.triage": "guard.resolve",
+  "reports.read": "reports.view",
+  "audit.run": "settings.manage",
+  "tax.write": "settings.manage",
+  "tax.read": "folio.view",
+  "guest.read": "guests.view",
+  "guest.write": "guests.edit",
+  "guest.ndpa": "guests.export",
+  "register.fullIds": "guests.export",
+  "id.reveal": "guests.reveal_id",
+  "folio.read": "folio.view",
+  "digest.manage": "settings.manage",
+  approver: "folio.approve",
+  "payouts.read": "reports.financial",
+  "payouts.manage": "payouts.manage",
+  "booking.settings": "settings.manage",
+  "reviews.read": "reviews.view",
+  "reviews.reply": "reviews.reply",
+  "cancel.refund": { all: ["reservations.cancel", "folio.refund"] },
+  "notifications.preview": "reservations.create",
+  "online.feed": "reservations.view",
 };
 
-export function can(role: Role | undefined | null, cap: Capability): boolean {
-  if (!role) return false;
-  return CAPS[role]?.includes(cap) ?? false;
+/* Fallback for an API that does not send `permissions` (API-M4 section 2.4). */
+const FRONT_DESK = [
+  "reservations.view", "reservations.create", "reservations.edit", "reservations.cancel",
+  "frontdesk.checkin", "frontdesk.checkout", "folio.view", "folio.charge", "folio.discount", "payments.take", "shifts.own",
+  "guests.view", "guests.edit", "guests.reveal_id", "rooms.status", "housekeeping.view", "housekeeping.work",
+  "maintenance.view", "maintenance.report", "rates.view", "corporate.view", "reviews.view",
+];
+const ACCOUNTANT = [
+  "reservations.view", "folio.view", "shifts.view_all", "guests.view", "reports.view", "reports.financial", "guard.view",
+  "audit.view", "billing.manage", "rates.view", "corporate.view", "maintenance.view", "reviews.view",
+];
+const LEGACY: Partial<Record<string, Permission[] | "*" | "*-payouts">> = {
+  OWNER: "*",
+  MANAGER: "*-payouts",
+  FRONT_DESK,
+  ACCOUNTANT,
+  HOUSEKEEPING: ["housekeeping.view", "housekeeping.work", "maintenance.report"],
+  SUPERVISOR: ["housekeeping.view", "housekeeping.work", "housekeeping.assign", "housekeeping.inspect", "rooms.status", "maintenance.view", "maintenance.report", "reservations.view"],
+  MAINTENANCE: ["maintenance.view", "maintenance.report", "maintenance.work", "housekeeping.view"],
+};
+
+type Checker = (p: Permission) => boolean;
+
+function evaluate(rule: Rule, has: Checker): boolean {
+  if (typeof rule === "string") return has(rule);
+  if ("any" in rule) return rule.any.some(has);
+  return rule.all.every(has);
+}
+
+function checkerFor(role: string | undefined, permissions: string[] | undefined): Checker {
+  if (permissions) {
+    const set = new Set(permissions);
+    return (p) => set.has(p);
+  }
+  const legacy = role ? LEGACY[role] : undefined;
+  if (legacy === "*") return () => true;
+  if (legacy === "*-payouts") return (p) => p !== "payouts.manage";
+  const set = new Set(legacy ?? []);
+  return (p) => set.has(p);
+}
+
+/** Whether a role/permission set allows a capability alias or a permission code. */
+export function can(role: Role | string | undefined | null, cap: Capability | Permission, permissions?: string[]): boolean {
+  if (!role && !permissions) return false;
+  const has = checkerFor(role ?? undefined, permissions);
+  const rule = (ALIAS as Record<string, Rule>)[cap];
+  return rule ? evaluate(rule, has) : has(cap);
 }
 
 export function useCan() {
   const me = useMe();
   const role = me.data?.user.role;
-  return { role, can: (cap: Capability) => can(role, cap), ready: !!role };
+  const permissions = me.data?.permissions;
+  const has = useMemo(() => checkerFor(role, permissions), [role, permissions]);
+  const check = useCallback(
+    (cap: Capability | Permission) => {
+      if (!role && !permissions) return false;
+      const rule = (ALIAS as Record<string, Rule>)[cap];
+      return rule ? evaluate(rule, has) : has(cap);
+    },
+    [has, role, permissions],
+  );
+  const mine = useMemo(() => new Set(permissions ?? []), [permissions]);
+  return {
+    role,
+    roleName: me.data?.user.roleName ?? null,
+    can: check,
+    /** the raw permission set (empty until /me has loaded) */
+    mine,
+    isOwner: role === "OWNER",
+    ready: !!role,
+  };
 }

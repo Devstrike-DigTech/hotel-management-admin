@@ -53,6 +53,12 @@
   --m-card: #c0931e;
   --m-ledger: #9a5ea6;
   --m-comp: #a39a8c;
+  /* season bands on the Rate Almanac (validated: adjacent CVD >= 10.2, normal >= 18.9 on surface) */
+  --season-1: #d0592f;
+  --season-2: #4a68b8;
+  --season-3: #c0931e;
+  --season-4: #2e8b62;
+  --season-5: #9a5ea6;
 }
 
 :root[data-theme="dark"] {
@@ -97,6 +103,11 @@
   --m-card: #b88c34;
   --m-ledger: #a174bc;
   --m-comp: #6f675c;
+  --season-1: #d4643e;
+  --season-2: #6b87cc;
+  --season-3: #b88c34;
+  --season-4: #3a9670;
+  --season-5: #a174bc;
 }
 
 @theme inline {

@@ -74,9 +74,20 @@ export interface ReservationListItem extends OnlineFields {
   checkedOutAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** M4 */
+  ratePlan?: { id: string; code: string; name: string } | null;
+  corporateAccount?: { id: string; name: string } | null;
+  promoCode?: string | null;
+  roomTotalKobo?: number;
 }
 
-export interface ReservationDetail extends Omit<ReservationListItem, "guest"> {
+export interface ReservationDetail extends Omit<ReservationListItem, "guest" | "ratePlan" | "corporateAccount"> {
+  /** M4 */
+  nightlyRates?: { date: string; rateKobo: number; baseRateKobo: number; source: string; ruleId: string | null; ruleName: string | null; discountKobo: number }[];
+  discountTotalKobo?: number;
+  promo?: { code: string; description: string; type: string; discountKobo: number; status: string } | null;
+  ratePlan?: { id: string; code: string; name: string; kind: string; includesBreakfast: boolean; nonRefundable: boolean } | null;
+  corporateAccount?: { id: string; name: string; creditLimitKobo: number; outstandingKobo: number; availableKobo: number } | null;
   notes: string;
   estimatedTotalKobo: number;
   registration: Registration | null;
@@ -107,6 +118,10 @@ export interface ReservationInput {
   rateKobo?: number;
   notes?: string;
   clientCreatedAt?: string;
+  /** M4 */
+  ratePlanId?: string;
+  promoCode?: string;
+  corporateAccountId?: string;
 }
 
 export interface ReservationPatch {
@@ -157,6 +172,8 @@ export interface CheckInInput {
 export interface CheckOutResult {
   reservation: ReservationDetail;
   invoice: InvoiceDocument;
+  /** M4: set when the balance went to a company's City Ledger */
+  cityLedger?: { charge: { id: string; amountKobo: number; accountId: string }; invoice: { id: string; number: string } | null } | null;
 }
 
 /* ---------- availability + tape chart ---------- */
@@ -221,6 +238,8 @@ export interface TapeChart {
   roomTypes: (TypeRef & { roomCount: number })[];
   stays: TapeStay[];
   unassigned: TapeStay[];
+  /** M4: out-of-order windows overlapping the range */
+  blocks?: { id: string; roomId: string; from: string; to: string; reason: string; ticketId: string | null; ticketNumber: string | null }[];
 }
 
 /* ---------- front desk today ---------- */

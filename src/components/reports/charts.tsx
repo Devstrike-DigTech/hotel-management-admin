@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 /* In-house SVG charts: hairline grid, mono axis text, 2px surface gaps between
    stacked segments, rounded data-ends, hover tooltip, table fallback. */
 
-function useWidth(min = 280) {
+export function useWidth(min = 280) {
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(640);
   useEffect(() => {
@@ -19,7 +19,7 @@ function useWidth(min = 280) {
   return { ref, w };
 }
 
-function niceMax(v: number) {
+export function niceMax(v: number) {
   if (v <= 0) return 1;
   const p = Math.pow(10, Math.floor(Math.log10(v)));
   const n = v / p;
@@ -27,7 +27,7 @@ function niceMax(v: number) {
   return step * p;
 }
 
-const axisText = { fontFamily: "var(--font-mono)", fontSize: 10, fill: "var(--ink-faint)" } as const;
+export const axisText = { fontFamily: "var(--font-mono)", fontSize: 10, fill: "var(--ink-faint)" } as const;
 
 export interface Series {
   key: string;
@@ -234,7 +234,7 @@ export function LineChart({
   );
 }
 
-function Tooltip({ leftPct, title, children }: { leftPct: number; title: string; children: React.ReactNode }) {
+export function Tooltip({ leftPct, title, children }: { leftPct: number; title: string; children: React.ReactNode }) {
   return (
     <div
       className="pointer-events-none absolute top-8 z-10 min-w-[170px] rounded-md border border-line bg-surface px-3 py-2 shadow-float"
@@ -246,7 +246,7 @@ function Tooltip({ leftPct, title, children }: { leftPct: number; title: string;
   );
 }
 
-function TipRow({ color, label, value }: { color: string; label: string; value: string }) {
+export function TipRow({ color, label, value }: { color: string; label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-6 py-px text-[12px]">
       <span className="flex items-center gap-1.5 text-ink-muted">

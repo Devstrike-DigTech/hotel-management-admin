@@ -3,11 +3,17 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowsClockwise, Key, UserPlus, UsersThree } from "@phosphor-icons/react";
+import Link from "next/link";
+import { ArrowRight, ArrowsClockwise, Key, LockSimple, ShieldCheck, UserPlus, UsersThree } from "@phosphor-icons/react";
 import { hotelApi } from "@/lib/api/endpoints";
 import { qk, useMe, useStaff } from "@/lib/api/hooks";
 import type { Role, Staff } from "@/lib/api/types";
-import { ROLES, ROLE_ORDER, type Tone } from "@/lib/catalog";
+import { ROLES, ROLE_ORDER, roleLabel, type Tone } from "@/lib/catalog";
+import { useRoles } from "@/lib/api/hooks-m4";
+import type { RoleWire } from "@/lib/api/types-m4";
+import { useCan } from "@/lib/permissions";
+import { useEntitlements } from "@/lib/auth";
+import { isApiError } from "@/lib/api/client";
 import { formatPhone, initials, relativeTime } from "@/lib/format";
 import { toast } from "@/lib/store";
 import { cn } from "@/lib/cn";
@@ -23,6 +29,9 @@ const ROLE_TONE: Record<Role, Tone> = {
   FRONT_DESK: "adire",
   HOUSEKEEPING: "palm",
   ACCOUNTANT: "neutral",
+  SUPERVISOR: "palm",
+  MAINTENANCE: "ochre",
+  CUSTOM: "laterite",
 };
 
 export function StaffView() {
@@ -47,7 +56,9 @@ export function StaffView() {
 
   const max = me.data?.entitlements.limits.max_staff;
   const used = me.data?.entitlements.usage.staff ?? staff.data?.length ?? 0;
-  const canManage = me.data ? ["OWNER", "MANAGER"].includes(me.data.user.role) : true;
+  const { can, ready } = useCan();
+  const canManage = ready && can("staff.manage");
+  const roles = useRoles(canManage);
 
   return (
     <>
@@ -100,7 +111,7 @@ export function StaffView() {
                         {s.fullName} {self && <span className="font-normal text-ink-faint">(you)</span>}
                       </p>
                       <p className="mt-0.5 flex items-center gap-2 text-[12px] text-ink-muted">
-                        <Badge tone={ROLE_TONE[s.role]}>{ROLES[s.role]?.label ?? s.role}</Badge>
+                        <Badge tone={ROLE_TONE[s.role] ?? "neutral"}>{roleLabel(s)}</Badge>
                         <PinMark s={s} />
                         <span className="truncate">{s.lastLoginAt ? relativeTime(s.lastLoginAt) : "Never signed in"}</span>
                       </p>
@@ -143,7 +154,7 @@ export function StaffView() {
                         </td>
                         <td className="py-3">
                           <span className="flex items-center gap-2">
-                            <Badge tone={ROLE_TONE[s.role]}>{ROLES[s.role]?.label ?? s.role}</Badge>
+                            <Badge tone={ROLE_TONE[s.role] ?? "neutral"}>{roleLabel(s)}</Badge>
                             <PinMark s={s} />
                           </span>
                         </td>
@@ -175,14 +186,26 @@ export function StaffView() {
             </p>
           </Panel>
           <Panel className="p-5">
-            <p className="eyebrow mb-3">Roles</p>
+            <div className="mb-3 flex items-baseline justify-between">
+              <p className="eyebrow">Roles</p>
+              {canManage && (
+                <Link href="/staff/roles" className="inline-flex items-center gap-1 text-[12.5px] font-medium text-laterite hover:underline">
+                  Permissions <ArrowRight size={12} weight="bold" />
+                </Link>
+              )}
+            </div>
             <dl className="flex flex-col gap-3">
-              {ROLE_ORDER.map((r) => (
-                <div key={r}>
-                  <dt>
-                    <Badge tone={ROLE_TONE[r]}>{ROLES[r].label}</Badge>
+              {(roles.data
+                ? roles.data.map((r) => ({ id: r.id, tone: (r.key ? ROLE_TONE[r.key] : "laterite") ?? "neutral", label: r.name, description: r.description, count: r.staffCount, system: r.system }))
+                : ROLE_ORDER.filter((r) => r !== "CUSTOM").map((r) => ({ id: r, tone: ROLE_TONE[r], label: ROLES[r].label, description: ROLES[r].description, count: null as number | null, system: true }))
+              ).map((r) => (
+                <div key={r.id}>
+                  <dt className="flex items-center gap-2">
+                    <Badge tone={r.tone}>{r.label}</Badge>
+                    {!r.system && <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-ink-faint">custom</span>}
+                    {r.count != null && <span className="ml-auto font-mono text-[11px] text-ink-faint">{r.count}</span>}
                   </dt>
-                  <dd className="mt-1 text-[12.5px] text-ink-muted">{ROLES[r].description}</dd>
+                  <dd className="mt-1 text-[12.5px] text-ink-muted">{r.description}</dd>
                 </div>
               ))}
             </dl>
@@ -191,6 +214,7 @@ export function StaffView() {
       </div>
 
       <StaffSheet
+        roles={roles.data}
         open={creating || !!editing}
         member={editing}
         onOpenChange={(o) => {
@@ -254,17 +278,20 @@ function generatePassword() {
   return `${w}${Math.floor(1000 + Math.random() * 9000)}!`;
 }
 
-function StaffSheet({ open, member, onOpenChange }: { open: boolean; member: Staff | null; onOpenChange: (o: boolean) => void }) {
+function StaffSheet({ open, member, onOpenChange, roles: roleList }: { open: boolean; member: Staff | null; onOpenChange: (o: boolean) => void; roles?: RoleWire[] }) {
   const qc = useQueryClient();
   const editing = !!member;
-  const [form, setForm] = useState({ fullName: "", email: "", phone: "", role: "FRONT_DESK" as Role, password: "" });
+  const { mine, isOwner } = useCan();
+  const { has, requiredPlan } = useEntitlements();
+  const [escalation, setEscalation] = useState<string[] | null>(null);
+  const [form, setForm] = useState({ fullName: "", email: "", phone: "", role: "FRONT_DESK" as string, password: "" });
   const [key, setKey] = useState("");
   const k = `${open}-${member?.id ?? "new"}`;
   if (k !== key) {
     setKey(k);
     setForm(
       member
-        ? { fullName: member.fullName, email: member.email, phone: (member.phone ?? "").replace(/^\+234/, ""), role: member.role, password: "" }
+        ? { fullName: member.fullName, email: member.email, phone: (member.phone ?? "").replace(/^\+234/, ""), role: member.roleId ?? member.role, password: "" }
         : { fullName: "", email: "", phone: "", role: "FRONT_DESK", password: generatePassword() },
     );
   }
@@ -277,11 +304,15 @@ function StaffSheet({ open, member, onOpenChange }: { open: boolean; member: Sta
         return hotelApi.updateStaff(member!.id, {
           fullName: form.fullName.trim(),
           phone,
-          role: form.role,
+          roleId: form.role,
           ...(form.password ? { password: form.password } : {}),
         });
       }
-      return hotelApi.createStaff({ fullName: form.fullName.trim(), email: form.email.trim(), phone, role: form.role, password: form.password });
+      return hotelApi.createStaff({ fullName: form.fullName.trim(), email: form.email.trim(), phone, roleId: form.role, password: form.password });
+    },
+    onMutate: () => setEscalation(null),
+    onError: (e) => {
+      if (isApiError(e) && e.code === "PERMISSION_ESCALATION") setEscalation(((e.details?.missing as string[]) ?? []).slice());
     },
     onSuccess: () => {
       toast.success(
@@ -292,12 +323,18 @@ function StaffSheet({ open, member, onOpenChange }: { open: boolean; member: Sta
       void qc.invalidateQueries({ queryKey: qk.me });
       onOpenChange(false);
     },
-    meta: { errorTitle: editing ? "Changes not saved" : "Staff member not added" },
+    meta: { errorTitle: editing ? "Changes not saved" : "Staff member not added", silentCodes: ["PERMISSION_ESCALATION"] },
   });
 
   const valid = form.fullName.trim() && /\S+@\S+\.\S+/.test(form.email) && (editing || form.password.length >= 8);
-  const roles = ROLE_ORDER.filter((r) => r !== "OWNER");
-
+  // every role the signer may hand out; roles holding permissions they lack are shown but closed
+  const options = (roleList ?? ROLE_ORDER.filter((r) => r !== "CUSTOM").map((r) => ({ id: r, key: r, name: ROLES[r].label, description: ROLES[r].description, system: true, permissions: [] as string[], staffCount: 0 }) as unknown as RoleWire))
+    .filter((r) => r.key !== "OWNER" || isOwner)
+    .map((r) => {
+      const missing = isOwner || !roleList ? [] : r.permissions.filter((p) => !mine.has(p));
+      const locked = !r.system && !has("custom_roles");
+      return { r, missing, locked };
+    });
   return (
     <Sheet
       open={open}
@@ -339,23 +376,44 @@ function StaffSheet({ open, member, onOpenChange }: { open: boolean; member: Sta
         <fieldset>
           <legend className="mb-2 text-[13px] font-medium text-ink">Role</legend>
           <div role="radiogroup" className="grid gap-2 sm:grid-cols-2">
-            {roles.map((r) => {
-              const on = form.role === r;
+            {options.map(({ r, missing, locked }) => {
+              const on = form.role === r.id;
+              const off = missing.length > 0 || locked;
               return (
                 <label
-                  key={r}
+                  key={r.id}
                   className={cn(
-                    "flex cursor-pointer flex-col gap-0.5 rounded-md border px-3 py-2.5 transition-colors",
-                    on ? "border-laterite bg-laterite-wash/40" : "border-line hover:border-line-strong",
+                    "flex flex-col gap-0.5 rounded-md border px-3 py-2.5 transition-colors",
+                    off ? "cursor-not-allowed border-dashed border-line opacity-70" : "cursor-pointer",
+                    on ? "border-laterite bg-laterite-wash/40" : !off && "border-line hover:border-line-strong",
                   )}
+                  title={missing.length ? `Includes ${missing.length} permission${missing.length === 1 ? "" : "s"} you don't hold` : undefined}
                 >
-                  <input type="radio" name="role" className="sr-only" checked={on} onChange={() => set("role", r)} />
-                  <span className="text-[13.5px] font-medium text-ink">{ROLES[r].label}</span>
-                  <span className="text-[12px] text-ink-muted">{ROLES[r].description}</span>
+                  <input type="radio" name="role" className="sr-only" checked={on} disabled={off} onChange={() => set("role", r.id)} />
+                  <span className="flex items-center gap-1.5 text-[13.5px] font-medium text-ink">
+                    {r.name}
+                    {!r.system && <span className="font-mono text-[9.5px] font-normal uppercase tracking-[0.14em] text-laterite">custom</span>}
+                    {(locked || missing.length > 0) && <LockSimple size={11} weight="bold" className="ml-auto text-brass" />}
+                  </span>
+                  <span className="text-[12px] text-ink-muted">
+                    {locked
+                      ? `Custom roles need ${requiredPlan("custom_roles").name}`
+                      : missing.length
+                        ? `Has ${missing.length} permission${missing.length === 1 ? "" : "s"} you don't, so you can't give it`
+                        : r.description}
+                  </span>
                 </label>
               );
             })}
           </div>
+          {escalation && (
+            <p role="alert" className="mt-3 flex items-start gap-2 rounded-md border border-[color-mix(in_oklab,var(--danger)_30%,transparent)] bg-danger-wash px-3 py-2 text-[12.5px] text-ink">
+              <ShieldCheck size={15} weight="duotone" className="mt-px shrink-0 text-danger" />
+              <span>
+                You can&rsquo;t give a role with more access than you have. Missing: <span className="font-mono">{escalation.join(", ") || "some permissions"}</span>.
+              </span>
+            </p>
+          )}
         </fieldset>
 
         <Field
