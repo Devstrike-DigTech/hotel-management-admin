@@ -156,8 +156,10 @@ export function OutboxChip({ className }: { className?: string }) {
         ) : (
           <CloudArrowUp size={15} weight="duotone" />
         )}
-        <span className="font-mono">{items.length}</span>
-        <span className="hidden sm:inline">{!net.online ? "offline" : conflicts ? "to review" : "queued"}</span>
+        {items.length > 0 && <span className="font-mono">{items.length}</span>}
+        <span className={items.length ? "hidden sm:inline" : undefined}>
+          {!net.online ? (items.length ? "queued offline" : "Offline") : conflicts ? "to review" : "queued"}
+        </span>
       </button>
       <SyncSheet open={open} onOpenChange={setOpen} />
     </>
