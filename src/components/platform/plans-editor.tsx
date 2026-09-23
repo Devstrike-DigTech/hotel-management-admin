@@ -116,7 +116,7 @@ function PlanForm({ plan }: { plan: Plan }) {
     (k) => JSON.stringify(patch[k]) !== JSON.stringify(original[k]),
   );
   const dirty = changedKeys.length > 0;
-  const tenantsOnPlan = metrics.data?.tenantsByPlan?.[plan.code];
+  const tenantsOnPlan = plan.tenantCount ?? metrics.data?.tenantsByPlan?.[plan.code];
 
   const save = useMutation({
     mutationFn: () => {

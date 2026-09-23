@@ -134,6 +134,7 @@ export function RoomsView() {
       {/* toolbar */}
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
         <Segmented
+          className="self-start"
           label="View"
           value={view}
           onChange={setView}

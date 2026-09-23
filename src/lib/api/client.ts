@@ -65,7 +65,17 @@ async function parseError(res: Response): Promise<ApiError> {
   } catch {
     /* non-JSON error */
   }
-  const msg = Array.isArray(body.message) ? body.message.join(". ") : body.message;
+  let msg = Array.isArray(body.message) ? body.message.join(". ") : body.message;
+  // VALIDATION_ERROR carries details.fields = { field: string[] }; surface the first messages.
+  const fields = (body.details as { fields?: Record<string, string[]> } | undefined)?.fields;
+  if (body.code === "VALIDATION_ERROR" && fields && typeof fields === "object") {
+    const parts = Object.values(fields)
+      .map((v) => (Array.isArray(v) ? v[v.length - 1] : String(v)))
+      .filter(Boolean)
+      .map((s) => s.charAt(0).toUpperCase() + s.slice(1));
+    if (parts.length) msg = parts.slice(0, 2).join(". ");
+  }
+  if (res.status === 429) msg = "Too many attempts. Wait a minute and try again.";
   const code =
     body.code ||
     (res.status === 401

@@ -224,7 +224,6 @@ function StaffSheet({ open, member, onOpenChange }: { open: boolean; member: Sta
       if (editing) {
         return hotelApi.updateStaff(member!.id, {
           fullName: form.fullName.trim(),
-          email: form.email.trim(),
           phone,
           role: form.role,
           ...(form.password ? { password: form.password } : {}),
@@ -278,7 +277,7 @@ function StaffSheet({ open, member, onOpenChange }: { open: boolean; member: Sta
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Email" htmlFor="st-email">
-            <Input id="st-email" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="blessing@yourhotel.ng" />
+            <Input id="st-email" type="email" disabled={editing} title={editing ? "Email can't be changed" : undefined} value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="blessing@yourhotel.ng" />
           </Field>
           <Field label="Phone" htmlFor="st-phone">
             <AffixInput id="st-phone" prefix="+234" inputMode="tel" className="font-mono" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="803 123 4567" />

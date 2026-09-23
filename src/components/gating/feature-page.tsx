@@ -75,7 +75,7 @@ export function FeaturePage({ feature, icon: I, name, title, pitch, bullets, pre
         description={pitch}
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <Panel className="relative overflow-hidden">
+        <Panel className="relative self-start overflow-hidden">
           <div className="flex items-center justify-between border-b border-line px-5 py-3">
             <span className="eyebrow">Preview</span>
             <span className="text-[12px] text-ink-faint">Sample data</span>

@@ -89,8 +89,7 @@ export function PlanCompare({
                     )}
                   >
                     <span aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: tone }} />
-                    <div className="flex min-h-[22px] items-center gap-2">
-                      <span className="display-sm text-[21px] leading-none text-ink">{p.name}</span>
+                    <div className="mb-2 flex h-[18px] items-center gap-2">
                       {p.highlighted && !isCurrent && (
                         <span className="rounded-xs border border-[color-mix(in_oklab,var(--brass)_45%,transparent)] px-1.5 py-px font-mono text-[9.5px] uppercase tracking-[0.14em] text-brass">
                           Most chosen
@@ -98,11 +97,12 @@ export function PlanCompare({
                       )}
                       {isCurrent && (
                         <span className="rounded-xs bg-ink px-1.5 py-px font-mono text-[9.5px] uppercase tracking-[0.14em] text-paper">
-                          {trialing ? "Trial" : "Current"}
+                          {trialing ? "Your trial" : "Your plan"}
                         </span>
                       )}
                     </div>
-                    <p className="mt-1.5 min-h-[36px] text-[12.5px] leading-snug text-ink-muted">{p.tagline}</p>
+                    <span className="display-sm block text-[22px] leading-none text-ink">{p.name}</span>
+                    <p className="mt-2 min-h-[70px] text-[12.5px] leading-snug text-ink-muted">{p.tagline}</p>
                     <div className="mt-4 flex items-baseline gap-1">
                       {price == null ? (
                         <span className="display text-[30px] leading-none text-ink">

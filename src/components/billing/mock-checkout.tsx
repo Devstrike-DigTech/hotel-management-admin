@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, Flask, ShieldCheck, WarningOctagon } from "@phosphor-icons/react";
 import { hotelApi } from "@/lib/api/endpoints";
@@ -39,7 +39,8 @@ export function MockCheckout() {
   const s = useHotelSession();
   const router = useRouter();
   const qc = useQueryClient();
-  const [pending] = useState<Pending | null>(() => (typeof window === "undefined" ? null : readPending()));
+  // sessionStorage is client-only: read it after hydration to keep SSR and client in step.
+  const pending = useMemo(() => (hydrated ? readPending() : null), [hydrated]);
 
   useEffect(() => {
     if (hydrated && !s) router.replace(`/login?next=${encodeURIComponent(`/billing/mock-checkout?reference=${reference}`)}`);

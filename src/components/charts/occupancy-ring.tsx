@@ -21,13 +21,18 @@ export function OccupancyRing({
   byStatus,
   total,
   size = 148,
+  rate,
 }: {
   byStatus: Partial<Record<RoomStatus, number>>;
   total: number;
   size?: number;
+  /** 0..1 */
+  rate?: number | null;
 }) {
   const occupied = byStatus.OCCUPIED ?? 0;
-  const pct = total ? Math.round((occupied / total) * 100) : 0;
+  // Prefer the server's rate (occupied / sellable rooms, excluding out of order).
+  const sellable = total - (byStatus.OUT_OF_ORDER ?? 0);
+  const pct = rate != null ? Math.round(rate * 100) : sellable > 0 ? Math.round((occupied / sellable) * 100) : 0;
   const c = 50;
   const r = 42;
   const start = -Math.PI / 2;

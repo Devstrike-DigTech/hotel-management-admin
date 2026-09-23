@@ -74,7 +74,8 @@ function Detail({ tenant }: { tenant: TenantDetail }) {
   const overrides = new Map((tenant.featureOverrides ?? []).map((o) => [o.featureCode, o.enabled]));
   const [local, setLocal] = useState<Map<string, boolean>>(overrides);
   const setFeature = useMutation({
-    mutationFn: ({ code, enabled }: { code: string; enabled: boolean }) => platformApi.setFeature(tenant.id, code, enabled),
+    mutationFn: ({ code, enabled }: { code: string; enabled: boolean }) =>
+      enabled ? platformApi.setFeature(tenant.id, code, true) : platformApi.removeFeature(tenant.id, code),
     onMutate: ({ code, enabled }) => setLocal((m) => new Map(m).set(code, enabled)),
     onError: (_e, { code }) =>
       setLocal((m) => {

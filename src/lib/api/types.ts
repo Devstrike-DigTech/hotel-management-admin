@@ -64,6 +64,8 @@ export interface Plan {
   commissionBps: number | null;
   highlighted: boolean;
   sortOrder: number;
+  /** platform console only */
+  tenantCount?: number;
 }
 
 export type FeatureCategory = "Operations" | "Revenue" | "Guests" | "Growth" | "Platform";

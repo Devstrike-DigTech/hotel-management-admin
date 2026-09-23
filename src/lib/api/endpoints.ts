@@ -112,6 +112,9 @@ export const platformApi = {
       body: { featureCode, enabled },
       auth: "platform",
     }),
+  /** Remove an add-on override so the tenant falls back to its plan. */
+  removeFeature: (id: string, featureCode: string) =>
+    api<unknown>(`/platform/tenants/${id}/features/${featureCode}`, { method: "DELETE", auth: "platform" }),
   plans: async () => {
     const plans = items(await api<Plan[] | { items: Plan[] }>("/platform/plans", { auth: "platform" }));
     return [...plans].sort((a, b) => a.sortOrder - b.sortOrder);

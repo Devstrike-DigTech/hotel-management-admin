@@ -198,8 +198,8 @@ function RoomTypeSheet({
     base: "",
     hourly: "",
     capacity: "2",
-    bedType: "",
-    size: "",
+    size: "24",
+    bedType: "Queen",
     amenities: [] as string[],
   };
   const [form, setForm] = useState(blank);
@@ -232,8 +232,8 @@ function RoomTypeSheet({
         basePriceKobo: toKobo(form.base) ?? 0,
         ...(hourlyAllowed ? { hourlyPriceKobo: toKobo(form.hourly) } : {}),
         capacity: Number(form.capacity) || 1,
-        bedType: form.bedType.trim() || null,
-        sizeSqm: form.size ? Number(form.size) : null,
+        bedType: form.bedType.trim(),
+        sizeSqm: Number(form.size),
         amenities: form.amenities,
       };
       return editing ? hotelApi.updateRoomType(type!.id, body) : hotelApi.createRoomType(body);
@@ -247,7 +247,7 @@ function RoomTypeSheet({
     meta: { errorTitle: "Room type not saved" },
   });
 
-  const valid = form.name.trim() && toKobo(form.base);
+  const valid = form.name.trim() && toKobo(form.base) && form.bedType.trim() && Number(form.size) >= 1;
 
   return (
     <Sheet

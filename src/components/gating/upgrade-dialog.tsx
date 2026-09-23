@@ -43,10 +43,15 @@ export function UpgradeDialog() {
     const l = LIMIT_LABEL[prompt.limit] ?? { label: prompt.limit, noun: "item" };
     const target = plans.data?.find((p) => p.code === planCode);
     const next = target?.limits?.[prompt.limit];
+    const full = prompt.max !== undefined && prompt.current !== undefined && prompt.current >= prompt.max;
     eyebrow = "Limit reached";
-    title = (
+    title = full ? (
       <>
         You&rsquo;ve used every {l.noun} <em>on this plan</em>
+      </>
+    ) : (
+      <>
+        That&rsquo;s more {l.label.toLowerCase()} <em>than your plan holds</em>
       </>
     );
     body = (
@@ -85,7 +90,10 @@ export function UpgradeDialog() {
           const prev = idx > 0 ? plans.data![idx - 1] : null;
           return !prev?.features.includes(f);
         })
-        .slice(0, 5)
+        .sort((a, b) =>
+          prompt?.kind === "feature" ? Number(b === prompt.feature) - Number(a === prompt.feature) : 0,
+        )
+        .slice(0, 6)
     : [];
 
   const go = () => {
@@ -100,18 +108,21 @@ export function UpgradeDialog() {
         <D.Content className="fixed left-1/2 top-1/2 z-[80] grid w-[calc(100vw-24px)] max-w-[640px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border border-line bg-surface shadow-float outline-none data-[state=open]:animate-[dialog-in_240ms_cubic-bezier(0.22,1,0.36,1)] sm:grid-cols-[200px_1fr]">
           {/* indigo cloth panel */}
           <div className="relative hidden overflow-hidden bg-[#22324f] text-[#e9dfcc] sm:block dark:bg-[#172238]">
-            <AdireField cols={5} rows={10} className="absolute inset-0 h-full w-full opacity-40" strokeWidth={1} />
-            <div className="relative flex h-full flex-col justify-end p-5">
+            <AdireField
+              cols={5}
+              rows={10}
+              className="absolute inset-0 h-full w-full opacity-40 [mask-image:linear-gradient(180deg,black_30%,transparent_85%)]"
+              strokeWidth={1}
+            />
+            <div className="relative flex h-full flex-col justify-end gap-4 p-5">
               <span className="grid h-10 w-10 place-items-center rounded-full border border-[#e9dfcc]/40 bg-[#22324f]">
                 {icon}
               </span>
-              {plan && (
-                <div className="mt-4">
+              {plan && prompt?.kind !== "readonly" && plan.priceMonthlyKobo != null && (
+                <div>
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#e9dfcc]/70">From</p>
-                  <p className="font-mono text-[22px] leading-tight">
-                    {naira(plan.priceMonthlyKobo)}
-                    <span className="text-[12px] text-[#e9dfcc]/70">/mo</span>
-                  </p>
+                  <p className="mt-0.5 font-mono text-[19px] leading-tight">{naira(plan.priceMonthlyKobo)}</p>
+                  <p className="text-[11.5px] text-[#e9dfcc]/70">per month</p>
                 </div>
               )}
             </div>
@@ -133,17 +144,18 @@ export function UpgradeDialog() {
 
             {prompt?.kind !== "readonly" && plan && (
               <div className="mt-5 rounded-md border border-line bg-paper/60 p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <PlanPlate name={plan.name} code={plan.code} />
-                  <span className="text-[12px] text-ink-muted">{plan.tagline}</span>
-                </div>
-                <ul className="grid gap-1.5">
-                  {currentHighlights.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-[13px] text-ink">
-                      <Check size={13} weight="bold" className="text-palm" />
-                      {featureName(f, features.data)}
-                    </li>
-                  ))}
+                <PlanPlate name={plan.name} code={plan.code} />
+                <p className="mt-2 text-[12.5px] leading-snug text-ink-muted">{plan.tagline}</p>
+                <ul className="mt-3 grid gap-1.5 border-t border-line pt-3 sm:grid-cols-2">
+                  {currentHighlights.map((f) => {
+                    const asked = prompt?.kind === "feature" && prompt.feature === f;
+                    return (
+                      <li key={f} className={`flex items-center gap-2 text-[13px] ${asked ? "font-medium text-ink" : "text-ink"}`}>
+                        <Check size={13} weight="bold" className={asked ? "text-laterite" : "text-palm"} />
+                        {featureName(f, features.data)}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}

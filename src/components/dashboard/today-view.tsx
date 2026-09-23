@@ -6,7 +6,7 @@ import { ArrowRight, ArrowUpRight, Broom, Plus, SunHorizon, MoonStars } from "@p
 import { useDashboard, useMe, useRooms } from "@/lib/api/hooks";
 import { useRoomStatus } from "@/lib/api/mutations";
 import type { Room, RoomStatus } from "@/lib/api/types";
-import { LIMIT_LABEL, ROOM_STATUS, ROOM_STATUS_ORDER } from "@/lib/catalog";
+import { LIMIT_LABEL, ROOM_STATUS, ROOM_STATUS_ORDER, SUB_STATUS } from "@/lib/catalog";
 import { daysUntil, firstName, formatDate, greeting, lagosHour, lagosLongDate, relativeTime } from "@/lib/format";
 import { ButtonLink, Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, PageHeader, Panel, PanelHeader, PlanPlate, Skeleton, Meter } from "@/components/ui/primitives";
@@ -140,7 +140,12 @@ export function TodayView() {
               </span>
             }
             title="The key rack"
-            description="Hover a key for notes. Click, or press Enter, to change its status."
+            description={
+              <>
+                <span className="sm:hidden">Tap a key to change its status.</span>
+                <span className="hidden sm:inline">Hover a key for notes. Click, or press Enter, to change its status.</span>
+              </>
+            }
             actions={
               <Link href="/rooms" className="inline-flex items-center gap-1 text-[13px] text-ink-muted hover:text-ink">
                 All rooms <ArrowUpRight size={13} />
@@ -306,14 +311,16 @@ function PlanUsage() {
         eyebrow="Your plan"
         title={
           <span className="flex items-center gap-2">
-            {sub.planName} <PlanPlate name={sub.status === "TRIALING" ? "Trial" : sub.status.toLowerCase()} code={sub.planCode} />
+            {sub.planName} <PlanPlate name={SUB_STATUS[sub.status]?.label ?? sub.status} code={sub.planCode} />
           </span>
         }
         description={
           left !== null
             ? `${left} ${left === 1 ? "day" : "days"} left, trial ends ${formatDate(sub.trialEndsAt)}`
             : sub.currentPeriodEnd
-              ? `Renews ${formatDate(sub.currentPeriodEnd)}`
+              ? sub.status === "ACTIVE"
+                ? `Renews ${formatDate(sub.currentPeriodEnd)}`
+                : `Period ended ${formatDate(sub.currentPeriodEnd)}`
               : undefined
         }
       />
