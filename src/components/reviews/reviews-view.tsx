@@ -45,6 +45,19 @@ export const MODERATION: Record<ModerationReason, string> = {
 };
 const REPLY_MAX = 2000;
 
+/**
+ * The summary's count and rating must agree with its star distribution. If they
+ * don't (an older property aggregate), trust the distribution.
+ */
+function consistentSummary<T extends { rating: number | null; count: number; distribution: Record<string, number> }>(s: T | undefined): T | undefined {
+  if (!s) return s;
+  const counts = [1, 2, 3, 4, 5].map((k) => s.distribution[String(k)] ?? 0);
+  const n = counts.reduce((a, b) => a + b, 0);
+  if (!n || n === s.count) return s;
+  const mean = counts.reduce((a, c, i) => a + c * (i + 1), 0) / n;
+  return { ...s, count: n, rating: Math.round(mean * 10) / 10 };
+}
+
 export function ReviewsView() {
   const { can } = useCan();
   const summary = useReviewSummary();
@@ -61,7 +74,7 @@ export function ReviewsView() {
     pageSize: 10,
   };
   const list = useReviews(query);
-  const s = summary.data;
+  const s = consistentSummary(summary.data);
   const pages = Math.max(1, Math.ceil((list.data?.total ?? 0) / 10));
   const filtered = !!(replied || rating || traveller);
 

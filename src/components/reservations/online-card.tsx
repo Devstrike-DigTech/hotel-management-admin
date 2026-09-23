@@ -84,7 +84,11 @@ export function OnlineBookingCard({ r }: { r: ReservationDetail }) {
                     {p.reference}
                   </p>
                   {p.paidAt && <p className="text-[11.5px] text-ink-muted">{formatDateTime(p.paidAt)}</p>}
-                  {p.commissionKobo > 0 && <p className="text-[11.5px] text-ink-muted">{naira(p.commissionKobo)} commission taken at the split</p>}
+                  {p.commissionKobo > 0 && (
+                    <p className="text-[11.5px] text-ink-muted">
+                      {naira(p.commissionKobo)} commission {["SUCCEEDED", "PARTIALLY_REFUNDED", "REFUNDED"].includes(p.status) ? "taken at the split" : "to be taken at the split"}
+                    </p>
+                  )}
                 </div>
               </li>
             );

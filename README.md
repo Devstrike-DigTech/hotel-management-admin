@@ -112,9 +112,12 @@ where every booking came from, what was paid, what the platform kept, and what t
 | ![Online booking: the policy with the guest's view](docs/screenshots/m3-booking-settings-1440-light.png) | ![Reviews: rating, spread, subscores and the monthly trend](docs/screenshots/m3-reviews-1440-dark.png) |
 | ![A paid marketplace booking with its messages](docs/screenshots/m3-reservation-online-1440-light.png) | ![The Ledger with channel stamps](docs/screenshots/m3-ledger-1440-dark.png) |
 | ![Console: the marketplace](docs/screenshots/m3-platform-marketplace-1440-light.png) | ![Console: review moderation](docs/screenshots/m3-platform-reviews-1440-dark.png) |
+| ![Payout onboarding: the name the bank returned, to confirm](docs/screenshots/m3-payouts-onboarding-1440-dark.png) | ![An unpaid online hold counting down](docs/screenshots/m3-hold-1440-dark.png) |
+| ![The confirmation email, sandboxed](docs/screenshots/m3-email-preview-1440-dark.png) | ![Today with Booked online](docs/screenshots/m3-today-1440-light.png) |
 
 On a phone: [Payouts](docs/screenshots/m3-payouts-390-light.png), [Online booking](docs/screenshots/m3-booking-settings-390-dark.png),
-[Reviews](docs/screenshots/m3-reviews-390-light.png). Every M3 page is in `docs/screenshots/m3-*`.
+[Reviews](docs/screenshots/m3-reviews-390-light.png), [bank look-up](docs/screenshots/m3-payouts-onboarding-390-light.png),
+[email preview](docs/screenshots/m3-email-preview-390-light.png). Every M3 page is in `docs/screenshots/m3-*`.
 
 ### M3 routes
 
@@ -158,6 +161,8 @@ Online bookings everywhere else:
 | Message bodies (email preview) | yes | yes | yes | first lines only |
 | Cancel a booking paid online | yes | yes | | |
 | New booking slips | yes | yes | yes | yes |
+
+Shots were taken against the live API and its M3 seed; the payout account look-up and Paystack are in dev mock mode.
 
 ### M3 end-to-end tests
 

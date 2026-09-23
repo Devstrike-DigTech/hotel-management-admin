@@ -264,7 +264,7 @@ export function ReservationsList() {
                       <div className="flex flex-wrap items-center gap-2">
                         <Code value={r.code} className="text-[12px] text-ink-muted" />
                         {r.status === "PENDING" && r.holdExpiresAt ? <HoldCountdown expiresAt={r.holdExpiresAt} /> : <StayBadge status={r.status} />}
-                        {isOnlineSource(r.source) && <ChannelBadge source={r.source} size="sm" />}
+                        {isOnlineSource(r.source) && <ChannelBadge source={r.source} size="sm" compact />}
                       </div>
                       <GuestName name={r.guest.fullName} vip={r.guest.vip} className="mt-1 text-[15px] font-medium text-ink" />
                       <p className="mt-0.5 text-[12.5px] text-ink-muted">
