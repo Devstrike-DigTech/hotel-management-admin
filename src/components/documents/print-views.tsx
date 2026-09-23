@@ -54,7 +54,7 @@ export function SharedDocument({ token }: { token: string }) {
   );
 }
 
-function PrintFrame({
+export function PrintFrame({
   kind,
   loading,
   error,
@@ -62,7 +62,9 @@ function PrintFrame({
   children,
   actions,
   publicView,
+  label,
 }: {
+  label?: string;
   kind: "invoice" | "receipt";
   loading: boolean;
   error: unknown;
@@ -81,7 +83,7 @@ function PrintFrame({
               <ArrowLeft size={14} /> Back
             </Button>
           )}
-          <span className="eyebrow">{kind === "invoice" ? "A4 invoice" : "80mm receipt"}</span>
+          <span className="eyebrow">{label ?? (kind === "invoice" ? "A4 invoice" : "80mm receipt")}</span>
           <div className="ml-auto flex flex-wrap items-center gap-2">
             {actions}
             <Button size="sm" onClick={() => window.print()}>

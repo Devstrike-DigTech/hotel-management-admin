@@ -219,7 +219,27 @@ function StayCard({ r }: { r: ReservationDetail }) {
       </div>
       <dl className="divide-y divide-line border-t border-line px-5 py-1">
         <KV k={r.stayType === "DAY_USE" ? "Length" : "Nights"} v={<span className="font-mono">{r.stayType === "DAY_USE" ? formatDuration(+new Date(r.departureAt) - +new Date(r.arrivalAt)) : r.nights}</span>} />
-        <KV k="Rate" v={<span className="font-mono">{naira(r.rateKobo)} / {r.stayType === "DAY_USE" ? "hr" : "night"}</span>} />
+        {r.ratePlan && <KV k="Rate plan" v={<span>{r.ratePlan.name}{r.ratePlan.includesBreakfast ? ", breakfast" : ""}{r.ratePlan.nonRefundable ? ", no refunds" : ""}</span>} />}
+        {r.nightlyRates && r.nightlyRates.length > 1 && new Set(r.nightlyRates.map((n) => n.rateKobo)).size > 1 ? (
+          <div className="py-1.5">
+            <dt className="text-[13px] text-ink-muted">Nightly rates</dt>
+            <dd className="mt-1 flex flex-col gap-0.5">
+              {r.nightlyRates.map((n) => (
+                <span key={n.date} className="flex justify-between text-[12.5px]">
+                  <span className="text-ink-muted">
+                    {formatDate(`${n.date}T12:00:00+01:00`, { weekday: "short", day: "numeric", month: "short", year: undefined })}
+                    {n.ruleName && <span className="text-ink-faint"> &middot; {n.ruleName}</span>}
+                  </span>
+                  <span className="font-mono text-ink">{naira(n.rateKobo)}</span>
+                </span>
+              ))}
+            </dd>
+          </div>
+        ) : (
+          <KV k="Rate" v={<span className="font-mono">{naira(r.rateKobo)} / {r.stayType === "DAY_USE" ? "hr" : "night"}</span>} />
+        )}
+        {r.promo && <KV k="Promo" v={<span><span className="font-mono">{r.promo.code}</span> <span className="font-mono text-palm">−{naira(r.promo.discountKobo)}</span></span>} />}
+        {r.corporateAccount && <KV k="Company" v={<a href={`/corporate?open=${r.corporateAccount.id}`} className="hover:text-laterite">{r.corporateAccount.name}</a>} />}
         <KV k="Estimate" v={<span className="font-mono">{naira(r.estimatedTotalKobo)}</span>} />
         <KV k="Guests" v={`${r.adults} ${r.adults === 1 ? "adult" : "adults"}${r.children ? `, ${r.children} ${r.children === 1 ? "child" : "children"}` : ""}`} />
         <KV k="Source" v={r.online ? <SourceTag source={r.source} size="sm" /> : SOURCES[r.source]} />

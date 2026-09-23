@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { CheckCircle, CloudArrowUp, Door, Money, Scroll, WarningCircle } from "@phosphor-icons/react";
+import { Briefcase, CheckCircle, CloudArrowUp, Door, Money, Scroll, WarningCircle } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { toast } from "@/lib/store";
 import { naira } from "@/lib/format";
@@ -39,7 +39,10 @@ export function CheckOutDialog({
   const { can } = useCan();
   const [override, setOverride] = useState(false);
   const [reason, setReason] = useState("");
-  const [done, setDone] = useState<{ invoice?: InvoiceDocument; queued?: boolean } | null>(null);
+  const [done, setDone] = useState<{ invoice?: InvoiceDocument; queued?: boolean; ledger?: { account: string; amountKobo: number; invoiceId?: string; invoiceNumber?: string } } | null>(null);
+  const [toLedger, setToLedger] = useState(false);
+  const [limitError, setLimitError] = useState<string | null>(null);
+  const acct = r.corporateAccount ?? null;
   const [refundMethod, setRefundMethod] = useState<"CASH" | "TRANSFER" | "POS">("TRANSFER");
   const [refundAmount, setRefundAmount] = useState<number | null>(null);
 
@@ -48,30 +51,42 @@ export function CheckOutDialog({
   const early = +new Date(r.departureAt) > now + 2 * 3600_000;
 
   const checkout = useMutation({
-    mutationFn: () =>
+    mutationFn: (v: { ledger?: boolean } = {}) =>
       deskAction<CheckOutResult>({
         kind: "check-out",
         title: `Check out ${r.guest.fullName}`,
         subtitle: `${r.code}${r.room ? ` · room ${r.room.number}` : ""}`,
         method: "POST",
         path: `/reservations/${r.id}/check-out`,
-        body: override ? { override: { reason: reason.trim() } } : {},
+        body: {
+          ...(v.ledger ? { cityLedger: true } : {}),
+          ...(override ? { override: { reason: reason.trim() } } : {}),
+        },
         offlineAllowed: has("offline_mode") && balance === 0,
-        invalidate: [["reservations"], ["folio"]],
+        invalidate: [["reservations"], ["folio"], ["city-ledger"], ["corporate"]],
       }),
+    onMutate: () => setLimitError(null),
     onSuccess: async (res) => {
       if (res.queued) {
         setDone({ queued: true });
         return;
       }
-      await refresh();
-      setDone({ invoice: res.result.invoice });
-      toast.success(`${r.guest.fullName} checked out`, r.room ? `Room ${r.room.number} is now dirty and on the housekeeping list.` : undefined);
+      await refresh([["city-ledger"], ["corporate"]]);
+      const cl = res.result.cityLedger;
+      setDone({
+        invoice: res.result.invoice,
+        ledger: cl ? { account: acct?.name ?? "the company", amountKobo: cl.charge.amountKobo, invoiceId: cl.invoice?.id, invoiceNumber: cl.invoice?.number } : undefined,
+      });
+      toast.success(`${r.guest.fullName} checked out`, cl ? `${naira(cl.charge.amountKobo)} charged to ${acct?.name ?? "the company"}.` : r.room ? `Room ${r.room.number} is now dirty and on the housekeeping list.` : undefined);
     },
     onError: (e) => {
       if (isApiError(e) && e.code === "BALANCE_OUTSTANDING") void folio.refetch();
+      if (isApiError(e) && e.code === "CREDIT_LIMIT_EXCEEDED") {
+        const d = e.details as { availableKobo?: number; balanceKobo?: number } | undefined;
+        setLimitError(`${acct?.name ?? "The company"} has ${naira(d?.availableKobo ?? 0)} of credit left; this stay needs ${naira(d?.balanceKobo ?? balance)}.`);
+      }
     },
-    meta: { errorTitle: "Not checked out" },
+    meta: { errorTitle: "Not checked out", silentCodes: ["CREDIT_LIMIT_EXCEEDED"] },
   });
 
   const refund = useMutation({
@@ -100,6 +115,20 @@ export function CheckOutDialog({
           <span className={cn("grid h-14 w-14 place-items-center rounded-full", done.queued ? "bg-ochre-wash text-ochre" : "bg-palm-wash text-palm")}>
             {done.queued ? <CloudArrowUp size={28} weight="duotone" /> : <CheckCircle size={28} weight="duotone" />}
           </span>
+          {done.ledger && (
+            <p className="rounded-md border border-[color-mix(in_oklab,var(--adire)_30%,transparent)] bg-adire-wash/60 px-3 py-2 text-[13px] text-ink">
+              <span className="font-mono">{naira(done.ledger.amountKobo)}</span> charged to <span className="font-medium">{done.ledger.account}</span> on the City Ledger
+              {done.ledger.invoiceNumber && (
+                <>
+                  {" "}
+                  &middot;{" "}
+                  <a href={`/print/statement/${done.ledger.invoiceId}`} className="font-mono text-laterite hover:underline">
+                    {done.ledger.invoiceNumber}
+                  </a>
+                </>
+              )}
+            </p>
+          )}
           {done.invoice ? (
             <>
               <div>
@@ -142,7 +171,7 @@ export function CheckOutDialog({
                 All settled. Checking out closes the folio, issues the final invoice
                 {r.room ? `, and sends room ${r.room.number} to housekeeping` : ""}.
               </p>
-              <Button size="lg" onClick={() => checkout.mutate()} loading={checkout.isPending} data-testid="confirm-checkout">
+              <Button size="lg" onClick={() => checkout.mutate({})} loading={checkout.isPending} data-testid="confirm-checkout">
                 {!online && has("offline_mode") ? <CloudArrowUp size={16} weight="bold" /> : <Door size={16} weight="bold" />}
                 {!online && has("offline_mode") ? "Save check-out offline" : "Check out and issue invoice"}
               </Button>
@@ -165,6 +194,38 @@ export function CheckOutDialog({
               >
                 <Money size={16} weight="bold" /> Take {naira(balance)}
               </Button>
+              {acct && (
+                <div className="rounded-md border border-[color-mix(in_oklab,var(--adire)_35%,transparent)] bg-adire-wash/40 px-4 py-3.5">
+                  <p className="flex items-center gap-2 text-[13.5px] font-medium text-ink">
+                    <Briefcase size={16} weight="duotone" className="text-adire" /> {acct.name}
+                  </p>
+                  <p className="mt-1 text-[12.5px] text-ink-muted">
+                    {acct.availableKobo >= balance
+                      ? `${naira(acct.availableKobo)} of credit left. Charging this stay leaves ${naira(acct.availableKobo - balance)}.`
+                      : `Only ${naira(Math.max(0, acct.availableKobo))} of credit left; this stay is ${naira(balance - Math.max(0, acct.availableKobo))} over the limit.`}
+                  </p>
+                  {limitError && (
+                    <p role="alert" className="mt-2 text-[12.5px] text-danger">
+                      {limitError} {can("override") ? "Open the override below to go over the limit with a reason." : "A manager can override it."}
+                    </p>
+                  )}
+                  {acct.availableKobo >= balance && (
+                    <Button
+                      className="mt-3 w-full"
+                      variant="ink"
+                      loading={checkout.isPending && toLedger && !override}
+                      onClick={() => {
+                        setToLedger(true);
+                        setOverride(false);
+                        checkout.mutate({ ledger: true });
+                      }}
+                      data-testid="checkout-city-ledger"
+                    >
+                      <Door size={16} weight="bold" /> Charge {naira(balance)} to the City Ledger and check out
+                    </Button>
+                  )}
+                </div>
+              )}
               {can("override") ? (
                 <div className="rounded-md border border-dashed border-line-strong">
                   <button
@@ -174,7 +235,7 @@ export function CheckOutDialog({
                     className="flex w-full items-center gap-2 px-4 py-3 text-left text-[13px] font-medium text-ink"
                   >
                     <Scroll size={16} weight="duotone" className="text-ochre" />
-                    Let them leave owing (city ledger)
+                    {acct ? "Go over the credit limit (manager)" : "Let them leave owing (city ledger)"}
                   </button>
                   {override && (
                     <div className="flex flex-col gap-3 border-t border-dashed border-line-strong px-4 py-3">
@@ -185,7 +246,15 @@ export function CheckOutDialog({
                       <Field label="Reason" htmlFor="co-reason">
                         <Textarea id="co-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Company account, Access Bank PO 4471" className="min-h-16" />
                       </Field>
-                      <Button variant="danger" onClick={() => checkout.mutate()} loading={checkout.isPending} disabled={reason.trim().length < 4}>
+                      <Button
+                        variant="danger"
+                        onClick={() => {
+                          setToLedger(!!acct);
+                          checkout.mutate({ ledger: !!acct });
+                        }}
+                        loading={checkout.isPending && override}
+                        disabled={reason.trim().length < 4}
+                      >
                         Check out owing {naira(balance)}
                       </Button>
                     </div>

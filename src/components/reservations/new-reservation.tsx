@@ -24,6 +24,8 @@ import { Field, Input, Textarea } from "@/components/ui/form";
 import { Segmented, Skeleton } from "@/components/ui/primitives";
 import { ChipRadio, NairaInput, Stepper } from "@/components/m2/bits";
 import { LockedInline } from "@/components/gating/gate";
+import type { StayQuote } from "@/lib/api/types-m4";
+import { StayPricing, type PricingChoice } from "./stay-pricing";
 
 /** Mounted once in the shell; opened through `openNewReservation()`. */
 export function NewReservationHost() {
@@ -73,6 +75,8 @@ function NewReservationForm({ prefill, onDone }: { prefill: NewReservationPrefil
   const [status, setStatus] = useState<"CONFIRMED" | "PENDING">("CONFIRMED");
   const [notes, setNotes] = useState("");
   const [rate, setRate] = useState<number | null>(null);
+  const [pricing, setPricing] = useState<PricingChoice>({ ratePlanId: null, promoCode: null, corporateAccountId: null });
+  const [quote, setQuote] = useState<StayQuote | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const phoneRef = useRef<HTMLInputElement>(null);
 
@@ -163,6 +167,14 @@ function NewReservationForm({ prefill, onDone }: { prefill: NewReservationPrefil
         status,
         notes: notes.trim() || undefined,
         rateKobo: rate ?? undefined,
+        ...(dayUse
+          ? {}
+          : {
+              ratePlanId: pricing.ratePlanId ?? quote?.ratePlan.id ?? undefined,
+              promoCode: pricing.promoCode && quote?.promo ? pricing.promoCode : undefined,
+              corporateAccountId: pricing.corporateAccountId ?? undefined,
+              source: pricing.corporateAccountId && source === "WALK_IN" ? ("CORPORATE" as ReservationSource) : source,
+            }),
       });
     },
     onSuccess: async (r) => {
@@ -355,6 +367,22 @@ function NewReservationForm({ prefill, onDone }: { prefill: NewReservationPrefil
         )}
       </Section>
 
+      {roomTypeId && !dayUse && (
+        <Section n="02b" title="Price">
+          <StayPricing
+            roomTypeId={roomTypeId}
+            arrival={arrival}
+            departure={departure}
+            adults={adults}
+            kids={children}
+            phone={normalisePhone(phone)}
+            value={pricing}
+            onChange={setPricing}
+            onQuote={setQuote}
+          />
+        </Section>
+      )}
+
       {/* 03 guest */}
       <Section n="03" title="Guest">
         {prefill.guestId ? (
@@ -448,9 +476,9 @@ function NewReservationForm({ prefill, onDone }: { prefill: NewReservationPrefil
         <div className="min-w-0 flex-1">
           <p className="text-[12px] text-ink-muted">
             {units} {dayUse ? (units === 1 ? "hour" : "hours") : units === 1 ? "night" : "nights"}
-            {selectedType ? ` · ${selectedType.name}` : ""} &middot; before tax
+            {selectedType ? ` · ${selectedType.name}` : ""} &middot; {quote && !dayUse && rate == null ? `${quote.ratePlan.name}, with tax` : "before tax"}
           </p>
-          <p className="font-mono text-[20px] leading-tight text-ink">{naira(unitRate * units)}</p>
+          <p className="font-mono text-[20px] leading-tight text-ink">{naira(quote && !dayUse && rate == null ? quote.breakdown.totalKobo : unitRate * units)}</p>
         </div>
         <Button type="submit" size="lg" loading={create.isPending} disabled={dayUse && !has("hourly_bookings")}>
           Book it
