@@ -115,7 +115,7 @@ export function HousekeepingView() {
             Turn rooms around <em>before the next arrival</em>.
           </>
         }
-        description="Drag a room onto a name to hand it out. Urgent rooms have a guest arriving today. Cleaned rooms wait for a supervisor before they go back on sale."
+        description="Drag a room onto a name (or tap it) to hand it out. Urgent rooms have a guest arriving today. Cleaned rooms wait for a supervisor before they go back on sale."
         actions={
           canAssign && (
             <Button variant="secondary" loading={suggest.isPending} onClick={() => suggest.mutate()}>
@@ -135,7 +135,7 @@ export function HousekeepingView() {
           sub={board.data?.requireInspection ? "inspection is on" : "inspection is off"}
           onClick={can("housekeeping.inspect") ? () => setTab("inspection") : undefined}
         />
-        <Count label="Arrivals waiting" value={board.data ? urgent : null} sub="rooms not ready for a guest due today" tone={urgent ? "laterite" : undefined} />
+        <Count label="Arrivals waiting" value={board.data ? urgent : null} sub="rooms not ready for today's guests" tone={urgent ? "laterite" : undefined} />
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -276,11 +276,11 @@ function Count({ label, value, sub, onClick, tone }: { label: string; value: num
   const body = (
     <>
       <span className="display-sm text-[13.5px] italic text-ink-muted">{label}</span>
-      {value === null ? <Skeleton className="mt-1 h-8 w-12" /> : <span className={cn("font-mono text-[32px] leading-none tracking-tight", tone === "laterite" ? "text-laterite" : "text-ink")}>{value}</span>}
-      <span className="text-[11.5px] text-ink-faint">{sub}</span>
+      {value === null ? <Skeleton className="mt-1 h-8 w-12" /> : <span className={cn("font-mono text-[26px] leading-none tracking-tight md:text-[32px]", tone === "laterite" ? "text-laterite" : "text-ink")}>{value}</span>}
+      <span className="line-clamp-1 text-[11.5px] text-ink-faint">{sub}</span>
     </>
   );
-  const cls = "flex flex-col gap-1.5 bg-surface px-5 py-4 text-left";
+  const cls = "flex min-w-0 flex-col gap-1 bg-surface px-4 py-3 text-left md:gap-1.5 md:px-5 md:py-4";
   return onClick ? (
     <button type="button" onClick={onClick} className={cn(cls, "transition-colors hover:bg-surface-2/60")}>
       {body}

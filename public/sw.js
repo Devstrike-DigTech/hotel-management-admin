@@ -6,13 +6,14 @@
  *  - API calls are not touched here; data is cached in IndexedDB by the app and
  *    offline writes go through the IndexedDB outbox with Idempotency-Keys.
  */
-const VERSION = "desk-v2";
+const VERSION = "desk-v3";
 const SHELL = `${VERSION}-shell`;
 const STATIC = `${VERSION}-static`;
 // React Server Component payloads live in their own cache so a page
 // navigation can never be answered with one (they share URLs with pages).
 const RSC = `${VERSION}-rsc`;
-const PRECACHE = ["/today", "/ledger", "/reservations", "/login", "/offline.html"];
+// /hk: the housekeeper's phone view, opened on floors with no signal
+const PRECACHE = ["/today", "/ledger", "/reservations", "/hk", "/login", "/offline.html"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

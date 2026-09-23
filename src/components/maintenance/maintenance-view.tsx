@@ -103,11 +103,11 @@ function Tile({ label, value, sub, tone, onClick }: { label: string; value: Reac
   const body = (
     <>
       <span className="display-sm text-[13.5px] italic text-ink-muted">{label}</span>
-      {value === null ? <Skeleton className="mt-1 h-8 w-14" /> : <span className={cn("font-mono text-[30px] leading-none tracking-tight", tone === "danger" ? "text-danger" : "text-ink")}>{value}</span>}
+      {value === null ? <Skeleton className="mt-1 h-8 w-14" /> : <span className={cn("font-mono text-[25px] leading-none tracking-tight md:text-[30px]", tone === "danger" ? "text-danger" : "text-ink")}>{value}</span>}
       <span className="truncate text-[11.5px] text-ink-faint">{sub}</span>
     </>
   );
-  const cls = "flex min-w-0 flex-col gap-1.5 bg-surface px-5 py-4 text-left";
+  const cls = "flex min-w-0 flex-col gap-1 bg-surface px-4 py-3 text-left md:gap-1.5 md:px-5 md:py-4";
   return onClick ? (
     <button type="button" onClick={onClick} className={cn(cls, "hover:bg-surface-2/60")}>
       {body}

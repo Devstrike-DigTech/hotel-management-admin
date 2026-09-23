@@ -227,7 +227,7 @@ export function Segmented<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className={cn("inline-flex items-center rounded-md border border-line bg-surface-2/70 p-0.5", className)}
+      className={cn("scrollbar-thin inline-flex max-w-full items-center overflow-x-auto rounded-md border border-line bg-surface-2/70 p-0.5", className)}
       onKeyDown={(e) => {
         const idx = options.findIndex((o) => o.value === value);
         if (e.key === "ArrowRight" || e.key === "ArrowDown") {
@@ -250,7 +250,7 @@ export function Segmented<T extends string>({
             tabIndex={active ? 0 : -1}
             onClick={() => onChange(o.value)}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-sm font-medium transition-colors duration-150",
+              "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-sm font-medium transition-colors duration-150",
               size === "sm" ? "h-7 px-2.5 text-[12.5px]" : "h-8 px-3 text-[13px]",
               active
                 ? "bg-surface text-ink shadow-[0_1px_0_var(--line-strong),0_0_0_1px_var(--line)]"

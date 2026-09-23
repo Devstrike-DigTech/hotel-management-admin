@@ -8,7 +8,7 @@ import { LogoMark } from "@/components/brand";
 import { AdireField } from "@/components/motifs/adire";
 
 /** Render *bold* and _italic_ the way WhatsApp does, keep line breaks. */
-function renderWhatsApp(text: string) {
+export function renderWhatsApp(text: string) {
   return text.split("\n").map((line, i) => (
     <span key={i} className="block min-h-[1.2em]">
       {line.split(/(\*[^*]+\*|_[^_]+_)/g).map((part, j) =>

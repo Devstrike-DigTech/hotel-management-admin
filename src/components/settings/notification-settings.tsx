@@ -20,7 +20,10 @@ import { Input, Switch } from "@/components/ui/form";
 import { Badge, ErrorState, PageHeader, Panel, PanelHeader, Skeleton } from "@/components/ui/primitives";
 import { NairaInput, Stepper } from "@/components/m2/bits";
 import { LockedInline } from "@/components/gating/gate";
-import { PhonePreview } from "@/components/reports/phone-preview";
+import { renderWhatsApp } from "@/components/reports/phone-preview";
+import { LogoMark } from "@/components/brand";
+import { config } from "@/lib/config";
+import { Checks } from "@phosphor-icons/react";
 
 type Form = Pick<NotificationSettings, "guardAlerts" | "quietHours" | "digest">;
 
@@ -206,7 +209,7 @@ export function NotificationSettingsView() {
           </div>
 
           <aside className="flex flex-col gap-5 lg:sticky lg:top-20 lg:self-start">
-            {preview && <PhonePreview digest={preview} />}
+            {preview && <AlertChat body={preview.body} />}
             <Panel>
               <PanelHeader
                 eyebrow="WhatsApp templates"
@@ -301,6 +304,44 @@ export function NotificationSettingsView() {
         </div>
       )}
     </>
+  );
+}
+
+/** The alert as it lands, the owner's one-key reply, and the acknowledgement. */
+function AlertChat({ body }: { body: string }) {
+  const bubble = "relative max-w-[88%] rounded-lg px-3 pb-1.5 pt-2 text-[13px] leading-[1.4] shadow-[0_1px_0.5px_rgb(0_0_0/0.13)]";
+  const time = "mt-1 flex items-center justify-end gap-1 text-[10.5px] text-[#667781] dark:text-[#8696a0]";
+  return (
+    <figure aria-label="How an alert looks on the owner's phone" className="overflow-hidden rounded-[22px] border border-line-strong bg-[#141210] p-[7px] shadow-[0_24px_48px_-28px_rgb(40_25_10/0.6)]">
+      <div className="overflow-hidden rounded-[16px] bg-[#ece5dd] dark:bg-[#0f1512]" style={{ colorScheme: "light" }}>
+        <div className="flex items-center gap-2.5 bg-[#1f4d3b] px-3 py-2.5 text-white">
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-[#f4efe6]">
+            <LogoMark size={19} />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-[13.5px] font-medium">{config.appName} Owner Alerts</p>
+            <p className="text-[10.5px] text-white/70">business account</p>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 px-3 py-3.5">
+          <div className={cn(bubble, "self-start rounded-tl-none bg-white text-[#111b21] dark:bg-[#1f2c34] dark:text-[#e9edef]")}>
+            <div className="whitespace-pre-wrap break-words">{renderWhatsApp(body)}</div>
+            <span className={time}>02:14</span>
+          </div>
+          <div className={cn(bubble, "self-end rounded-tr-none bg-[#d9fdd3] text-[#111b21] dark:bg-[#005c4b] dark:text-[#e9edef]")}>
+            1
+            <span className={time}>
+              02:16 <Checks size={13} weight="bold" className="text-[#53bdeb]" />
+            </span>
+          </div>
+          <div className={cn(bubble, "self-start rounded-tl-none bg-white text-[#111b21] dark:bg-[#1f2c34] dark:text-[#e9edef]")}>
+            Acknowledged 2 alerts for The Palmwine House.
+            <span className={time}>02:16</span>
+          </div>
+        </div>
+      </div>
+      <figcaption className="px-2 pb-1 pt-2.5 text-center text-[11.5px] text-[#a69d8f]">Reply 1 or ACK to acknowledge; DIGEST for today&rsquo;s numbers.</figcaption>
+    </figure>
   );
 }
 
