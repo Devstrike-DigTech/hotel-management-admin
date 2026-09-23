@@ -27,6 +27,7 @@ import { ROOM_STATUS, ROOM_STATUS_ORDER } from "@/lib/catalog";
 import { paletteStore, useStore } from "@/lib/store";
 import { setThemePref } from "./theme-toggle";
 import { BookBookmark, BookOpenText, CalendarPlus, ChartBar, Coins, Door, Money, ShieldWarning, SignIn } from "@phosphor-icons/react";
+import { Bank, CalendarX, ChatsTeardrop, Globe, GlobeHemisphereWest, Storefront } from "@phosphor-icons/react";
 import { useCan } from "@/lib/permissions";
 import { useReservations } from "@/lib/api/hooks-m2";
 import { openNewReservation, openPayment } from "@/lib/store-m2";
@@ -205,6 +206,32 @@ export function CommandPalette() {
           {can("reports.read") && <Action icon={<ChartBar size={17} weight="duotone" />} label="Today's flash report" keywords="occupancy adr revpar revenue" onSelect={() => run(() => router.push("/reports"))} />}
           {can("guest.write") && <Action icon={<BookOpenText size={17} weight="duotone" />} label="Download the guest register" keywords="police csv export" onSelect={() => run(() => router.push("/register"))} />}
         </Command.Group>
+
+        {(can("reservations.read") || can("reviews.read") || can("payouts.read")) && (
+          <Command.Group heading="Online" className={groupCls}>
+            {can("reservations.read") && (
+              <Action icon={<Storefront size={17} weight="duotone" />} label="Marketplace bookings" hint="commission applies" keywords="online reservations source channel marketplace" onSelect={() => run(() => router.push("/reservations?source=MARKETPLACE&view=all"))} />
+            )}
+            {can("reservations.read") && (
+              <Action icon={<Globe size={17} weight="duotone" />} label="Booking site bookings" hint="no commission" keywords="online reservations source channel microsite own website" onSelect={() => run(() => router.push("/reservations?source=BOOKING_SITE&view=all"))} />
+            )}
+            {can("reviews.reply") && (
+              <Action icon={<ChatsTeardrop size={17} weight="duotone" />} label="Reply to reviews" hint="waiting for a reply" keywords="reviews ratings respond feedback" onSelect={() => run(() => router.push("/reviews?replied=false"))} />
+            )}
+            {can("booking.settings") && (
+              <Action icon={<CalendarX size={17} weight="duotone" />} label="Change cancellation policy" keywords="refund free cancellation fee no-show online booking settings" onSelect={() => run(() => router.push("/settings/booking"))} />
+            )}
+            {can("booking.settings") && (
+              <Action icon={<GlobeHemisphereWest size={17} weight="duotone" />} label="Turn online booking on or off" keywords="pay at hotel booking site marketplace settings" onSelect={() => run(() => router.push("/settings/booking"))} />
+            )}
+            {can("payouts.manage") && (
+              <Action icon={<Bank size={17} weight="duotone" />} label="Set up or change the payout account" keywords="bank paystack subaccount settlement nuban" onSelect={() => run(() => router.push("/payouts"))} />
+            )}
+            {can("payouts.read") && (
+              <Action icon={<Bank size={17} weight="duotone" />} label="Online revenue and commission" keywords="payouts paystack commission deducted net" onSelect={() => run(() => router.push("/payouts"))} />
+            )}
+          </Command.Group>
+        )}
 
         <Command.Group heading="Actions" className={groupCls}>
           <Action icon={<Rows size={17} weight="duotone" />} label="Add rooms in bulk" hint="e.g. 101 to 120" keywords="add rooms bulk range create" onSelect={() => run(() => router.push("/rooms?new=bulk"))} />

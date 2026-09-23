@@ -10,6 +10,7 @@ import { HOTEL_NAV, isActive, navVisible, type NavItem } from "@/lib/nav";
 import { useEntitlements, useLogout } from "@/lib/auth";
 import { useCan } from "@/lib/permissions";
 import { useGuardSummary, useShifts } from "@/lib/api/hooks-m2";
+import { useReviewSummary } from "@/lib/api/hooks-m3";
 import { ROLES } from "@/lib/catalog";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -36,9 +37,11 @@ export function Sidebar({
   const guardOn = ready && can("guard.read") && has("revenue_guard_basic");
   const summary = useGuardSummary(guardOn);
   const pending = useShifts({ status: "CLOSED", pageSize: 1 }, ready && can("shift.approve"));
+  const reviews = useReviewSummary(ready && can("reviews.reply"));
   const badges: Record<string, number | undefined> = {
     flags: summary.data?.open,
     approvals: pending.data?.total,
+    reviews: reviews.data?.unreplied,
   };
 
   return (
@@ -172,7 +175,7 @@ function NavLink({
             "ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1.5 font-mono text-[10.5px] font-medium",
             item.badge === "flags" ? "bg-laterite text-laterite-ink" : "bg-brass-wash text-brass",
           )}
-          aria-label={`${count} ${item.badge === "flags" ? "open flags" : "waiting"}`}
+          aria-label={`${count} ${item.badge === "flags" ? "open flags" : item.badge === "reviews" ? "to reply to" : "waiting"}`}
         >
           {count}
         </span>

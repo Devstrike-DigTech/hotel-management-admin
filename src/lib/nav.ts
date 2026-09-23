@@ -1,5 +1,8 @@
 import {
   AddressBook,
+  Bank,
+  ChatsTeardrop,
+  GlobeHemisphereWest,
   Bed,
   BookBookmark,
   BookOpenText,
@@ -35,7 +38,7 @@ export interface NavItem {
   /** hidden for roles without this capability */
   cap?: Capability;
   /** show a live count badge */
-  badge?: "flags" | "approvals";
+  badge?: "flags" | "approvals" | "reviews";
   /** label on the phone tab bar */
   short?: string;
   /** hidden for roles that have this capability (avoids duplicates) */
@@ -55,6 +58,7 @@ export const HOTEL_NAV: NavGroup[] = [
       { href: "/ledger", label: "The Ledger", short: "Ledger", icon: Rows, feature: "reservations", cap: "reservations.read", keywords: "tape chart calendar availability grid", shortcut: "G L" },
       { href: "/reservations", label: "Reservations", short: "Bookings", icon: BookBookmark, feature: "reservations", cap: "reservations.read", keywords: "bookings stays arrivals codes", shortcut: "G V" },
       { href: "/guests", label: "Guests", icon: AddressBook, feature: "guest_register", cap: "guest.read", keywords: "guest profiles people customers ndpa" },
+      { href: "/reviews", label: "Reviews", icon: ChatsTeardrop, cap: "reviews.read", badge: "reviews", keywords: "ratings stars feedback reply verified stays" },
       { href: "/rooms", label: "Rooms", icon: Key, keywords: "key rack board status", shortcut: "G R" },
       { href: "/rooms/types", label: "Room types", icon: Bed, keywords: "rates prices categories" },
       { href: "/housekeeping", label: "Housekeeping", icon: Broom, feature: "housekeeping", keywords: "cleaning tasks" },
@@ -65,6 +69,7 @@ export const HOTEL_NAV: NavGroup[] = [
     items: [
       { href: "/shifts", label: "My shift", short: "Shift", icon: Coins, cap: "shift.own", keywords: "cashier till float blind count close shift open shift" },
       { href: "/shifts", label: "Shifts", short: "Shifts", icon: Coins, cap: "shift.viewAll", hideCap: "shift.own", keywords: "cashier shifts variance counts all" },
+      { href: "/payouts", label: "Payouts", icon: Bank, cap: "payouts.read", keywords: "bank account paystack subaccount online revenue commission settlement" },
       { href: "/folios", label: "Folios & invoices", icon: Wallet, feature: "invoicing", cap: "folio.read", keywords: "bills invoices receipts balances walk-in" },
       { href: "/approvals", label: "Approvals", icon: SealCheck, cap: "shift.approve", badge: "approvals", keywords: "approve shifts manager variance" },
       { href: "/guard", label: "Revenue Guard", icon: ShieldWarning, feature: "revenue_guard_basic", cap: "guard.read", badge: "flags", keywords: "flags leakage fraud alerts triage" },
@@ -86,6 +91,7 @@ export const HOTEL_NAV: NavGroup[] = [
     items: [
       { href: "/staff", label: "Staff", icon: UsersThree, keywords: "team people users roles pin", shortcut: "G S" },
       { href: "/property", label: "Property", icon: Buildings, keywords: "settings details hotel branding amenities" },
+      { href: "/settings/booking", label: "Online booking", icon: GlobeHemisphereWest, cap: "booking.settings", keywords: "booking site marketplace pay at hotel cancellation policy refund online" },
       { href: "/settings/taxes", label: "Taxes & charges", icon: Percent, cap: "tax.read", keywords: "vat consumption tax service charge discount threshold" },
       { href: "/billing", label: "Billing & plan", icon: Receipt, keywords: "subscription upgrade invoices plan", shortcut: "G B" },
       { href: "/audit", label: "Audit log", icon: ClockCounterClockwise, keywords: "history activity trail" },
