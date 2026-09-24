@@ -34,6 +34,12 @@ import { TenantMark } from "@/components/tenant-mark";
 
 const COLLAPSE_KEY = "admin.sidebar.collapsed";
 
+/** Routes that use the whole width under the top bar. */
+const WORKSPACES = ["/site", "/settings/booking-form"];
+function isWorkspace(pathname: string) {
+  return WORKSPACES.some((w) => pathname === w || pathname.startsWith(`${w}/`));
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const hydrated = useHydrated();
   const s = useHotelSession();
@@ -146,7 +152,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         </D.Portal>
       </D.Root>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className={cn("flex min-w-0 flex-1 flex-col", isWorkspace(pathname) && "lg:h-dvh lg:overflow-hidden")}>
         {/* top bar (a support session's bar rides above it) */}
         <div className="sticky top-0 z-30">
         <SupportSessionBar />
@@ -198,11 +204,18 @@ function Shell({ children }: { children: React.ReactNode }) {
         <Banners />
         <AnnouncementBars />
 
-        <main id="main" className="flex-1 px-4 pb-28 pt-6 sm:px-6 md:pt-9 lg:px-10 lg:pb-16">
-          <div className="mx-auto w-full max-w-[1240px] animate-[rise_260ms_cubic-bezier(0.22,1,0.36,1)]" key={pathname}>
+        {isWorkspace(pathname) ? (
+          // full-bleed workspaces (Brand Studio, Form Builder) manage their own panes
+          <main id="main" className="flex min-h-0 flex-1 flex-col pb-[76px] lg:pb-0" data-workspace>
             <Suspense fallback={null}>{children}</Suspense>
-          </div>
-        </main>
+          </main>
+        ) : (
+          <main id="main" className="flex-1 px-4 pb-28 pt-6 sm:px-6 md:pt-9 lg:px-10 lg:pb-16">
+            <div className="mx-auto w-full max-w-[1240px] animate-[rise_260ms_cubic-bezier(0.22,1,0.36,1)]" key={pathname}>
+              <Suspense fallback={null}>{children}</Suspense>
+            </div>
+          </main>
+        )}
 
         <MobileTabs onMore={() => setDrawer(true)} />
       </div>

@@ -101,6 +101,8 @@ export interface ReservationDetail extends Omit<ReservationListItem, "guest" | "
   online?: OnlineBookingInfo | null;
 }
 
+export type ReservationDetailM7 = ReservationDetail & import("./types-m7").ReservationM7;
+
 export interface ReservationInput {
   guestId?: string;
   guest?: GuestInput;
@@ -122,6 +124,10 @@ export interface ReservationInput {
   ratePlanId?: string;
   promoCode?: string;
   corporateAccountId?: string;
+  /** M7: the FRONT_DESK booking form (API-M7 6) */
+  formAnswers?: Record<string, unknown>;
+  extras?: { extraId: string; quantity?: number }[];
+  transfers?: { direction: "ARRIVAL" | "DEPARTURE"; pickupPointId: string; vehicleOptionId?: string | null; passengers: number; scheduledAt: string; details?: Record<string, unknown>; luggage?: number | null; contactPhone?: string | null }[];
 }
 
 export interface ReservationPatch {

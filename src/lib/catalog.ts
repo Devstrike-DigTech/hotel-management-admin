@@ -112,6 +112,7 @@ export const PLAN_TONE: Record<string, string> = {
 };
 
 const STARTER = [
+  "brand_kit",
   "front_desk",
   "reservations",
   "guest_register",
@@ -123,6 +124,11 @@ const STARTER = [
 ];
 const GROWTH = [
   "booking_site_branding",
+  "site_templates_all",
+  "site_sections",
+  "form_fields_unlimited",
+  "form_conditional_logic",
+  "paid_extras",
   "revenue_guard_full",
   "owner_whatsapp_alerts",
   "housekeeping",
@@ -132,6 +138,8 @@ const GROWTH = [
   "sms_messaging",
 ];
 const PRO = [
+  "site_fonts",
+  "form_file_uploads",
   "custom_domain",
   "pos",
   "channel_manager",
@@ -199,6 +207,14 @@ export const FALLBACK_FEATURES: FeatureInfo[] = [
   { code: "dedicated_database", name: "Dedicated database", description: "Your data in an isolated database.", category: "Platform" },
   { code: "sso", name: "Single sign-on", description: "Staff sign in with Google Workspace or Microsoft.", category: "Platform" },
   { code: "data_export", name: "Full data export", description: "Every record in one zip, on demand.", category: "Platform" },
+  { code: "brand_kit", name: "Brand kit", description: "Logo, favicon and colours on your booking site.", category: "Growth" },
+  { code: "site_templates_all", name: "All site templates", description: "Boutique, Business, Resort and Heritage layouts.", category: "Growth" },
+  { code: "site_sections", name: "Section editor", description: "Reorder and switch booking-site sections; light or dark.", category: "Growth" },
+  { code: "site_fonts", name: "Font pairings", description: "Choose the type on your booking site.", category: "Growth" },
+  { code: "form_fields_unlimited", name: "Unlimited form fields", description: "Ask guests as many questions as you need.", category: "Guests" },
+  { code: "form_conditional_logic", name: "Conditional questions", description: "Show a question only after a certain answer.", category: "Guests" },
+  { code: "paid_extras", name: "Paid extras and pickups", description: "Sell breakfast, late check-out and arrival pickups.", category: "Revenue" },
+  { code: "form_file_uploads", name: "File uploads", description: "Let guests attach a letter or a photo.", category: "Guests" },
 ];
 
 export function featureName(code: string, features?: FeatureInfo[]): string {
@@ -213,6 +229,7 @@ export const LIMIT_LABEL: Record<string, { label: string; noun: string }> = {
   max_rooms: { label: "Rooms", noun: "room" },
   max_staff: { label: "Staff seats", noun: "staff seat" },
   max_properties: { label: "Properties", noun: "property" },
+  max_custom_form_fields: { label: "Extra form fields", noun: "extra form field" },
 };
 
 export const NIGERIAN_STATES = [

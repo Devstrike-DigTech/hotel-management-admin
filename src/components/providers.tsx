@@ -20,7 +20,7 @@ export interface MutationMeta extends Record<string, unknown> {
 }
 
 /** Route entitlement errors to the upgrade dialog; everything else to a toast. */
-function handleMutationError(error: unknown, meta?: MutationMeta) {
+export function handleMutationError(error: unknown, meta?: MutationMeta) {
   if (isApiError(error)) {
     const d = (error.details ?? {}) as Record<string, unknown>;
     if (error.code === "FEATURE_LOCKED") {

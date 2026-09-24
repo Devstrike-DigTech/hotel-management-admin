@@ -422,3 +422,30 @@ button:focus-visible .tag-swing { animation: swing-hover 1100ms cubic-bezier(0.2
     scroll-behavior: auto !important;
   }
 }
+
+/* ---- M7 workspaces: Brand Studio and the Form Builder ---- */
+@keyframes studio-load {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+/* the stage the live preview sits on: a cutting mat with a faint dotted grid */
+.studio-stage {
+  background-color: color-mix(in oklab, var(--surface-2) 70%, var(--paper));
+  background-image: radial-gradient(circle at 1px 1px, color-mix(in oklab, var(--ink) 13%, transparent) 1px, transparent 1.2px);
+  background-size: 18px 18px;
+}
+[data-theme="dark"] .studio-stage {
+  background-color: #0f0d0b;
+  background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.07) 1px, transparent 1.2px);
+}
+/* a field on the builder canvas: a filled-in slip */
+.canvas-sheet {
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--line) border-box;
+}
+/* fill-in-the-blank chips in a rule sentence */
+.rule-blank {
+  border-bottom: 1.5px solid var(--laterite);
+  padding: 0 2px 1px;
+}
