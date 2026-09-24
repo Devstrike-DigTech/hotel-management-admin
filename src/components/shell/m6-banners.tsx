@@ -135,11 +135,11 @@ export function AnnouncementBar({ a, onDismiss, dismissing }: { a: AnnouncementV
             <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted">{s.tag}</span>
             <strong className="font-medium text-ink">{a.title}</strong>
           </p>
-          <p className={cn("mt-0.5 whitespace-pre-line text-ink-muted", !open && long && "line-clamp-1")}>{a.body}</p>
-          {(long || a.linkUrl) && (
+          <p className={cn("mt-0.5 whitespace-pre-line text-ink-muted", !open && (long ? "line-clamp-1" : "line-clamp-2 sm:line-clamp-none"))}>{a.body}</p>
+          {(long || a.linkUrl || a.body.length > 90) && (
             <p className="mt-1 flex gap-4 text-[12.5px]">
-              {long && (
-                <button type="button" onClick={() => setOpen((o) => !o)} className="font-medium text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink">
+              {(long || a.body.length > 90) && (
+                <button type="button" onClick={() => setOpen((o) => !o)} className={cn("font-medium text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink", !long && "sm:hidden")}>
                   {open ? "Less" : "Read all"}
                 </button>
               )}

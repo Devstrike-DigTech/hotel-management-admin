@@ -57,7 +57,7 @@ export function BrandedLogin({ portal: p }: { portal: StaffPortalPublic }) {
                 <span className="grid h-10 w-10 place-items-center rounded-full border text-[15px]" style={{ borderColor: `${onPrimary}80`, ...headingStyle }}>
                   {p.brandName
                     .split(/\s+/)
-                    .filter((w) => /^[A-Za-z]/.test(w))
+                    .filter((w) => /^[A-Za-z]/.test(w) && !["the", "and", "of"].includes(w.toLowerCase()))
                     .slice(0, 2)
                     .map((w) => w[0])
                     .join("")}
