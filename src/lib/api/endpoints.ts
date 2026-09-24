@@ -14,9 +14,6 @@ import type {
   Me,
   Paginated,
   Plan,
-  PlanPatch,
-  PlatformAuthResponse,
-  PlatformMetrics,
   Property,
   Room,
   RoomInput,
@@ -26,9 +23,6 @@ import type {
   SignupInput,
   Staff,
   StaffInput,
-  SubscriptionStatus,
-  TenantDetail,
-  TenantRow,
 } from "./types";
 
 /** Accept either a bare array or a `{ items }` envelope. */
@@ -97,28 +91,3 @@ export const hotelApi = {
     api<unknown>("/billing/dev/confirm", { method: "POST", body: { reference } }),
 };
 
-export const platformApi = {
-  login: (email: string, password: string) =>
-    api<PlatformAuthResponse>("/platform/auth/login", { method: "POST", body: { email, password }, auth: "none" }),
-  metrics: () => api<PlatformMetrics>("/platform/metrics", { auth: "platform" }),
-  tenants: (q: { q?: string; plan?: string; status?: string; page?: number }) =>
-    api<Paginated<TenantRow>>("/platform/tenants", { auth: "platform", query: q }),
-  tenant: (id: string) => api<TenantDetail>(`/platform/tenants/${id}`, { auth: "platform" }),
-  updateSubscription: (id: string, body: { planCode?: string; status?: SubscriptionStatus; trialEndsAt?: string }) =>
-    api<unknown>(`/platform/tenants/${id}/subscription`, { method: "PATCH", body, auth: "platform" }),
-  setFeature: (id: string, featureCode: string, enabled: boolean) =>
-    api<unknown>(`/platform/tenants/${id}/features`, {
-      method: "PUT",
-      body: { featureCode, enabled },
-      auth: "platform",
-    }),
-  /** Remove an add-on override so the tenant falls back to its plan. */
-  removeFeature: (id: string, featureCode: string) =>
-    api<unknown>(`/platform/tenants/${id}/features/${featureCode}`, { method: "DELETE", auth: "platform" }),
-  plans: async () => {
-    const plans = items(await api<Plan[] | { items: Plan[] }>("/platform/plans", { auth: "platform" }));
-    return [...plans].sort((a, b) => a.sortOrder - b.sortOrder);
-  },
-  updatePlan: (code: string, patch: PlanPatch) =>
-    api<Plan>(`/platform/plans/${code}`, { method: "PATCH", body: patch, auth: "platform" }),
-};

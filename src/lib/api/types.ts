@@ -65,8 +65,6 @@ export interface Plan {
   commissionBps: number | null;
   highlighted: boolean;
   sortOrder: number;
-  /** platform console only */
-  tenantCount?: number;
 }
 
 export type FeatureCategory = "Operations" | "Revenue" | "Guests" | "Growth" | "Platform";
@@ -292,59 +290,4 @@ export interface HousekeepingTask {
   status?: string;
 }
 
-/* ---------- platform ---------- */
-export interface PlatformUser {
-  id: string;
-  fullName?: string;
-  email: string;
-  role?: string;
-}
 
-export interface PlatformAuthResponse {
-  accessToken: string;
-  user: PlatformUser;
-}
-
-export interface TenantRow {
-  id: string;
-  name: string;
-  slug: string;
-  city: string | null;
-  planCode: PlanCode;
-  status: SubscriptionStatus;
-  rooms: number;
-  staff: number;
-  createdAt: string;
-  trialEndsAt: string | null;
-}
-
-export interface PlatformMetrics {
-  mrrKobo: number;
-  arrKobo: number;
-  tenantsTotal: number;
-  tenantsByPlan: Record<string, number>;
-  tenantsByStatus: Partial<Record<SubscriptionStatus, number>>;
-  trialsEndingSoon: TenantRow[];
-  newTenants30d: number;
-  signupsByWeek: { week: string; count: number }[];
-  /** M3 */
-  marketplace?: { gmv30dKobo: number; commission30dKobo: number; receivableKobo: number; orphanedOpen: number; flaggedReviews: number };
-}
-
-export interface FeatureOverride {
-  featureCode: string;
-  enabled: boolean;
-}
-
-export interface TenantDetail extends TenantRow {
-  subscription?: Subscription & { id?: string };
-  owner?: { fullName: string; email: string; phone?: string | null } | null;
-  properties?: { id: string; name: string; city?: string | null }[];
-  featureOverrides?: FeatureOverride[];
-  entitlements?: Entitlements;
-  [key: string]: unknown;
-}
-
-export type PlanPatch = Partial<
-  Pick<Plan, "name" | "tagline" | "priceMonthlyKobo" | "priceYearlyKobo" | "limits" | "features" | "commissionBps" | "highlighted">
->;

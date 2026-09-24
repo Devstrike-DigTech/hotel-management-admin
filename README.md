@@ -1,10 +1,11 @@
-# Hotel admin (staff dashboard + platform console)
+# Hotel admin (staff dashboard)
 
-The operator side of the hotel management platform built by Devstrike Digital Limited:
+The hotel side of the hotel management platform built by Devstrike Digital Limited: owners, managers,
+front-desk, housekeeping and outlet staff run the house from here, from the Key Rack to the partner API.
 
-- **Hotel admin** for owners, managers and front-desk staff: the live Key Rack, rooms, room types,
-  staff, property settings, billing and the audit log.
-- **Platform console** (`/platform`) for Devstrike staff: revenue, tenants, plans and add-ons.
+The Devstrike platform console is **not** part of this app. Since Milestone 6 it lives in its own repository,
+`hotel-management-platform` (port 3002, meant for a private host), and the API refuses `/platform/*` calls
+from this app's origin. A build of this app contains no console routes, sign-in, tokens or API client.
 
 The product name is not final. It is read from `NEXT_PUBLIC_APP_NAME` everywhere (wordmark, titles,
 copy) and never hard-coded.
@@ -15,7 +16,7 @@ copy) and never hard-coded.
 |---|---|
 | ![Key rack status sheet](docs/screenshots/key-rack-sheet-1440-light.png) | ![Command palette](docs/screenshots/command-palette-1440-dark.png) |
 | ![Plan comparison](docs/screenshots/billing-1440-dark.png) | ![Locked feature preview](docs/screenshots/pos-1440-light.png) |
-| ![Sign in](docs/screenshots/login-1440-light.png) | ![Platform console](docs/screenshots/platform-1440-light.png) |
+| ![Sign in](docs/screenshots/login-1440-light.png) | ![Housekeeping](docs/screenshots/housekeeping-1440-light.png) |
 
 On a phone: [Today](docs/screenshots/today-390-light.png), [Rooms, dark](docs/screenshots/rooms-390-dark.png),
 [status sheet](docs/screenshots/key-rack-sheet-390-light.png).
@@ -111,7 +112,6 @@ where every booking came from, what was paid, what the platform kept, and what t
 |---|---|
 | ![Online booking: the policy with the guest's view](docs/screenshots/m3-booking-settings-1440-light.png) | ![Reviews: rating, spread, subscores and the monthly trend](docs/screenshots/m3-reviews-1440-dark.png) |
 | ![A paid marketplace booking with its messages](docs/screenshots/m3-reservation-online-1440-light.png) | ![The Ledger with channel stamps](docs/screenshots/m3-ledger-1440-dark.png) |
-| ![Console: the marketplace](docs/screenshots/m3-platform-marketplace-1440-light.png) | ![Console: review moderation](docs/screenshots/m3-platform-reviews-1440-dark.png) |
 | ![Payout onboarding: the name the bank returned, to confirm](docs/screenshots/m3-payouts-onboarding-1440-dark.png) | ![An unpaid online hold counting down](docs/screenshots/m3-hold-1440-dark.png) |
 | ![The confirmation email, sandboxed](docs/screenshots/m3-email-preview-1440-dark.png) | ![Today with Booked online](docs/screenshots/m3-today-1440-light.png) |
 
@@ -126,8 +126,6 @@ On a phone: [Payouts](docs/screenshots/m3-payouts-390-light.png), [Online bookin
 | `/payouts` | **Owner**: search Nigerian banks, type the 10-digit NUBAN, see the name the bank returns and confirm it before the Paystack subaccount is saved. Everyone with access: the account on file and its settlement status, paid online, commission, paid to you and refunds for 30 or 90 days, and commission per booking. The two channels are explained side by side: marketplace bookings pay the plan's commission (taken at the split, or invoiced monthly when the guest pays at the hotel); booking-site bookings pay none |
 | `/settings/booking` | Online booking on or off, pay at the hotel, the cancellation policy (free window, late fee, no-show fee as presets or exact values) on a timeline, and **what the guest sees**: the same sentences plus a worked example with real dates and naira. The note added to the pre-arrival message |
 | `/reviews` | Overall rating, the star spread (click to filter), subscores as rulers, a 12-month trend in hand-drawn SVG, filters by reply and traveller type, a reply composer with gentle checks (thank them, answer the point, no phone or room numbers), report to moderators, and a **Verified stay** link to the reservation |
-| `/platform/marketplace` | Gross booking value, commission collected against receivable by hotel, the channel and payment mix, pay-at-hotel receivables by month with *Settle*, and orphaned payments with a refund retry |
-| `/platform/reviews` | The moderation queue: flagged, live and hidden reviews; hide with a reason (abuse, personal details, off topic, spam, other) and a note the hotel sees, keep a flagged one up, or restore |
 
 Online bookings everywhere else:
 
@@ -148,8 +146,8 @@ Online bookings everywhere else:
   Today has a *Booked online* card with arrivals, new bookings and open holds.
 - The palette adds *Marketplace bookings*, *Booking site bookings*, *Reply to reviews*, *Change cancellation policy*,
   *Turn online booking on or off* and *Set up or change the payout account*; the sidebar adds Reviews (with the
-  number waiting for a reply), Payouts and Online booking, and the console adds Marketplace and Reviews (with the
-  flagged count) and a marketplace strip on its overview.
+  number waiting for a reply), Payouts and Online booking. (The marketplace and review moderation pages of the
+  Devstrike console moved to `hotel-management-platform` in M6.)
 
 ### M3 roles
 
@@ -325,7 +323,6 @@ Seed accounts:
 | Hotel owner, The Palmwine House (Growth, active) | `demo@palmwine.ng` | `Demo1234!` |
 | Starter trial (housekeeping locked) | `owner@wusegarden.ng` | `Demo1234!` |
 | Starter, past due | `owner@marinacreek.ng` | `Demo1234!` |
-| Platform console | `admin@devstrike.ng` | `Admin1234!` |
 
 In development the sign-in pages show a small "Dev" button that fills the demo credentials.
 
@@ -372,14 +369,6 @@ Cmd/Ctrl+K opens the command palette: navigation, actions ("Add rooms in bulk", 
 theme and log out. Type a room number and a status (`204 dirty`, `305 clean`) to change it without
 leaving the keyboard. `[` collapses the sidebar.
 
-**Platform console** (`/platform`, separate sign-in and token)
-
-| Route | |
-|---|---|
-| `/platform` | MRR and ARR, weekly signups, plan mix, subscription health, trials ending soon |
-| `/platform/tenants` | Search, plan and status filters, paging |
-| `/platform/tenants/[id]` | Change plan and status, extend the trial (+7 / +14 days), grant or remove add-on features |
-| `/platform/plans` | Name, tagline, prices (or custom), limits (or unlimited), commission, highlight, features |
 
 ## Architecture
 
@@ -389,19 +378,17 @@ src/
     (auth)/login, signup           public sign-in and onboarding
     (hotel)/...                    staff app, wrapped by AppShell (route protection)
     (checkout)/billing/mock-checkout
-    platform/login                 console sign-in
-    platform/(console)/...         console, wrapped by PlatformShell
   components/
     keyrack/                       Key Rack, status textures, status sheet
     shell/                         sidebar, top bar, palette, theme, trial pill, Lagos clock
     gating/                        <Gate>, upgrade dialog, locked feature pages and previews
-    charts/                        hand-built SVG charts (occupancy dial, columns, share bar, unit rows)
+    charts/                        hand-built SVG occupancy dial
     motifs/                        adire line motifs
     ui/                            restyled primitives
-    dashboard, rooms, staff, property, billing, audit, platform, auth
+    dashboard, rooms, staff, property, billing, audit, auth
   lib/
     api/client.ts                  fetch wrapper, error envelope, refresh single-flight
-    api/session.ts                 hotel + platform token storage (localStorage, guarded)
+    api/session.ts                 hotel tokens (localStorage) and a support session's token (sessionStorage), guarded
     api/endpoints.ts, hooks.ts     typed endpoints and TanStack Query hooks
     api/mutations.ts               optimistic room status
     api/types.ts                   the M1 contract as TypeScript
@@ -438,7 +425,6 @@ M3 adds:
 ```
 src/
   app/(hotel)/payouts, reviews, settings/booking
-  app/platform/(console)/marketplace, reviews
   components/
     m3/bits.tsx       channel badge, hold countdown, stars
     payouts/          bank picker (combobox), onboarding, account, commission explainer, payments
@@ -465,7 +451,6 @@ every chart has a legend, direct values and a screen-reader table.
 - **Silent refresh**: the access token is refreshed a minute before its `exp`; any 401 also triggers a
   single-flight `POST /auth/refresh` and one retry. Refresh tokens rotate; a failed refresh (including
   `REFRESH_TOKEN_REUSED`) clears the session and sends the user to `/login?next=...&expired=1`.
-- Platform tokens are stored separately (`admin.session.platform`) with their own guard.
 - Route protection is client-side because the API is on another origin: shells show a splash until
   the session is known, then redirect when it is missing. The API enforces everything regardless.
 
@@ -537,5 +522,5 @@ chart, AA contrast in both themes, and 16px inputs on phones to avoid zoom on fo
 ## Notes
 
 - `docs/screenshots` was captured with Playwright against the live API at 1440px and 390px.
-- The room table and the console tables scroll horizontally on phones; the Key Rack, staff list and
+- The room table and the delivery log scroll horizontally on phones; the Key Rack, staff list and
   the rest reflow.

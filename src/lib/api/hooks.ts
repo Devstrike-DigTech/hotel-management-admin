@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { authApi, hotelApi, platformApi, publicApi } from "./endpoints";
+import { authApi, hotelApi, publicApi } from "./endpoints";
 import type { RoomStatus } from "./types";
 
 export const qk = {
@@ -18,10 +18,6 @@ export const qk = {
   invoices: ["billing", "invoices"] as const,
   plans: ["public", "plans"] as const,
   features: ["public", "features"] as const,
-  pMetrics: ["platform", "metrics"] as const,
-  pTenants: (q: object) => ["platform", "tenants", q] as const,
-  pTenant: (id: string) => ["platform", "tenant", id] as const,
-  pPlans: ["platform", "plans"] as const,
 };
 
 export const useMe = (enabled = true) =>
@@ -44,9 +40,3 @@ export const usePublicPlans = (enabled = true) =>
 export const usePublicFeatures = (enabled = true) =>
   useQuery({ queryKey: qk.features, queryFn: publicApi.features, staleTime: 30 * 60_000, enabled });
 
-export const usePlatformMetrics = (enabled = true) => useQuery({ queryKey: qk.pMetrics, queryFn: platformApi.metrics, enabled });
-export const usePlatformTenants = (q: { q?: string; plan?: string; status?: string; page?: number }) =>
-  useQuery({ queryKey: qk.pTenants(q), queryFn: () => platformApi.tenants(q), placeholderData: (p) => p });
-export const usePlatformTenant = (id: string) =>
-  useQuery({ queryKey: qk.pTenant(id), queryFn: () => platformApi.tenant(id) });
-export const usePlatformPlans = () => useQuery({ queryKey: qk.pPlans, queryFn: platformApi.plans });

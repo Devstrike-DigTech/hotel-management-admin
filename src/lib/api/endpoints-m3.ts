@@ -6,18 +6,13 @@ import type {
   CommissionEntry,
   HotelReview,
   HotelReviewSummary,
-  MarketplaceSummary,
-  ModerationReason,
-  ModerationReview,
   NotificationLogItem,
   NotificationPreview,
   OnlineFeed,
-  OrphanedPayment,
   Paginated,
   PayoutAccount,
   PayoutSummary,
   PayoutTransaction,
-  Receivables,
   ResolvedAccount,
   ReviewQuery,
 } from "./types-m3";
@@ -72,21 +67,3 @@ export const notificationsApi = {
   preview: (id: string) => api<NotificationPreview>(`/notifications/${id}/preview`),
 };
 
-export const platformM3Api = {
-  marketplace: (from?: string, to?: string) =>
-    api<MarketplaceSummary>("/platform/marketplace/summary", { auth: "platform", query: { from, to } }),
-  receivables: (month?: string) => api<Receivables>("/platform/commission/receivables", { auth: "platform", query: { month } }),
-  settle: (tenantId: string, month: string, reference?: string) =>
-    api<Receivables["items"][number]>("/platform/commission/receivables/settle", {
-      method: "POST",
-      auth: "platform",
-      body: { tenantId, month, reference: reference || undefined },
-    }),
-  orphaned: (q: { status?: "open" | "all"; page?: number; pageSize?: number }) =>
-    api<Paginated<OrphanedPayment>>("/platform/payments/orphaned", { auth: "platform", query: q }),
-  retryRefund: (id: string) => api<OrphanedPayment>(`/platform/payments/${id}/retry-refund`, { method: "POST", auth: "platform" }),
-  reviews: (q: { status?: string; page?: number; pageSize?: number; q?: string }) =>
-    api<Paginated<ModerationReview>>("/platform/reviews", { auth: "platform", query: q }),
-  moderate: (id: string, body: { status: "HIDDEN" | "PUBLISHED"; reason?: ModerationReason; note?: string }) =>
-    api<ModerationReview>(`/platform/reviews/${id}`, { method: "PATCH", body, auth: "platform" }),
-};
