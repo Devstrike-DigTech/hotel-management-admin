@@ -294,6 +294,86 @@ folio with the code from the dev outbox; a custom domain verifies after its reco
 
 ---
 
+## Milestone 6: Enterprise
+
+Keys and webhooks for the hotel's own systems, the hotel's brand everywhere (booking site, staff sign-in, email,
+texts), single sign-on, a full data export, and the hotel's side of Devstrike support: requests, announcements and
+support sessions.
+
+![White label: brand kit, contrast checks, curated fonts and the live sign-in preview](docs/screenshots/m6-white-label-1440-light.png)
+
+| | |
+|---|---|
+| ![A new API key's secret, shown once](docs/screenshots/m6-api-key-secret-1440-dark.png) | ![Scopes by resource, property and IP limits, expiry](docs/screenshots/m6-api-key-new-1440-light.png) |
+| ![Webhooks: endpoints, events, signing secret and the delivery log](docs/screenshots/m6-webhooks-1440-dark.png) | ![A delivery's request and response, with Replay](docs/screenshots/m6-webhook-delivery-1440-light.png) |
+| ![The hotel's own staff portal sign-in, with SSO](docs/screenshots/m6-login-portal-1440-light.png) | ![Single sign-on: presets, domains, JIT role, break-glass](docs/screenshots/m6-sso-1440-light.png) |
+| ![A support session: who, why, read-only, time left; a write refused](docs/screenshots/m6-support-session-blocked-1440-light.png) | ![Data export with a signed download](docs/screenshots/m6-export-1440-dark.png) |
+| ![Email sending domain: DNS records, verified](docs/screenshots/m6-white-label-email-1440-light.png) | ![Ask for help, with the page and context attached](docs/screenshots/m6-support-new-1440-light.png) |
+
+On a phone: [API keys](docs/screenshots/m6-api-keys-390-light.png), [webhooks](docs/screenshots/m6-webhooks-390-dark.png),
+[white label](docs/screenshots/m6-white-label-390-light.png), [staff portal sign-in](docs/screenshots/m6-login-portal-390-dark.png),
+[support session](docs/screenshots/m6-support-session-390-dark.png), [support thread](docs/screenshots/m6-support-thread-390-light.png).
+Also: [quick start](docs/screenshots/m6-quickstart-1440-light.png), [an endpoint switched off after failures](docs/screenshots/m6-webhook-auto-disabled-1440-light.png),
+[SMS sender ID](docs/screenshots/m6-white-label-sms-1440-light.png), [staff portal domain](docs/screenshots/m6-white-label-portal-1440-light.png),
+[past support sessions](docs/screenshots/m6-support-sessions-1440-light.png), [SSO by email on our own host](docs/screenshots/m6-login-sso-1440-light.png).
+Every M6 shot (1440 px and 390 px, light and dark) is in `docs/screenshots/m6-*`, taken against the live API and the
+Harmattan seed. The seed's logo and favicon are Unsplash links the screenshot sandbox cannot reach, so the brand kit
+shows the monogram fallback and "That link doesn't load an image".
+
+### M6 routes
+
+| Route | |
+|---|---|
+| `/developers` | Quick start: three steps (test key, first request, webhook) that tick themselves off, a first request in curl, Node and Python, signature verification, and a link to the developer docs on the web app (`/developers`) |
+| `/developers/api-keys` | Keys with scopes picked by resource (read / write, with presets for a booking engine, BI, door locks, housekeeping apps), property restriction, IP allowlist (CIDR), expiry. The secret is shown **once** on an ink slab with copy and a warning; the dialog only closes once you tick that it is stored. Rotate (the old secret works for 24 hours, drawn as a timeline) and revoke. Live and test keys are marked differently; test keys dry-run every write |
+| `/developers/webhooks` | Endpoints with an event picker grouped by what happened, the signing secret shown once (and rolled), *Send test event* (opens the request and response it produced), a delivery log you can filter, and a request / response viewer with headers, body and every attempt, with *Replay*. An endpoint switched off after 24 hours of failures says so and can be switched back on |
+| `/settings/white-label` | The master switch and *hide the marketplace* (needs a verified booking domain). **Brand kit**: name, logo and favicon links, primary and accent colours with WCAG contrast readouts, heading and body fonts from the API's curated Google list, footer links, and a live preview of the staff sign-in and the booking site. **Email domain**: the DNS records (SPF, DKIM, return path) to copy, *Check records*, sender name; mail comes from our address until it verifies. **SMS sender ID**: request, then the networks' decision as a three-step status. **Staff portal**: the address, its TXT and CNAME, verification |
+| `/settings/sso` | Google Workspace, Microsoft Entra ID or any OIDC provider (presets fill the issuer), the redirect URI to copy, allowed email domains, create accounts on first sign-in with a role (never Owner) or refuse unknown people, *Require SSO* with the break-glass owner explained, and **Test sign-in** in a pop-up whose result comes back to the page |
+| `/data-export` | Request a zip (JSON and / or CSV), live progress by table, then *Download* with the link's lifetime; *Get a new link* after it runs out; earlier exports |
+| `/support`, `/support/[id]` | Requests (everyone's for owners and managers), the reply-due time from the plan's SLA, a thread with support's replies and attachments, reply, close and reopen. *Support sessions*: every time our team viewed the hotel, as whom, why, how many changes; an owner can end an active one |
+| `/impersonate` | The one-time hand-off from the console (`#code=`), and the "session ended" page |
+| `/sso/complete` | Exchanges the one-time code after the identity provider |
+
+Anywhere in the app: a **help** button in the top bar opens *Ask for help* with the page you were on, the property,
+your role, the app version and browser already attached (the palette's *Ask support for help* does the same), and
+active **announcements** sit under the top bar by severity (info, good news, maintenance, heads up, important) and
+can be dismissed. Lower plans see each Enterprise page as a preview built from the same components, with the plan
+that unlocks it. The palette gains *Create an API key*, *Add a webhook endpoint*, *Failed webhook deliveries*,
+*Change the brand kit*, *Send email from our domain*, *Set up single sign-on*, *Export all our data* and *Who from
+support viewed our hotel*.
+
+### Staff portal and single sign-on at sign-in
+
+`/login` looks up its own host with `GET /public/staff-portal?host=`. On a hotel's verified staff portal
+(`staff.theirhotel.com`) the page shows only the hotel's name, logo, colours, fonts and favicon, and their
+*Continue with Google / Microsoft* button; with SSO required the password form hides behind *Owner sign-in*. Our
+own hosts (localhost, `*.APP_DOMAIN`) render straight away; any other host waits for the lookup so our brand never
+flashes first. Inside the app, a white-labelled tenant sees their own mark in the sidebar and their name in the tab
+title. On our host, *Sign in with single sign-on* finds the hotel by email domain, and a password sign-in answered
+with `SSO_REQUIRED` offers SSO instead. In development, `/login?portal=staff.harmattanhotels.com` previews a portal
+on localhost.
+
+### Devstrike support sessions
+
+The console opens `/impersonate#code=...` in a new tab. The code becomes a staff token that lives in that tab's
+`sessionStorage` only: it never replaces the user's own sign-in, never refreshes, and the tab neither reads nor
+writes the device's offline cache. A persistent indigo bar with a brass hatched edge says who from support is
+viewing as whom, why, read-only or with changes allowed, and the minutes left, with *End session*. While
+read-only, the client refuses every write before it leaves (the API refuses it too, `403 IMPERSONATION_READ_ONLY`)
+and explains that nothing was changed. When the session ends or expires the tab shows *Support session ended*.
+
+### M6 end-to-end tests
+
+`e2e/m6.spec.ts` runs against the live API and the Harmattan Hotels & Suites seed (Enterprise): an API key's secret
+is shown once and then only its last four characters (and works on the partner API); a new webhook endpoint's test
+ping opens in the viewer and lands in the log; a brand-kit change shows on the preview and on the staff portal's
+sign-in (`?portal=`); staff sign in through the dev mock OIDC provider; a full export is prepared and downloads as a
+zip; a support request carries the page it came from; and a support session started through the platform API
+(password, dev TOTP, `POST /platform/impersonations`) shows its bar and refuses a write in the browser and at the
+API. The tests clean up after themselves.
+
+---
+
 ## Stack
 
 | | |
@@ -323,6 +403,7 @@ Seed accounts:
 | Hotel owner, The Palmwine House (Growth, active) | `demo@palmwine.ng` | `Demo1234!` |
 | Starter trial (housekeeping locked) | `owner@wusegarden.ng` | `Demo1234!` |
 | Starter, past due | `owner@marinacreek.ng` | `Demo1234!` |
+| Enterprise, Harmattan Hotels & Suites (owner, manager, front desk) | `owner@harmattanhotels.com`, `gm@harmattanhotels.com`, `frontdesk.abuja@harmattanhotels.com` | `Demo1234!` |
 
 In development the sign-in pages show a small "Dev" button that fills the demo credentials.
 
@@ -364,6 +445,7 @@ In development the sign-in pages show a small "Dev" button that fills the demo c
 | `/audit` | Day-grouped timeline, paging, CSV export (gated by `audit_export`) |
 | `/housekeeping` | Live board on Growth and above; preview and upgrade card below it |
 | `/pos`, `/channel-manager`, `/dynamic-pricing`, `/loyalty`, `/inbox`, `/group` | Pro pages (see Milestone 5); on lower plans, previews naming the plan that unlocks them |
+| `/developers`, `/settings/white-label`, `/settings/sso`, `/data-export`, `/support` | Enterprise pages and support (see Milestone 6) |
 
 Cmd/Ctrl+K opens the command palette: navigation, actions ("Add rooms in bulk", "Add staff member"),
 theme and log out. Type a room number and a status (`204 dirty`, `305 clean`) to change it without

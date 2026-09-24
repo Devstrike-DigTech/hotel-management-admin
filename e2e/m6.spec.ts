@@ -213,8 +213,19 @@ test("a support session shows its banner and refuses writes while read-only", as
     return JSON.parse(t);
   };
   const ch = await j(await fetch(`${P}/auth/login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: PLATFORM_EMAIL, password: PLATFORM_PASSWORD }) }));
-  const { code } = await j(await fetch(`${P}/auth/dev/totp?email=${encodeURIComponent(PLATFORM_EMAIL)}`));
-  const s = await j(await fetch(`${P}/auth/mfa/verify`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mfaToken: ch.mfaToken, code }) }));
+  // a TOTP code works once; if another sign-in just used this one, wait for the next
+  let s: { accessToken: string } | null = null;
+  for (let i = 0; i < 3 && !s; i++) {
+    const { code } = await j(await fetch(`${P}/auth/dev/totp?email=${encodeURIComponent(PLATFORM_EMAIL)}`));
+    const r = await fetch(`${P}/auth/mfa/verify`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mfaToken: ch.mfaToken, code }) });
+    if (r.ok) s = await r.json();
+    else {
+      const e = await r.json();
+      if (e.code !== "MFA_CODE_ALREADY_USED") throw new Error(`mfa verify -> ${r.status} ${JSON.stringify(e)}`);
+      await new Promise((ok) => setTimeout(ok, ((e.details?.secondsLeft ?? 30) + 1) * 1000));
+    }
+  }
+  if (!s) throw new Error("no usable TOTP code");
   const desk = await login(DESK);
   const me = await call<{ tenant: { id: string }; user: { fullName: string } }>("GET", "/me", undefined, desk.accessToken);
   const started = await j(
