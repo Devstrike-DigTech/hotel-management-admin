@@ -15,7 +15,8 @@ import { useInboxSummary } from "@/lib/api/hooks-m5";
 import { roleLabel } from "@/lib/catalog";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import { LogoMark, TenantMark, TenantWordmark, Wordmark } from "@/components/brand";
+import { LogoMark, Wordmark } from "@/components/brand";
+import { TenantMark, TenantWordmark } from "@/components/tenant-mark";
 import { useSupportSummary } from "@/lib/api/hooks-m6";
 import { useShellBrand } from "./m6-runtime";
 import { Tip } from "@/components/ui/primitives";
@@ -42,7 +43,7 @@ export function Sidebar({
   const pending = useShifts({ status: "CLOSED", pageSize: 1 }, ready && can("shift.approve"));
   const reviews = useReviewSummary(ready && can("reviews.reply"));
   const inbox = useInboxSummary(ready && can("inbox.view") && has("whatsapp_messaging"));
-  const support = useSupportSummary(ready && can("support.request"));
+  const support = useSupportSummary(ready);
   const brand = useShellBrand();
   const badges: Record<string, number | undefined> = {
     flags: summary.data?.open,

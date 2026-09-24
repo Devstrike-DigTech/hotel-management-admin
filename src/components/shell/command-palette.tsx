@@ -300,7 +300,7 @@ export function CommandPalette() {
           {can("whitelabel.manage") && <Action icon={<EnvelopeSimple size={17} weight="duotone" />} label="Send email from our domain" locked={!has("white_label")} keywords="email domain spf dkim sender resend" onSelect={() => run(() => router.push("/settings/white-label#email"))} />}
           {can("sso.manage") && <Action icon={<Fingerprint size={17} weight="duotone" />} label="Set up single sign-on" locked={!has("sso")} keywords="sso google workspace microsoft entra oidc login" onSelect={() => run(() => router.push("/settings/sso"))} />}
           {can("data.export") && <Action icon={<FileZip size={17} weight="duotone" />} label="Export all our data" locked={!has("data_export")} keywords="export download zip backup ndpa" onSelect={() => run(() => router.push("/data-export"))} />}
-          {can("support.request") && <Action icon={<Lifebuoy size={17} weight="duotone" />} label="Ask support for help" hint="sends this page" keywords="help support ticket problem bug contact devstrike" onSelect={() => run(() => openSupport())} />}
+          {<Action icon={<Lifebuoy size={17} weight="duotone" />} label="Ask support for help" hint="sends this page" keywords="help support ticket problem bug contact devstrike" onSelect={() => run(() => openSupport())} />}
           {can("support.sessions.view") && <Action icon={<Eye size={17} weight="duotone" />} label="Who from support viewed our hotel" keywords="impersonation support sessions access audit" onSelect={() => run(() => router.push("/support"))} />}
         </Command.Group>
 

@@ -222,7 +222,8 @@ function BrandKitEditor({ s, manage }: { s: WhiteLabelSettings; manage: boolean 
   const set = <K extends keyof BrandDraft>(k: K, v: BrandDraft[K]) => setB((x) => ({ ...x, [k]: v }));
   const dirty = JSON.stringify(b) !== JSON.stringify(base) || JSON.stringify(links) !== JSON.stringify(s.footerLinks ?? []);
   const colorsOk = !!parseHex(b.primaryColor) && !!parseHex(b.accentColor);
-  const urlsOk = httpsOk(b.logoUrl) && httpsOk(b.faviconUrl) && links.every((l) => !l.url || httpsOk(l.url));
+  const linkOk = (u: string) => !u || httpsOk(u) || /^mailto:\S+@\S+$/.test(u);
+  const urlsOk = httpsOk(b.logoUrl) && httpsOk(b.faviconUrl) && links.every((l) => linkOk(l.url));
   const accentText = (contrastRatio(b.accentColor, "#FFFFFF") ?? 0) >= (contrastRatio(b.accentColor, "#1B1A17") ?? 0) ? "#FFFFFF" : "#1B1A17";
   const save = useMutation({
     mutationFn: () =>
@@ -288,7 +289,7 @@ function BrandKitEditor({ s, manage }: { s: WhiteLabelSettings; manage: boolean 
             {links.map((l, i) => (
               <li key={i} className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto] gap-2">
                 <Input value={l.label} placeholder="Privacy" aria-label="Link label" onChange={(e) => setLinks(links.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} disabled={!manage} />
-                <Input value={l.url} placeholder="https://yourhotel.com/privacy" aria-label="Link address" aria-invalid={!httpsOk(l.url)} className="font-mono" onChange={(e) => setLinks(links.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))} disabled={!manage} />
+                <Input value={l.url} placeholder="https://yourhotel.com/privacy" aria-label="Link address" aria-invalid={!linkOk(l.url)} className="font-mono" onChange={(e) => setLinks(links.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))} disabled={!manage} />
                 <Button variant="ghost" size="icon" aria-label="Remove link" onClick={() => setLinks(links.filter((_, j) => j !== i))} disabled={!manage}>
                   <X size={14} />
                 </Button>

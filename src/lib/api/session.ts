@@ -22,6 +22,7 @@ export interface ImpersonationState {
 
 const HOTEL_KEY = "admin.session.hotel";
 const IMP_KEY = "admin.session.impersonation";
+const ENDED_KEY = "admin.support.ended";
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -95,14 +96,28 @@ export const session = {
   },
   impersonation: () => readImp(),
   setImpersonation(s: ImpersonationState | null) {
+    const had = !!readImp();
     cache.imp = s;
     try {
       if (s) sessionStorage.setItem(IMP_KEY, JSON.stringify(s));
       else sessionStorage.removeItem(IMP_KEY);
+      // remember that this tab's support session ended, so the shell shows that instead of the sign-in page
+      if (had && !s) sessionStorage.setItem(ENDED_KEY, "1");
+      if (s) sessionStorage.removeItem(ENDED_KEY);
     } catch {
       /* memory only */
     }
     emit();
+  },
+  /** Whether a support session ended in this tab (read once by the ended page). */
+  supportEnded(clear = false) {
+    try {
+      const v = sessionStorage.getItem(ENDED_KEY) === "1";
+      if (clear) sessionStorage.removeItem(ENDED_KEY);
+      return v;
+    } catch {
+      return false;
+    }
   },
   /** Keep the stored banner in step with /me (mode changes). */
   updateImpersonationBanner(b: ImpersonationBanner) {

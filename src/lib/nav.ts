@@ -157,7 +157,7 @@ export const HOTEL_NAV: NavGroup[] = [
   },
   {
     label: "Help",
-    items: [{ href: "/support", label: "Support", icon: Lifebuoy, cap: "support.request", badge: "support", keywords: "help support ticket request contact devstrike problem bug question" }],
+    items: [{ href: "/support", label: "Support", icon: Lifebuoy, badge: "support", keywords: "help support ticket request contact devstrike problem bug question" }],
   },
 ];
 

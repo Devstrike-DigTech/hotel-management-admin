@@ -71,7 +71,7 @@ export function SupportView() {
         }
         description="Requests go straight to our support team with the page you were on and your hotel's details. Replies come here and by email."
         actions={
-          can("support.request") && (
+          (
             <Button onClick={() => openSupport()} data-testid="new-support-request">
               <Plus size={15} weight="bold" /> New request
             </Button>

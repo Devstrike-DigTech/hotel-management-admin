@@ -7,6 +7,7 @@ import { Suspense, useEffect, useState } from "react";
 import { DotsThreeOutline, Lifebuoy, MagnifyingGlass, WarningOctagon, ClockCountdown, X } from "@phosphor-icons/react";
 import { useHotelSession, useHydrated, useSilentRefresh } from "@/lib/auth";
 import { onSessionExpired } from "@/lib/api/client";
+import { session } from "@/lib/api/session";
 import { useMe } from "@/lib/api/hooks";
 import { MOBILE_TABS, allNavItems, isActive, navVisible } from "@/lib/nav";
 import { daysUntil, formatDate } from "@/lib/format";
@@ -29,7 +30,7 @@ import { PropertyScopeRuntime, usePropertyScope } from "./property-switcher";
 import { AnnouncementBars, M6Runtime, SupportSessionBar, useShellBrand } from "./m6-runtime";
 import { SupportHost, openSupport } from "@/components/support/new-request";
 import { Tip } from "@/components/ui/primitives";
-import { TenantMark } from "@/components/brand";
+import { TenantMark } from "@/components/tenant-mark";
 
 const COLLAPSE_KEY = "admin.sidebar.collapsed";
 
@@ -41,7 +42,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useSilentRefresh();
 
   useEffect(() => {
-    if (hydrated && !s && !pathname.startsWith("/impersonate")) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    if (!hydrated || s || pathname.startsWith("/impersonate")) return;
+    if (session.supportEnded()) router.replace("/impersonate?ended=1");
+    else router.replace(`/login?next=${encodeURIComponent(pathname)}`);
   }, [hydrated, s, router, pathname]);
 
   useEffect(

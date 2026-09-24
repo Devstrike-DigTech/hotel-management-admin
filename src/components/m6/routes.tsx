@@ -105,5 +105,6 @@ export function ExportRoute() {
 }
 
 export function SupportRoute({ id }: { id?: string }) {
-  return <RequireCap cap="support.request" what="Support">{id ? <SupportThread id={id} /> : <SupportView />}</RequireCap>;
+  // every role may contact support (API-M6 section 10); the API enforces it
+  return id ? <SupportThread id={id} /> : <SupportView />;
 }

@@ -23,6 +23,12 @@ export function ImpersonateHandoff() {
   const ran = useRef(false);
 
   useEffect(() => {
+    if (!ended) return;
+    if (session.impersonation()) session.setImpersonation(null);
+    session.supportEnded(true);
+  }, [ended]);
+
+  useEffect(() => {
     if (ended || ran.current) return;
     ran.current = true;
     const code = new URLSearchParams(window.location.hash.slice(1)).get("code");

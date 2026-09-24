@@ -6,7 +6,7 @@ import { Info, Key } from "@phosphor-icons/react";
 import type { StaffPortalPublic } from "@/lib/api/types-m6";
 import { session } from "@/lib/api/session";
 import { inkOn, loadGoogleFont } from "@/lib/m6-catalog";
-import { TenantMark } from "@/components/brand";
+import { TenantMark } from "@/components/tenant-mark";
 import { ProviderMark } from "@/components/sso/sso-view";
 import { ErrorNote, PasswordForm } from "./login-form";
 import { SSO_ERRORS, providerLabel, ssoStartUrl } from "./staff-portal";
