@@ -104,6 +104,36 @@ test("a colour published in Brand Studio shows on the booking site", async ({ br
   }
 });
 
+test("an expired preview link is replaced and the studio shows the draft again", async ({ browser }) => {
+  const { ctx, page } = await open(browser, owner);
+  try {
+    // the first link the studio gets is already dead: past expiresAt, and the web page it frames says EXPIRED
+    let minted = 0;
+    await page.route("**/api/v1/site/preview-token", async (route) => {
+      minted += 1;
+      const res = await route.fetch();
+      if (minted > 1) return route.fulfill({ response: res });
+      const body = (await res.json()) as { token: string; expiresAt: string; urls: { site: string; booking: string } };
+      const stale = { ...body, token: "e2e-stale", expiresAt: new Date(Date.now() - 60_000).toISOString(), urls: { site: body.urls.site.replace(body.token, "e2e-stale"), booking: body.urls.booking.replace(body.token, "e2e-stale") } };
+      return route.fulfill({ response: res, json: stale });
+    });
+    await page.route(/preview=e2e-stale/, (route) =>
+      route.fulfill({
+        contentType: "text/html",
+        body: `<!doctype html><title>Preview</title><script>parent.postMessage({ type: "site-preview", state: "EXPIRED", href: location.href }, "*")</script>`,
+      }),
+    );
+    await page.goto("/site");
+    const stage = page.getByTestId("preview-frame-stage");
+    // the studio mints a new link on EXPIRED, reloads the frame, and the real page reports the draft
+    await expect(stage).toHaveAttribute("data-preview-state", "DRAFT", { timeout: 45_000 });
+    expect(minted).toBeGreaterThanOrEqual(2);
+    await expect(page.getByTestId("preview-frame")).not.toHaveAttribute("src", /e2e-stale/);
+  } finally {
+    await ctx.close();
+  }
+});
+
 type FormState = { hasUnpublishedChanges: boolean; published: { id: string; version: number } | null; draft: { fields: { key: string; label: string; condition: unknown }[] } };
 
 test("a form with a custom select and a conditional question is published and used at the front desk", async ({ browser }) => {

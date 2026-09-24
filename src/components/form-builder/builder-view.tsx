@@ -508,6 +508,7 @@ function Builder({ state, editable }: { state: BookingFormState; editable: boole
 
 function FormPreview({ lens, onLens, device, onDevice, version }: { lens: Channel; onLens: (l: Lens) => void; device: Device; onDevice: (d: Device) => void; version: number }) {
   const token = usePreviewToken(lens !== "FRONT_DESK");
+  const [reload, setReload] = useState(0);
   const desk = useRenderedForm("FRONT_DESK", "draft", lens === "FRONT_DESK");
   const src = token.data ? `${token.data.urls.booking}${token.data.urls.booking.includes("?") ? "&" : "?"}channel=${lens}` : null;
   return (
@@ -535,7 +536,7 @@ function FormPreview({ lens, onLens, device, onDevice, version }: { lens: Channe
           </div>
         </div>
       ) : (
-        <PreviewFrame src={src} device={device} host="Booking form preview" version={version} fit="contain" title="Guest booking form preview" testId="form-preview-frame" empty={<p className="text-[13px] text-ink-muted">{token.isError ? "The preview didn't open." : "Opening the guest's booking form…"}</p>} />
+        <PreviewFrame onExpired={() => void token.refetch()} onRetry={() => void token.refetch().then(() => setReload((r) => r + 1))} src={src} device={device} host="Booking form preview" version={version + reload} fit="contain" title="Guest booking form preview" testId="form-preview-frame" empty={<p className="text-[13px] text-ink-muted">{token.isError ? "The preview didn't open." : "Opening the guest's booking form…"}</p>} />
       )}
     </div>
   );

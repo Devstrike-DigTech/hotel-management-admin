@@ -479,7 +479,7 @@ function Studio({ state, manage }: { state: SiteThemeState; manage: boolean }) {
           {controls}
         </aside>
         <section className={cn("min-h-[70dvh] min-w-0 flex-1 flex-col lg:flex lg:min-h-0", mobileView === "preview" ? "flex" : "hidden")} aria-label="Live preview">
-          <PreviewFrame src={preview.data?.urls.site ?? null} device={device} host={host} version={version} busy={save.kind === "saving"} empty={empty} title={`Preview of ${hotelName}'s booking site`} />
+          <PreviewFrame onExpired={() => void preview.refetch()} onRetry={() => { void preview.refetch(); setVersion((v) => v + 1); }} src={preview.data?.urls.site ?? null} device={device} host={host} version={version} busy={save.kind === "saving"} empty={empty} title={`Preview of ${hotelName}'s booking site`} />
         </section>
       </div>
 

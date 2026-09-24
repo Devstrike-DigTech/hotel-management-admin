@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowClockwise, ArrowSquareOut, Desktop, DeviceMobile, DeviceTablet, LockSimple } from "@phosphor-icons/react";
+import { config } from "@/lib/config";
+import { ArrowClockwise, ArrowSquareOut, Desktop, DeviceMobile, DeviceTablet, LockSimple, WarningCircle } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { Segmented, Tip } from "@/components/ui/primitives";
 
 export type Device = "desktop" | "tablet" | "phone";
+type PreviewState = "DRAFT" | "EXPIRED" | "NOT_FOUND" | "UNAVAILABLE";
+const PREVIEW_STATES: PreviewState[] = ["DRAFT", "EXPIRED", "NOT_FOUND", "UNAVAILABLE"];
 export const DEVICE_WIDTH: Record<Device, number> = { desktop: 1280, tablet: 820, phone: 390 };
 
 export function DeviceToggle({ value, onChange, className }: { value: Device; onChange: (d: Device) => void; className?: string }) {
@@ -40,6 +43,8 @@ export function PreviewFrame({
   title = "Live preview",
   testId = "preview-frame",
   fit = "width",
+  onExpired,
+  onRetry,
 }: {
   src: string | null;
   device: Device;
@@ -51,11 +56,45 @@ export function PreviewFrame({
   testId?: string;
   /** "width" fills the stage width; "contain" also fits the height (phone view) */
   fit?: "width" | "contain";
+  /** the framed page says its token ran out: mint a new one (the new src reloads the frame) */
+  onExpired?: () => void;
+  /** try again after NOT_FOUND / UNAVAILABLE */
+  onRetry?: () => void;
 }) {
   const stage = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
   const [loaded, setLoaded] = useState(false);
   const [shown, setShown] = useState(0);
+  const [state, setState] = useState<PreviewState | null>(null);
+  const handled = useRef<string | null>(null);
+  const expired = useRef(onExpired);
+  useEffect(() => {
+    expired.current = onExpired;
+  }, [onExpired]);
+
+  // the framed web page reports what it shows: { type: "site-preview", state, href }
+  useEffect(() => {
+    let web: string;
+    try {
+      web = new URL(config.webUrl).origin;
+    } catch {
+      return;
+    }
+    const onMessage = (e: MessageEvent) => {
+      const frame = stage.current?.querySelector("iframe");
+      if (e.origin !== web || !frame || e.source !== frame.contentWindow) return;
+      const d = e.data as { type?: string; state?: string; href?: string } | null;
+      if (!d || d.type !== "site-preview" || !PREVIEW_STATES.includes(d.state as PreviewState)) return;
+      setState(d.state as PreviewState);
+      // one fresh token per dead one, so a token that is refused straight away can't loop
+      if (d.state === "EXPIRED" && handled.current !== frame.src) {
+        handled.current = frame.src;
+        expired.current?.();
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
 
   useEffect(() => {
     const el = stage.current;
@@ -69,6 +108,7 @@ export function PreviewFrame({
     // a new draft version or device: show the loading rule until the frame answers
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset per load
     setLoaded(false);
+    setState(null);
   }, [src, version, device]);
 
   const width = DEVICE_WIDTH[device];
@@ -81,7 +121,7 @@ export function PreviewFrame({
   const url = src ? `${src}${src.includes("?") ? "&" : "?"}v=${version}` : null;
 
   return (
-    <div ref={stage} className="studio-stage relative flex min-h-0 flex-1 items-start justify-center overflow-hidden" data-testid={`${testId}-stage`}>
+    <div ref={stage} className="studio-stage relative flex min-h-0 flex-1 items-start justify-center overflow-hidden" data-testid={`${testId}-stage`} data-preview-state={state ?? undefined}>
       {!url ? (
         <div className="grid h-full w-full place-items-center p-8">{empty}</div>
       ) : (
@@ -127,6 +167,19 @@ export function PreviewFrame({
       {url && (!loaded || busy) && (
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] overflow-hidden" aria-hidden>
           <div className="h-full w-1/3 animate-[studio-load_1.1s_ease-in-out_infinite] bg-laterite" />
+        </div>
+      )}
+      {url && (state === "NOT_FOUND" || state === "UNAVAILABLE" || state === "EXPIRED") && (
+        <div role="status" className="absolute left-3 top-3 flex max-w-[calc(100%-24px)] items-center gap-2.5 rounded-md border border-[color-mix(in_oklab,var(--ochre)_40%,transparent)] bg-surface px-3 py-2 text-[12.5px] text-ink shadow-float" data-testid={`${testId}-notice`}>
+          <WarningCircle size={15} weight="fill" className="shrink-0 text-ochre" />
+          <span className="min-w-0">
+            {state === "EXPIRED" ? "The preview link ran out; opening a fresh one." : state === "NOT_FOUND" ? "The preview couldn't find this draft." : "The draft preview isn't available right now."}
+          </span>
+          {state !== "EXPIRED" && onRetry && (
+            <button type="button" onClick={() => { handled.current = null; onRetry(); }} className="shrink-0 font-medium text-laterite hover:underline">
+              Retry
+            </button>
+          )}
         </div>
       )}
       {url && (

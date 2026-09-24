@@ -32,9 +32,25 @@ export const useFontPairings = () => useQuery({ queryKey: qk7.pairings, queryFn:
 export const useSiteGates = (enabled = true) => useQuery({ queryKey: qk7.gates, queryFn: siteApi.gates, enabled, staleTime: 5 * 60_000 });
 export const useSiteTheme = (enabled = true) => useQuery({ queryKey: qk7.theme, queryFn: siteApi.theme, enabled });
 export const useThemeVersions = (enabled: boolean) => useQuery({ queryKey: qk7.themeVersions, queryFn: siteApi.versions, enabled });
-/** A signed preview link for the draft theme and form, refreshed before it runs out (30 minutes). */
+/**
+ * A signed preview link for the draft theme and form (API-M7 1.7). It is refreshed a few minutes before
+ * its `expiresAt`, also while the tab is in the background, and again whenever the tab comes back into
+ * view close to expiry, so the framed page never holds a dead token. The frame reports an expired one
+ * anyway (`site-preview` message) and the studio mints a new one then too.
+ */
+const PREVIEW_MARGIN = 3 * 60_000;
+const untilRefresh = (expiresAt: string | undefined) => (expiresAt ? Math.max(30_000, Date.parse(expiresAt) - Date.now() - PREVIEW_MARGIN) : 60_000);
 export const usePreviewToken = (enabled = true) =>
-  useQuery({ queryKey: qk7.preview, queryFn: () => siteApi.previewToken(), enabled, staleTime: 20 * 60_000, refetchInterval: 25 * 60_000, retry: 1 });
+  useQuery({
+    queryKey: qk7.preview,
+    queryFn: () => siteApi.previewToken(),
+    enabled,
+    staleTime: (q) => untilRefresh(q.state.data?.expiresAt),
+    refetchInterval: (q) => untilRefresh(q.state.data?.expiresAt),
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
 
 export const useBookingForm = (enabled = true) => useQuery({ queryKey: qk7.form, queryFn: formApi.get, enabled });
 export const useFormLibrary = (enabled = true) => useQuery({ queryKey: qk7.library, queryFn: formApi.library, enabled, staleTime: 60_000 });
