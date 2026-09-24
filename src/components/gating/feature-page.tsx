@@ -96,7 +96,7 @@ export function FeaturePage({ feature, icon: I, name, title, pitch, bullets, pre
                 </span>
               )}
             </div>
-            <h2 className="display-sm mt-3 text-[20px] leading-snug text-ink">What {name.toLowerCase()} does for you</h2>
+            <h2 className="display-sm mt-3 text-[20px] leading-snug text-ink">What {/^[A-Z][a-z]/.test(name) ? name.charAt(0).toLowerCase() + name.slice(1) : name} {/ & | and /.test(name) ? "do" : "does"} for you</h2>
           </div>
           <ul className="flex flex-col gap-3 p-5">
             {bullets.map((b) => (

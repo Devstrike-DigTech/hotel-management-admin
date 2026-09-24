@@ -205,7 +205,7 @@ export function LoginForm() {
             <div className="mt-5 flex items-center gap-3 text-[12.5px] text-ink-muted">
               <span className="h-px flex-1 bg-line" />
               <button type="button" onClick={() => setSso(true)} className="inline-flex items-center gap-1.5 font-medium text-ink hover:text-laterite" data-testid="use-sso">
-                <Fingerprint size={15} /> Sign in with single sign-on
+                <Fingerprint size={15} /> Use single sign-on
               </button>
               <span className="h-px flex-1 bg-line" />
             </div>
