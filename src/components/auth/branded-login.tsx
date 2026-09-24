@@ -21,6 +21,7 @@ export function BrandedLogin({ portal: p }: { portal: StaffPortalPublic }) {
   const expired = params.get("expired") === "1";
   const ssoError = params.get("sso_error");
   const [breakGlass, setBreakGlass] = useState(false);
+  const [logoBroken, setLogoBroken] = useState(false);
   const primary = p.primaryColor ?? "#1F2D48";
   const accent = p.accentColor ?? primary;
   const onPrimary = inkOn(primary);
@@ -49,9 +50,9 @@ export function BrandedLogin({ portal: p }: { portal: StaffPortalPublic }) {
         </svg>
         <div className="relative flex h-full flex-col justify-between p-12 xl:p-16">
           <span className="inline-flex items-center gap-3">
-            {p.logoUrl ? (
+            {p.logoUrl && !logoBroken ? (
               // eslint-disable-next-line @next/next/no-img-element -- the hotel's own logo
-              <img src={p.logoUrl} alt={p.brandName} className="h-10 max-w-[220px] object-contain" />
+              <img src={p.logoUrl} alt="" onError={() => setLogoBroken(true)} className="h-10 max-w-[220px] object-contain" />
             ) : (
               <>
                 <span className="grid h-10 w-10 place-items-center rounded-full border text-[15px]" style={{ borderColor: `${onPrimary}80`, ...headingStyle }}>
@@ -78,9 +79,9 @@ export function BrandedLogin({ portal: p }: { portal: StaffPortalPublic }) {
       </aside>
       <main className="flex min-h-dvh flex-col bg-paper px-5 py-8 sm:px-10 lg:px-16">
         <div className="-mx-5 -mt-8 mb-8 flex items-center gap-3 px-5 py-5 lg:hidden" style={{ background: primary, color: onPrimary }}>
-          {p.logoUrl ? (
+          {p.logoUrl && !logoBroken ? (
             // eslint-disable-next-line @next/next/no-img-element -- the hotel's own logo
-            <img src={p.logoUrl} alt="" className="h-8 max-w-[160px] object-contain" />
+            <img src={p.logoUrl} alt="" onError={() => setLogoBroken(true)} className="h-8 max-w-[160px] object-contain" />
           ) : (
             <TenantMark name={p.brandName} size={30} className="border-current text-current" />
           )}

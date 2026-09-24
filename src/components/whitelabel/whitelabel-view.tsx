@@ -40,9 +40,14 @@ export function WhiteLabelView() {
   const manage = can("whitelabel.manage");
   const [tab, setTab] = useState<Tab>("brand");
   useEffect(() => {
-    const h = window.location.hash.replace("#", "") as Tab;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- deep link to a tab once, after mount
-    if (TABS.some((t) => t.v === h)) setTab(h);
+    const read = () => {
+      const h = window.location.hash.replace("#", "") as Tab;
+      if (TABS.some((t) => t.v === h)) setTab(h);
+    };
+    read();
+    // a link such as #email from the palette changes only the hash
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
   }, []);
   const go = (t: Tab) => {
     setTab(t);

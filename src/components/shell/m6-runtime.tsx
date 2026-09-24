@@ -118,6 +118,7 @@ export function AnnouncementBars() {
   const qc = useQueryClient();
   const seen = useRef(new Set<string>());
   const imp = useImpersonation();
+  const [all, setAll] = useState(false);
   const dismiss = useMutation({
     mutationFn: (id: string) => announcementsApi.dismiss(id),
     onMutate: (id) => qc.setQueryData(qk6.announcements, (x: HotelAnnouncement[] | undefined) => (x ?? []).filter((a) => a.id !== id)),
@@ -135,18 +136,25 @@ export function AnnouncementBars() {
   }, [list, imp]);
   if (!list.length) return null;
   const order = { CRITICAL: 0, WARNING: 1, MAINTENANCE: 2, INFO: 3, SUCCESS: 4 } as const;
+  const sorted = [...list].sort((a, b) => order[a.severity] - order[b.severity] || Date.parse(b.startsAt) - Date.parse(a.startsAt));
+  // one notice at a time keeps the page above the fold; the rest are a click away
+  const shown = all ? sorted : sorted.slice(0, 1);
   return (
     <div data-testid="announcements">
-      {[...list]
-        .sort((a, b) => order[a.severity] - order[b.severity])
-        .slice(0, 3)
-        .map((a) => (
-          <AnnouncementBar
-            key={a.id}
-            a={{ id: a.id, title: a.title, body: a.body, severity: a.severity, linkUrl: a.link?.url, linkLabel: a.link?.label, dismissible: a.dismissible }}
-            onDismiss={imp ? undefined : () => dismiss.mutate(a.id)}
-          />
-        ))}
+      {shown.map((a) => (
+        <AnnouncementBar
+          key={a.id}
+          a={{ id: a.id, title: a.title, body: a.body, severity: a.severity, linkUrl: a.link?.url, linkLabel: a.link?.label, dismissible: a.dismissible }}
+          onDismiss={imp ? undefined : () => dismiss.mutate(a.id)}
+        />
+      ))}
+      {sorted.length > 1 && (
+        <div className="border-b border-line bg-surface-2/60">
+          <button type="button" onClick={() => setAll((v) => !v)} className="mx-auto block w-full max-w-[1240px] px-4 py-1 text-left text-[12px] font-medium text-ink-muted hover:text-ink sm:px-6 lg:px-10" data-testid="more-announcements">
+            {all ? "Show one notice" : `${sorted.length - 1} more ${sorted.length - 1 === 1 ? "notice" : "notices"}`}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
