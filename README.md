@@ -374,6 +374,66 @@ API. The tests clean up after themselves.
 
 ---
 
+## Milestone 7: the booking site, the booking form, extras and pickups
+
+The hotel designs its own booking site and decides what guests are asked when they book; sells breakfast, late
+check-out and pickups from airports, motor parks, train stations and jetties; and a new hotel is walked through
+setup in eight saved steps.
+
+![Brand Studio: templates drawn in the hotel's colours, and the real booking site at desktop size](docs/screenshots/m7-studio-1440-light.png)
+
+| | |
+|---|---|
+| ![The form builder: library, the form as a canvas, the question's settings](docs/screenshots/m7-builder-1440-light.png) | ![Colours with contrast on light and dark pages](docs/screenshots/m7-studio-colours-1440-dark.png) |
+| ![Transfers: who is met, where and when](docs/screenshots/m7-transfers-1440-light.png) | ![Assign a driver; the guest's message as it will read](docs/screenshots/m7-transfer-assign-1440-light.png) |
+| ![Pickup points by kind, with vehicles and working hours](docs/screenshots/m7-pickups-1440-light.png) | ![Extras priced for a sample stay](docs/screenshots/m7-extras-1440-dark.png) |
+| ![Setup in eight saved steps](docs/screenshots/m7-setup-1440-light.png) | ![The front desk books through the hotel's own form](docs/screenshots/m7-new-reservation-1440-light.png) |
+
+At 1024 px: [Brand Studio](docs/screenshots/m7-studio-1024-light.png), [form builder](docs/screenshots/m7-builder-1024-light.png).
+On a phone: [Brand Studio](docs/screenshots/m7-studio-390-light.png), [form builder](docs/screenshots/m7-builder-390-light.png),
+[transfers](docs/screenshots/m7-transfers-390-light.png), [setup](docs/screenshots/m7-setup-390-light.png).
+Every M7 shot (1440, 1024 for the two workspaces, and 390 px, light and dark) is in `docs/screenshots/m7-*`.
+
+### M7 routes
+
+| Route | |
+|---|---|
+| `/site` | **Brand Studio**, full width: controls on the left, the **real web app** on the right in an iframe (signed preview link from `POST /site/preview-token`, refreshed before it runs out), at desktop, tablet or phone size and scaled to fit. **Template**: the six templates as live schematics drawn in the hotel's own colours; the two on every plan and the four locked ones (a lock plate and the plan that opens them). **Colours & logo**: logo and tab icon uploads, primary and secondary colour with ten Nigerian-named swatches and the contrast of button text, text on light pages and text on dark pages; when a colour is too faint the studio names the darker (or lighter) shade links and headings will use, from the server's applied variants. Light, dark or follow the phone. **Type**: the curated pairs as specimens set in the hotel's name. **Sections**: drag to reorder (pointer or arrow keys), switch off, open to edit words, highlights, experiences and questions; up to three text blocks. Every change saves to the draft and reloads the preview. **Publish** shows what changes (template, colours with swatches, fonts, sections shown, hidden and moved); **History** lists the last 20 publishes with revert; **Discard** goes back to what guests see |
+| `/settings/booking-form` | **Form builder**, full width in three panes (two at 1024 px, one at a time on a phone). **Library**: the always-on questions (reword, never remove), the two recommended ones as switches, ready-made questions (nationality, purpose of visit, emergency contact, company and TIN, pickup, extras and more) with Add or drag onto the form, and your own questions by kind of answer. **Canvas**: sections as numbered rules, each question drawn as the control the guest will see, drag to reorder or move between sections, rename or reorder sections, the channel dots (Marketplace, Booking site, Front desk), and a lens that fades what one channel doesn't ask. **Inspector**: label (ID-like labels warn and suggest the register card; BVN is refused), help, required / optional / hidden, options, answer limits and patterns, file types and size, where it is asked, **Show when** as a sentence with blanks (*Show Bus company when Arriving by is By road*), and the NDPA purpose, guest note and *sensitive*. **Preview** opens the guest's form on the real web app per channel, or the front-desk form in place. **Publish** lists what was added, changed and removed with a note; versions can be restored into the draft; presets by hotel type |
+| `/extras` | Extras by category with the price for a sample stay you choose (nights, guests), sold in the last 30 days, on or off. The editor: kind (extra, early check-in, late check-out with its time), pricing per stay, night, guest, guest per night or item with a worked example, tax, channels, notice, daily limit, dates, arrival days and shortest stay |
+| `/pickup-points` | Airports, motor parks, train stations, jetties and other places, each with its vehicles and prices, pickup and drop-off prices, notice and a 24-hour ruler of the drivers' working hours. The editor says what guests are asked for each kind. **Transport companies**: the platform list (GIGM, ABC, Peace Mass Transit, Chisco, GUO and the rest) and the hotel's own local lines |
+| `/transfers` | The day's pickups and drop-offs on a time line, with counts (arrivals, departures, need a driver, on the road, done), filters and day navigation. Each card shows the guest, the place, the flight, bus company and city or train, passengers, luggage, the driver and any delay, with one large next action (Confirm, Assign a driver, Driver on the way, Guest picked up, Arrived) that works with a thumb on a phone. **Assign a driver** shows the guest's message as it will read and says where it went; delay notes with quick picks ("Bus delayed at Ore"), no-show and cancel; every step in a timeline |
+| `/setup` | Eight steps saved on the server: kind of place (applies the form preset and suggested template), brand and template, rooms (quick room type and rooms in bulk), the booking form, extras and pickups (a locked preview below Growth), getting paid, times and policies, and go live (preview links, publish the site and form, list on the marketplace). Skip what can wait; rooms and going live can't be skipped |
+
+Elsewhere:
+
+- **New reservation** renders the hotel's published form for the front desk (conditions evaluated as you type), with the extras
+  picker and the pickup block (airport: airline and flight; motor park: company from the list or other, city, ticket, the bus;
+  train: route and service; jetty: details; passengers, luggage, vehicle, phone on the day, drop-off on departure). Answers,
+  extras and transfers go with the booking; server issues land on their question. The total adds extras and pickups.
+- **Reservation**: *What the guest told us* (sensitive answers masked, revealed with the ID permission; files as signed links;
+  company and TIN for the invoice) and *Extras and pickups* with add and remove at the desk.
+- **Check-in**: the register card fills empty boxes from the answers (nationality, date of birth, address, arriving from,
+  purpose, vehicle) and says which.
+- **Today**: *Resume setup* until the wizard is done, and *Pickups today* with the next ones and who still needs a driver.
+- The sidebar gains a *Booking site* group and *Transfers*; the palette gains template, colours, fonts, sections, a form
+  question, an extra, a pickup point, today's pickups and *Resume setup*. Workspaces fold the sidebar to icons below 1440 px.
+- Plans: logo and colours on every plan; the other four templates, sections and light/dark on Growth; fonts and file uploads
+  on Pro; Starter asks up to three extra questions (a meter in the library, then the upgrade dialog) and has no conditions or
+  extras. Locked parts stay visible with the plan that opens them. Permissions `site.manage`, `forms.manage`,
+  `extras.manage`, `transfers.view` and `transfers.manage` gate pages, sidebar and palette entries.
+
+### M7 end-to-end tests
+
+`e2e/m7.spec.ts`: a colour published in Brand Studio shows on the web microsite (the applied shade is in the page); a custom
+select and a question shown only for one of its answers are built, published and answered through the new-reservation drawer,
+and the answers show on the reservation; a motor-park pickup booked at the desk shows on the transfers board, a driver is
+assigned and the guest's message (name, plate) is found in the dev outbox; the Starter hotel (Bodija Heights) sees four locked
+templates and cannot add a fourth extra question; the setup wizard (Wuse Garden) keeps a skipped step after a reload. The
+tests revert the theme and the form and cancel their bookings.
+
+---
+
 ## Stack
 
 | | |
@@ -446,6 +506,7 @@ In development the sign-in pages show a small "Dev" button that fills the demo c
 | `/housekeeping` | Live board on Growth and above; preview and upgrade card below it |
 | `/pos`, `/channel-manager`, `/dynamic-pricing`, `/loyalty`, `/inbox`, `/group` | Pro pages (see Milestone 5); on lower plans, previews naming the plan that unlocks them |
 | `/developers`, `/settings/white-label`, `/settings/sso`, `/data-export`, `/support` | Enterprise pages and support (see Milestone 6) |
+| `/site`, `/settings/booking-form`, `/extras`, `/pickup-points`, `/transfers`, `/setup` | Booking site, form, extras, pickups and setup (see Milestone 7) |
 
 Cmd/Ctrl+K opens the command palette: navigation, actions ("Add rooms in bulk", "Add staff member"),
 theme and log out. Type a room number and a status (`204 dirty`, `305 clean`) to change it without
@@ -520,6 +581,27 @@ src/
     policy.ts                                        cancellation policy in plain language
 e2e/                                                Playwright tests
 ```
+
+M7 adds:
+
+```
+src/
+  app/(hotel)/site, settings/booking-form, extras, pickup-points, transfers, setup
+  components/
+    studio/        Brand Studio: template schematics (SVG), panels, scaled preview frame, publish diff and history
+    form-builder/  library, canvas, inspector, condition logic and sentences
+    guest-form/    the form renderer shared by the builder preview and the new-reservation drawer; pickup block, extras picker
+    extras/ pickups/ transfers/ setup/
+    m7/            routes with plan gates, locked previews, Today cards, catalogue icons
+    reservations/addons-cards.tsx
+  lib/
+    api/types-m7.ts, endpoints-m7.ts, hooks-m7.ts    the M7 contract
+    m7-catalog.ts          templates, sections, pairings, library, presets, extras, pickup kinds, transport companies
+    use-sortable.ts        drag to reorder with pointer events and arrow keys
+    use-media.ts
+```
+
+The shell renders `/site` and `/settings/booking-form` as full-width workspaces that fill the viewport under the top bar.
 
 The Ledger renders only the rows and bars in view (plus overscan), draws the day grid with a single
 repeating gradient, and indexes stays by room, so 200 rooms by 60 days stays smooth. Payment-method
