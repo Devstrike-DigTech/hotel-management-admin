@@ -64,7 +64,7 @@ test.beforeAll(async () => {
   owner = await login(OWNER);
 });
 
-type ThemeState = { siteUrl: string; hasUnpublishedChanges: boolean; draft: { brand: { primary: string } }; published: { id: string; version: number } | null };
+type ThemeState = { siteUrl: string; hasUnpublishedChanges: boolean; draft: { templateId: string; colourMode: string; sections: unknown[]; brand: { primary: string; secondary: string | null; fontPairingId: string | null; logoAssetId: string | null; faviconAssetId: string | null } }; published: { id: string; version: number } | null };
 
 test("a colour published in Brand Studio shows on the booking site", async ({ browser }) => {
   const before = await call<ThemeState>(owner, "GET", "/site/theme");
@@ -95,7 +95,11 @@ test("a colour published in Brand Studio shows on the booking site", async ({ br
   } finally {
     // put the site back as it was
     await call(owner, "POST", `/site/theme/versions/${current.id}/revert`, {}).catch(() => undefined);
-    if (before.hasUnpublishedChanges) await call(owner, "PUT", "/site/theme/draft", { brand: { primary: before.draft.brand.primary } }).catch(() => undefined);
+    // reverting also resets the draft, so the draft the seed (or the owner) had goes back too
+    if (before.hasUnpublishedChanges) {
+      const { templateId, colourMode, sections, brand } = before.draft;
+      await call(owner, "PUT", "/site/theme/draft", { templateId, resetSections: false, colourMode, sections, brand: { primary: brand.primary, secondary: brand.secondary, fontPairingId: brand.fontPairingId, logoAssetId: brand.logoAssetId, faviconAssetId: brand.faviconAssetId } }).catch(() => undefined);
+    }
     await ctx.close();
   }
 });

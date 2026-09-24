@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Paperclip, ShieldCheck, X } from "@phosphor-icons/react";
+import { LockSimple, Paperclip, ShieldCheck, X } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import type { ExtraSelection, FormField, PickupAnswer, PublicBookingForm } from "@/lib/api/types-m7";
 import { formApi } from "@/lib/api/endpoints-m7";
@@ -157,12 +157,26 @@ function Control({
     </span>
   );
   const optional = f.required === "OPTIONAL" && !f.boundTo;
-  if (f.boundTo)
+  if (f.boundTo) {
+    // the preview shows the always-on questions filled with a sample guest; the desk asks them in its own sections
+    const sample: Record<string, string> = { fullName: "Chiamaka Obi", phone: "+234 803 123 4567", email: "chiamaka@example.ng", dates: `${stay.arrival} \u2192 ${stay.departure}`, adults: String(stay.adults), children: String(stay.children) };
+    if (f.type === "CHECKBOX")
+      return (
+        <p className="flex items-center gap-2.5 text-[13.5px] text-ink-muted">
+          <span className="grid h-4 w-4 place-items-center rounded-xs border border-line-strong bg-surface-2" aria-hidden />
+          {f.label}
+        </p>
+      );
     return (
-      <Field label={label} hint="Taken from the stay and guest details">
-        <div className="h-10 rounded-md border border-dashed border-line-strong bg-surface-2/40 px-3 text-[13px] leading-10 text-ink-faint">{f.key === "dates" ? `${stay.arrival} to ${stay.departure}` : f.key === "adults" ? stay.adults : f.key === "children" ? stay.children : ""}</div>
-      </Field>
+      <div className="flex flex-col gap-1.5">
+        <span className="flex items-center gap-1.5 text-[13px] font-medium text-ink">
+          {f.label}
+          <LockSimple size={11} className="text-ink-faint" aria-label="Always on the form" />
+        </span>
+        <div className="h-10 rounded-md border border-dashed border-line-strong bg-surface-2/40 px-3 font-mono text-[13px] leading-10 text-ink-muted">{sample[f.key] ?? ""}</div>
+      </div>
     );
+  }
   switch (f.type) {
     case "PICKUP":
       return (
@@ -179,6 +193,7 @@ function Control({
           directions={f.pickup?.directions ?? ["ARRIVAL", "DEPARTURE"]}
           desk={desk}
           label={f.label}
+          showProblems={!!error}
         />
       );
     case "EXTRA":

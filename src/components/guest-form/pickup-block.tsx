@@ -84,6 +84,7 @@ export function PickupBlock({
   desk,
   errors,
   label,
+  showProblems = false,
 }: {
   value: PickupAnswer | undefined;
   onChange: (v: PickupAnswer) => void;
@@ -98,13 +99,15 @@ export function PickupBlock({
   desk: boolean;
   errors?: Record<string, string>;
   label: string;
+  /** show what's missing (after a first attempt to save) */
+  showProblems?: boolean;
 }) {
   const a: PickupAnswer = useMemo(() => value ?? { wanted: false }, [value]);
   const set = (p: Partial<PickupAnswer>) => onChange({ ...a, ...p });
   const point = points.find((x) => x.id === a.pickupPointId);
   const d = (a.details ?? {}) as Record<string, string | null | undefined>;
   const setD = (p: Record<string, string | null>) => set({ details: { ...d, ...p } });
-  const problems = useMemo(() => ({ ...pickupProblems(a, points, { desk }), ...(errors ?? {}) }), [a, points, desk, errors]);
+  const problems = useMemo(() => (showProblems || (errors && Object.keys(errors).length) ? { ...pickupProblems(a, points, { desk }), ...(errors ?? {}) } : ({} as Record<string, string>)), [a, points, desk, errors, showProblems]);
   const byKind = PICKUP_KINDS.map((k) => ({ ...k, points: points.filter((p) => p.kind === k.value) })).filter((k) => k.points.length);
   const time = a.scheduledAt ? lagosHHMM(a.scheduledAt) : "";
   const date = a.scheduledAt ? dayKeyOf(a.scheduledAt) : arrival;
