@@ -26,6 +26,11 @@ import { ChipRadio, NairaInput, Stepper } from "@/components/m2/bits";
 import { LockedInline } from "@/components/gating/gate";
 import type { StayQuote } from "@/lib/api/types-m4";
 import { StayPricing, type PricingChoice } from "./stay-pricing";
+import { useRenderedForm } from "@/lib/api/hooks-m7";
+import type { ExtraSelection, PickupAnswer } from "@/lib/api/types-m7";
+import { FormAnswers, checkAnswers, cleanAnswers, type StayContext } from "@/components/guest-form/renderer";
+import { extrasTotal } from "@/components/guest-form/extras-picker";
+import { transferPrice, transfersFromPickup } from "@/components/guest-form/pickup-block";
 
 /** Mounted once in the shell; opened through `openNewReservation()`. */
 export function NewReservationHost() {
@@ -78,7 +83,13 @@ function NewReservationForm({ prefill, onDone }: { prefill: NewReservationPrefil
   const [pricing, setPricing] = useState<PricingChoice>({ ratePlanId: null, promoCode: null, corporateAccountId: null });
   const [quote, setQuote] = useState<StayQuote | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, unknown>>({});
+  const [extrasSel, setExtrasSel] = useState<ExtraSelection[]>([]);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const phoneRef = useRef<HTMLInputElement>(null);
+  // the hotel's published booking form, as the front desk sees it (API-M7 2.4)
+  const deskForm = useRenderedForm("FRONT_DESK", "published", can("reservations.write"));
+  const form = deskForm.data && deskForm.data.fields.some((f) => !f.boundTo) ? deskForm.data : null;
 
   const departure = addDays(arrival, nights);
   const dayUse = stayType === "DAY_USE";
@@ -140,6 +151,17 @@ function NewReservationForm({ prefill, onDone }: { prefill: NewReservationPrefil
     return () => window.clearTimeout(id);
   }, [phone, prefill.guestId]);
 
+  const stayCtx: StayContext = { arrival, departure: dayUse ? arrival : departure, adults, children, phone: normalisePhone(phone) ?? undefined };
+  const pickupField = form?.fields.find((f) => f.type === "PICKUP");
+  const pickupAnswer = pickupField ? (answers[pickupField.key] as PickupAnswer | undefined) : undefined;
+  const transfers = transfersFromPickup(pickupAnswer);
+  const addOnsKobo =
+    (form ? extrasTotal(form.extras, extrasSel, { nights: dayUse ? 1 : nights, guests: adults + children }) : 0) +
+    transfers.reduce((sum, t) => {
+      const p = form?.pickup?.points.find((x) => x.id === t.pickupPointId);
+      return sum + (p ? transferPrice(p, t.direction, t.vehicleOptionId) : 0);
+    }, 0);
+
   const create = useMutation({
     mutationFn: () => {
       const e: Record<string, string> = {};
@@ -150,8 +172,17 @@ function NewReservationForm({ prefill, onDone }: { prefill: NewReservationPrefil
         if (fullName.trim().length < 2) e.fullName = "Enter the guest's full name";
       }
       setErrors(e);
-      if (Object.keys(e).length) throw new Error("Check the highlighted fields");
+      const fe = form ? checkAnswers(form, answers, stayCtx, true) : {};
+      setFormErrors(fe);
+      if (Object.keys(e).length || Object.keys(fe).length) throw new Error("Check the highlighted fields");
       return reservationsApi.create({
+        ...(form
+          ? {
+              formAnswers: cleanAnswers(form, answers, stayCtx),
+              extras: extrasSel.length ? extrasSel : undefined,
+              transfers: transfers.length ? transfers.map((t) => ({ ...t, details: pickupAnswer?.details, luggage: pickupAnswer?.luggage ?? null, contactPhone: pickupAnswer?.contactPhone ?? null })) : undefined,
+            }
+          : {}),
         roomTypeId,
         roomId: roomId || undefined,
         stayType,
@@ -188,6 +219,16 @@ function NewReservationForm({ prefill, onDone }: { prefill: NewReservationPrefil
     meta: { errorTitle: "Reservation not saved" },
     onError: (e) => {
       if (isApiError(e) && e.code === "ROOM_UNAVAILABLE") void refresh([["availability"]]);
+      if (isApiError(e) && e.code === "VALIDATION_ERROR") {
+        // answers.<key>[...] and transfers[i] issues land on their question (API-M7 0.4)
+        const issues = (e.details as { issues?: { path: string; fieldKey: string | null; message: string }[] })?.issues ?? [];
+        const fe: Record<string, string> = {};
+        for (const i of issues) {
+          const key = i.fieldKey ?? /^answers\.([^.[\]]+)/.exec(i.path)?.[1] ?? (/^transfers\[/.test(i.path) ? pickupField?.key : undefined);
+          if (key && !fe[key]) fe[key] = i.message;
+        }
+        setFormErrors(fe);
+      }
     },
   });
 
@@ -435,6 +476,12 @@ function NewReservationForm({ prefill, onDone }: { prefill: NewReservationPrefil
         )}
       </Section>
 
+      {form && (
+        <Section n="03b" title="What we ask" error={Object.keys(formErrors).length ? "Some answers need a look" : undefined}>
+          <FormAnswers form={form} answers={answers} onAnswers={setAnswers} extras={extrasSel} onExtras={setExtrasSel} stay={stayCtx} errors={formErrors} desk />
+        </Section>
+      )}
+
       {/* 04 details */}
       <Section n="04" title="Details">
         <div className="flex flex-wrap gap-6">
@@ -478,7 +525,8 @@ function NewReservationForm({ prefill, onDone }: { prefill: NewReservationPrefil
             {units} {dayUse ? (units === 1 ? "hour" : "hours") : units === 1 ? "night" : "nights"}
             {selectedType ? ` · ${selectedType.name}` : ""} &middot; {quote && !dayUse && rate == null ? `${quote.ratePlan.name}, with tax` : "before tax"}
           </p>
-          <p className="font-mono text-[20px] leading-tight text-ink">{naira(quote && !dayUse && rate == null ? quote.breakdown.totalKobo : unitRate * units)}</p>
+          <p className="font-mono text-[20px] leading-tight text-ink">{naira((quote && !dayUse && rate == null ? quote.breakdown.totalKobo : unitRate * units) + addOnsKobo)}</p>
+          {addOnsKobo > 0 && <p className="text-[11.5px] text-ink-muted" data-testid="addons-total">with {naira(addOnsKobo)} of extras and pickups, before their tax</p>}
         </div>
         <Button type="submit" size="lg" loading={create.isPending} disabled={dayUse && !has("hourly_bookings")}>
           Book it

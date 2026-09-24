@@ -38,6 +38,8 @@ import { HoldCountdown } from "@/components/m3/bits";
 import { OnlineBookingCard, paidOnline } from "@/components/reservations/online-card";
 import { NotificationLog } from "@/components/notifications/notification-log";
 import { CheckOutDialog } from "./check-out";
+import { AddOnsPanel, AnswersCard } from "./addons-cards";
+import type { ReservationDetailM7 } from "@/lib/api/types-m2";
 
 export function ReservationDetailView({ id }: { id: string }) {
   const q = useReservation(id);
@@ -174,6 +176,7 @@ export function ReservationDetailView({ id }: { id: string }) {
             </Panel>
           )}
           <FolioPanel folioId={r.folioId} title="Guest folio" reservationCode={r.code} />
+          <AddOnsPanel r={r as ReservationDetailM7} onChanged={() => void refresh()} />
           <Invoices folioId={r.folioId} />
           <NotificationLog reservationId={r.id} />
         </div>
@@ -181,6 +184,7 @@ export function ReservationDetailView({ id }: { id: string }) {
           {r.online && <OnlineBookingCard r={r} />}
           <StayCard r={r} />
           <GuestCard r={r} />
+          <AnswersCard r={r as ReservationDetailM7} />
           <RegisterCard r={r} />
           {r.notes && (
             <Panel className="px-5 py-4">

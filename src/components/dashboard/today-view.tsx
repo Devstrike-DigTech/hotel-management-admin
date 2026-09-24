@@ -26,6 +26,7 @@ import { RoomSheet } from "@/components/keyrack/room-sheet";
 import { StatusSwatch } from "@/components/keyrack/status-swatch";
 import { OccupancyRing } from "@/components/charts/occupancy-ring";
 import { ActivityFeed } from "./activity-feed";
+import { SetupChecklistCard, TransfersTodayCard } from "@/components/m7/today-cards";
 
 export function TodayView() {
   const me = useMe();
@@ -124,6 +125,10 @@ export function TodayView() {
         }
       />
 
+      <div className="mb-6 empty:hidden">
+        <SetupChecklistCard />
+      </div>
+
       {/* headline ledger */}
       {deskOn ? (
         <Panel className="mb-6 grid grid-cols-2 divide-line md:grid-cols-5 md:divide-x [&>*]:border-line max-md:[&>*]:gap-1 max-md:[&>*]:py-3.5 max-md:[&>*:nth-child(-n+4)]:border-b max-md:[&>*:nth-child(odd)]:border-r max-md:[&>*:last-child]:col-span-2 max-md:[&>*:last-child]:border-r-0 max-md:[&_.font-mono]:text-[28px]">
@@ -153,6 +158,10 @@ export function TodayView() {
           <OnlineTodayCard counts={desk.data?.online} enabled />
         </div>
       )}
+
+      <div className="mb-6 empty:hidden">
+        <TransfersTodayCard />
+      </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-12">
         {/* key rack */}

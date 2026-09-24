@@ -44,6 +44,12 @@ import {
   Fingerprint,
   FileZip,
   Lifebuoy,
+  PaintBrush,
+  Textbox,
+  ShoppingBag,
+  Signpost,
+  Van,
+  ListChecks,
   type Icon,
 } from "@phosphor-icons/react";
 import type { Capability, Permission } from "./permissions";
@@ -83,6 +89,7 @@ export const HOTEL_NAV: NavGroup[] = [
       { href: "/inbox", label: "Guest inbox", short: "Inbox", icon: ChatCircleText, feature: "whatsapp_messaging", cap: "inbox.view", badge: "inbox", keywords: "whatsapp messages chat conversations reply guests threads", shortcut: "G I" },
       { href: "/loyalty", label: "Loyalty", icon: Crown, feature: "loyalty", cap: "loyalty.view", keywords: "rewards points members tiers circle redeem" },
       { href: "/reviews", label: "Reviews", icon: ChatsTeardrop, cap: "reviews.read", badge: "reviews", keywords: "ratings stars feedback reply verified stays" },
+      { href: "/transfers", label: "Transfers", icon: Van, feature: "paid_extras", cap: "transfers.view", keywords: "pickups drop-offs airport motor park bus driver jibowu mmia train jetty transfer board" },
       { href: "/rooms", label: "Rooms", icon: Key, exact: true, cap: ["rooms.status", "rooms.manage", "reservations.view"], keywords: "key rack board status", shortcut: "G R" },
       { href: "/rooms/types", label: "Room types", icon: Bed, cap: ["rooms.manage", "rates.view"], keywords: "categories base price" },
     ],
@@ -115,6 +122,16 @@ export const HOTEL_NAV: NavGroup[] = [
       { href: "/dynamic-pricing", label: "Dynamic pricing", icon: ChartLineUp, feature: "dynamic_pricing", cap: "pricing.view", keywords: "suggestions autopilot guardrails events calendar yield pricing engine earned" },
       { href: "/channel-manager", label: "Channel manager", icon: Plugs, feature: "channel_manager", cap: "channels.view", keywords: "ota booking.com expedia airbnb agoda ical channex sync mapping commission" },
       { href: "/city-ledger", label: "City Ledger", icon: Tag, feature: "promotions", cap: "corporate.view", keywords: "receivables aging statements invoices companies owe" },
+    ],
+  },
+  {
+    label: "Booking site",
+    items: [
+      { href: "/site", label: "Brand Studio", icon: PaintBrush, cap: "site.manage", keywords: "brand studio booking site theme template logo favicon colours fonts sections faq publish microsite design" },
+      { href: "/settings/booking-form", label: "Booking form", icon: Textbox, cap: "forms.manage", keywords: "booking form builder fields questions guest details conditions custom fields ndpa publish" },
+      { href: "/extras", label: "Extras", icon: ShoppingBag, feature: "paid_extras", cap: "extras.manage", keywords: "extras add-ons breakfast early check-in late check-out cake wine laundry upsell" },
+      { href: "/pickup-points", label: "Pickup points", icon: Signpost, feature: "paid_extras", cap: "extras.manage", keywords: "pickup points airport motor park train station jetty transport companies gigm abc peace" },
+      { href: "/setup", label: "Setup", icon: ListChecks, cap: "settings.manage", keywords: "setup wizard getting started go live checklist resume setup" },
     ],
   },
   {

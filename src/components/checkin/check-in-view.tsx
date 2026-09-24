@@ -10,6 +10,7 @@ import {
   Check,
   CloudArrowUp,
   Key,
+  NotePencil,
   Printer,
   SealCheck,
   SignIn,
@@ -22,7 +23,7 @@ import { useCurrentShift, useReservation, useRoomAvailability } from "@/lib/api/
 import { guestsApi, reservationsApi } from "@/lib/api/endpoints-m2";
 import { normalisePhone, useDeskRefresh } from "@/lib/api/mutations-m2";
 import { errorMessage, isApiError } from "@/lib/api/client";
-import type { CheckInInput, Gender, ReservationDetail, RoomAvailability } from "@/lib/api/types-m2";
+import type { CheckInInput, Gender, ReservationDetail, ReservationDetailM7, RoomAvailability } from "@/lib/api/types-m2";
 import { deskAction } from "@/lib/offline/desk-action";
 import { useOnline } from "@/lib/offline/network";
 import { useEntitlements } from "@/lib/auth";
@@ -78,21 +79,35 @@ function CheckIn({ r, registerOnly }: { r: ReservationDetail; registerOnly: bool
   const { has } = useEntitlements();
   const { can } = useCan();
   const g = r.guest;
+  // answers from the booking form fill empty boxes on the card (API-M7 6)
+  const pre = (r as ReservationDetailM7).registerPrefill ?? null;
+  const prefilled = pre
+    ? ([
+        ["nationality", !g.nationality && pre.nationality],
+        ["date of birth", !g.dateOfBirth && pre.dateOfBirth],
+        ["address", !g.address && pre.address],
+        ["arriving from", !r.registration?.arrivingFrom && pre.arrivingFrom],
+        ["purpose", !r.registration?.purpose && pre.purpose],
+        ["vehicle", !r.registration?.vehiclePlate && !g.vehiclePlate && pre.vehiclePlate],
+      ] as const)
+        .filter(([, v]) => !!v)
+        .map(([k]) => k)
+    : [];
   const [card, setCard] = useState<CardState>({
     fullName: g.fullName,
     phone: g.phone ? formatPhone(g.phone) : "",
     email: g.email ?? "",
     gender: g.gender ?? "",
-    dateOfBirth: g.dateOfBirth ?? "",
-    nationality: g.nationality || "Nigerian",
-    address: g.address ?? "",
+    dateOfBirth: g.dateOfBirth ?? pre?.dateOfBirth ?? "",
+    nationality: g.nationality || pre?.nationality || "Nigerian",
+    address: g.address ?? pre?.address ?? "",
     company: g.company ?? "",
     idType: g.idType ?? "",
     idNumber: "",
-    arrivingFrom: r.registration?.arrivingFrom ?? "",
+    arrivingFrom: r.registration?.arrivingFrom ?? pre?.arrivingFrom ?? "",
     goingTo: r.registration?.goingTo ?? "",
-    purpose: r.registration?.purpose ?? "",
-    vehiclePlate: r.registration?.vehiclePlate ?? g.vehiclePlate ?? "",
+    purpose: r.registration?.purpose ?? ((pre?.purpose as Purpose | null) || ""),
+    vehiclePlate: r.registration?.vehiclePlate ?? g.vehiclePlate ?? pre?.vehiclePlate ?? "",
     consent: !!g.consentAt,
   });
   const set = <K extends keyof CardState>(k: K, v: CardState[K]) => setCard((c) => ({ ...c, [k]: v }));
@@ -260,6 +275,11 @@ function CheckIn({ r, registerOnly }: { r: ReservationDetail; registerOnly: bool
         </Button>
       </div>
 
+      {prefilled.length > 0 && (
+        <p className="mb-4 flex items-center gap-2 text-[13px] text-ink-muted" data-testid="register-prefilled">
+          <NotePencil size={15} className="text-adire" /> Filled in from the guest&rsquo;s booking answers: {prefilled.join(", ")}. Check them with the guest.
+        </p>
+      )}
       <div className="grid items-start gap-6 lg:grid-cols-12">
         {/* ---------------- the card ---------------- */}
         <form

@@ -39,6 +39,7 @@ import { CashRegister, ChartLineUp, ChatCircleText, CookingPot, Crown, ForkKnife
 import { usePropertyScope, useSwitchProperty } from "./property-switcher";
 import { EnvelopeSimple, Eye, FileZip, Fingerprint, Key, Lifebuoy, Palette, WebhooksLogo } from "@phosphor-icons/react";
 import { openSupport } from "@/components/support/new-request";
+import { ListChecks, PaintBrush, ShoppingBag, Signpost, Textbox, Van } from "@phosphor-icons/react";
 
 const itemCls =
   "group flex h-10 cursor-pointer items-center gap-3 rounded-md px-3 text-[14px] text-ink outline-none data-[selected=true]:bg-surface-2 data-[disabled=true]:opacity-50";
@@ -290,6 +291,18 @@ export function CommandPalette() {
           {can("channels.view") && <Action icon={<Plugs size={17} weight="duotone" />} label="Copy the iCal calendar links" locked={!has("channel_manager")} keywords="airbnb ical feed export import sync" onSelect={() => run(() => router.push("/channel-manager?tab=connections"))} />}
           {can("loyalty.view") && <Action icon={<Crown size={17} weight="duotone" />} label="Find a loyalty member" locked={!has("loyalty")} keywords="points member tier circle enrol" onSelect={() => run(() => router.push("/loyalty?tab=members"))} />}
           {can("settings.manage") && <Action icon={<Globe size={17} weight="duotone" />} label="Set up a custom domain" locked={!has("custom_domain")} keywords="domain dns cname booking site address" onSelect={() => run(() => router.push("/settings/domain"))} />}
+        </Command.Group>
+
+        <Command.Group heading="Booking site and extras" className={groupCls}>
+          {can("site.manage") && <Action icon={<PaintBrush size={17} weight="duotone" />} label="Change the booking site's template" hint="Brand Studio" keywords="template theme boutique business resort heritage essentials editorial site design" onSelect={() => run(() => router.push("/site#template"))} />}
+          {can("site.manage") && <Action icon={<PaintBrush size={17} weight="duotone" />} label="Change the logo and colours" keywords="logo favicon colour primary secondary contrast brand kit" onSelect={() => run(() => router.push("/site#brand"))} />}
+          {can("site.manage") && <Action icon={<PaintBrush size={17} weight="duotone" />} label="Choose the fonts" locked={!has("site_fonts")} keywords="font pairing typography type" onSelect={() => run(() => router.push("/site#type"))} />}
+          {can("site.manage") && <Action icon={<PaintBrush size={17} weight="duotone" />} label="Reorder the site's sections" locked={!has("site_sections")} keywords="sections faq questions text block hero gallery getting here" onSelect={() => run(() => router.push("/site#sections"))} />}
+          {can("forms.manage") && <Action icon={<Textbox size={17} weight="duotone" />} label="Add a question to the booking form" keywords="booking form field question custom select condition" onSelect={() => run(() => router.push("/settings/booking-form"))} />}
+          {can("extras.manage") && <Action icon={<ShoppingBag size={17} weight="duotone" />} label="Add an extra" hint="breakfast, late check-out" locked={!has("paid_extras")} keywords="extra add-on upsell breakfast cake wine" onSelect={() => run(() => router.push("/extras"))} />}
+          {can("extras.manage") && <Action icon={<Signpost size={17} weight="duotone" />} label="Add a pickup point" hint="airport, motor park" locked={!has("paid_extras")} keywords="pickup airport motor park train jetty jibowu mmia" onSelect={() => run(() => router.push("/pickup-points"))} />}
+          {can("transfers.view") && <Action icon={<Van size={17} weight="duotone" />} label="Today's pickups" hint="assign a driver" locked={!has("paid_extras")} keywords="transfers pickups driver assign airport motor park bus" onSelect={() => run(() => router.push("/transfers"))} />}
+          {can("settings.manage") && <Action icon={<ListChecks size={17} weight="duotone" />} label="Resume setup" keywords="setup wizard go live checklist getting started" onSelect={() => run(() => router.push("/setup"))} />}
         </Command.Group>
 
         <Command.Group heading="Enterprise and help" className={groupCls}>
