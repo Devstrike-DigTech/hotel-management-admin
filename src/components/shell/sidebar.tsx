@@ -15,7 +15,9 @@ import { useInboxSummary } from "@/lib/api/hooks-m5";
 import { roleLabel } from "@/lib/catalog";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import { LogoMark, Wordmark } from "@/components/brand";
+import { LogoMark, TenantMark, TenantWordmark, Wordmark } from "@/components/brand";
+import { useSupportSummary } from "@/lib/api/hooks-m6";
+import { useShellBrand } from "./m6-runtime";
 import { Tip } from "@/components/ui/primitives";
 import { PropertySwitcher } from "./property-switcher";
 import { ThemeToggle } from "./theme-toggle";
@@ -40,18 +42,21 @@ export function Sidebar({
   const pending = useShifts({ status: "CLOSED", pageSize: 1 }, ready && can("shift.approve"));
   const reviews = useReviewSummary(ready && can("reviews.reply"));
   const inbox = useInboxSummary(ready && can("inbox.view") && has("whatsapp_messaging"));
+  const support = useSupportSummary(ready && can("support.request"));
+  const brand = useShellBrand();
   const badges: Record<string, number | undefined> = {
     flags: summary.data?.open,
     approvals: pending.data?.total,
     reviews: reviews.data?.unreplied,
     inbox: inbox.data?.unread,
+    support: support.data?.unread,
   };
 
   return (
     <div className="flex h-full flex-col">
       <div className={cn("flex h-16 shrink-0 items-center", c ? "justify-center px-0" : "px-5")}>
         <Link href="/today" onClick={onNavigate} aria-label="Today" className="rounded-sm">
-          {c ? <LogoMark size={26} /> : <Wordmark size="sm" />}
+          {brand.whiteLabel ? c ? <TenantMark name={brand.name} logoUrl={brand.logoUrl} size={26} /> : <TenantWordmark name={brand.name} logoUrl={brand.logoUrl} /> : c ? <LogoMark size={26} /> : <Wordmark size="sm" />}
         </Link>
       </div>
 
@@ -157,9 +162,9 @@ function NavLink({
         <span
           className={cn(
             "ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1.5 font-mono text-[10.5px] font-medium",
-            item.badge === "flags" || item.badge === "inbox" ? "bg-laterite text-laterite-ink" : "bg-brass-wash text-brass",
+            item.badge === "flags" || item.badge === "inbox" || item.badge === "support" ? "bg-laterite text-laterite-ink" : "bg-brass-wash text-brass",
           )}
-          aria-label={`${count} ${item.badge === "flags" ? "open flags" : item.badge === "reviews" ? "to reply to" : item.badge === "inbox" ? "unread messages" : "waiting"}`}
+          aria-label={`${count} ${item.badge === "flags" ? "open flags" : item.badge === "reviews" ? "to reply to" : item.badge === "inbox" ? "unread messages" : item.badge === "support" ? "new replies" : "waiting"}`}
         >
           {count}
         </span>

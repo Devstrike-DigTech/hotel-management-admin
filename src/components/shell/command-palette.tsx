@@ -37,6 +37,8 @@ import { naira } from "@/lib/format";
 import { StatusSwatch } from "@/components/keyrack/status-swatch";
 import { CashRegister, ChartLineUp, ChatCircleText, CookingPot, Crown, ForkKnife, Plugs, TreeStructure, Truck, Wine } from "@phosphor-icons/react";
 import { usePropertyScope, useSwitchProperty } from "./property-switcher";
+import { EnvelopeSimple, Eye, FileZip, Fingerprint, Key, Lifebuoy, Palette, WebhooksLogo } from "@phosphor-icons/react";
+import { openSupport } from "@/components/support/new-request";
 
 const itemCls =
   "group flex h-10 cursor-pointer items-center gap-3 rounded-md px-3 text-[14px] text-ink outline-none data-[selected=true]:bg-surface-2 data-[disabled=true]:opacity-50";
@@ -288,6 +290,18 @@ export function CommandPalette() {
           {can("channels.view") && <Action icon={<Plugs size={17} weight="duotone" />} label="Copy the iCal calendar links" locked={!has("channel_manager")} keywords="airbnb ical feed export import sync" onSelect={() => run(() => router.push("/channel-manager?tab=connections"))} />}
           {can("loyalty.view") && <Action icon={<Crown size={17} weight="duotone" />} label="Find a loyalty member" locked={!has("loyalty")} keywords="points member tier circle enrol" onSelect={() => run(() => router.push("/loyalty?tab=members"))} />}
           {can("settings.manage") && <Action icon={<Globe size={17} weight="duotone" />} label="Set up a custom domain" locked={!has("custom_domain")} keywords="domain dns cname booking site address" onSelect={() => run(() => router.push("/settings/domain"))} />}
+        </Command.Group>
+
+        <Command.Group heading="Enterprise and help" className={groupCls}>
+          {can("integrations.manage") && <Action icon={<Key size={17} weight="duotone" />} label="Create an API key" locked={!has("api_access")} keywords="api key integration developer secret token partner" onSelect={() => run(() => router.push("/developers/api-keys"))} />}
+          {can("integrations.manage") && <Action icon={<WebhooksLogo size={17} weight="duotone" />} label="Add a webhook endpoint" locked={!has("api_access")} keywords="webhook events url deliveries ping" onSelect={() => run(() => router.push("/developers/webhooks"))} />}
+          {can("integrations.view") && <Action icon={<WebhooksLogo size={17} weight="duotone" />} label="Failed webhook deliveries" locked={!has("api_access")} keywords="webhook failures replay retry log" onSelect={() => run(() => router.push("/developers/webhooks"))} />}
+          {can("whitelabel.manage") && <Action icon={<Palette size={17} weight="duotone" />} label="Change the brand kit" hint="logo, colours, fonts" locked={!has("white_label")} keywords="white label brand logo colours fonts favicon" onSelect={() => run(() => router.push("/settings/white-label"))} />}
+          {can("whitelabel.manage") && <Action icon={<EnvelopeSimple size={17} weight="duotone" />} label="Send email from our domain" locked={!has("white_label")} keywords="email domain spf dkim sender resend" onSelect={() => run(() => router.push("/settings/white-label#email"))} />}
+          {can("sso.manage") && <Action icon={<Fingerprint size={17} weight="duotone" />} label="Set up single sign-on" locked={!has("sso")} keywords="sso google workspace microsoft entra oidc login" onSelect={() => run(() => router.push("/settings/sso"))} />}
+          {can("data.export") && <Action icon={<FileZip size={17} weight="duotone" />} label="Export all our data" locked={!has("data_export")} keywords="export download zip backup ndpa" onSelect={() => run(() => router.push("/data-export"))} />}
+          {can("support.request") && <Action icon={<Lifebuoy size={17} weight="duotone" />} label="Ask support for help" hint="sends this page" keywords="help support ticket problem bug contact devstrike" onSelect={() => run(() => openSupport())} />}
+          {can("support.sessions.view") && <Action icon={<Eye size={17} weight="duotone" />} label="Who from support viewed our hotel" keywords="impersonation support sessions access audit" onSelect={() => run(() => router.push("/support"))} />}
         </Command.Group>
 
         <Command.Group heading="Actions" className={groupCls}>

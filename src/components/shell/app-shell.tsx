@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as D from "@radix-ui/react-dialog";
 import { Suspense, useEffect, useState } from "react";
-import { DotsThreeOutline, MagnifyingGlass, WarningOctagon, ClockCountdown, X } from "@phosphor-icons/react";
+import { DotsThreeOutline, Lifebuoy, MagnifyingGlass, WarningOctagon, ClockCountdown, X } from "@phosphor-icons/react";
 import { useHotelSession, useHydrated, useSilentRefresh } from "@/lib/auth";
 import { onSessionExpired } from "@/lib/api/client";
 import { useMe } from "@/lib/api/hooks";
@@ -26,6 +26,10 @@ import { NewReservationHost } from "@/components/reservations/new-reservation";
 import { PaymentHost } from "@/components/folio/take-payment";
 import { OnlineFeedRuntime } from "@/components/online/online-feed";
 import { PropertyScopeRuntime, usePropertyScope } from "./property-switcher";
+import { AnnouncementBars, M6Runtime, SupportSessionBar, useShellBrand } from "./m6-runtime";
+import { SupportHost, openSupport } from "@/components/support/new-request";
+import { Tip } from "@/components/ui/primitives";
+import { TenantMark } from "@/components/brand";
 
 const COLLAPSE_KEY = "admin.sidebar.collapsed";
 
@@ -37,13 +41,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useSilentRefresh();
 
   useEffect(() => {
-    if (hydrated && !s) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    if (hydrated && !s && !pathname.startsWith("/impersonate")) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
   }, [hydrated, s, router, pathname]);
 
   useEffect(
     () =>
-      onSessionExpired((aud) => {
-        if (aud === "hotel") router.replace(`/login?next=${encodeURIComponent(window.location.pathname)}&expired=1`);
+      onSessionExpired((why) => {
+        if (why === "impersonation") router.replace("/impersonate?ended=1");
+        else router.replace(`/login?next=${encodeURIComponent(window.location.pathname)}&expired=1`);
       }),
     [router],
   );
@@ -99,6 +104,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   const current = allNavItems().find((i) => isActive(pathname, i.href));
   const scope = usePropertyScope();
+  const brand = useShellBrand();
   const place = scope.current?.name ?? me.data?.tenant.name;
 
   return (
@@ -138,10 +144,12 @@ function Shell({ children }: { children: React.ReactNode }) {
       </D.Root>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* top bar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-[color-mix(in_oklab,var(--paper)_88%,transparent)] px-4 backdrop-blur-[6px] sm:px-6 lg:px-8">
+        {/* top bar (a support session's bar rides above it) */}
+        <div className="sticky top-0 z-30">
+        <SupportSessionBar />
+        <header className="flex h-14 items-center gap-3 border-b border-line bg-[color-mix(in_oklab,var(--paper)_88%,transparent)] px-4 backdrop-blur-[6px] sm:px-6 lg:px-8">
           <Link href="/today" className="lg:hidden" aria-label="Today">
-            <LogoMark size={24} />
+            {brand.whiteLabel ? <TenantMark name={brand.name} logoUrl={brand.logoUrl} size={24} /> : <LogoMark size={24} />}
           </Link>
           <div className="min-w-0 lg:hidden">
             <p className="truncate text-[13.5px] font-medium text-ink">{me.data?.tenant.name ?? " "}</p>
@@ -173,12 +181,19 @@ function Shell({ children }: { children: React.ReactNode }) {
               <TrialPill sub={me.data?.subscription} />
             </div>
             <LagosClock className="hidden xl:flex" />
+            <Tip content="Ask for help">
+              <button type="button" onClick={() => openSupport()} className="grid h-9 w-9 place-items-center rounded-md text-ink-muted hover:bg-surface-2 hover:text-ink" aria-label="Ask for help" data-testid="help-button">
+                <Lifebuoy size={18} />
+              </button>
+            </Tip>
             <ThemeToggle compact className="hidden md:inline-flex" />
           </div>
         </header>
+        </div>
 
         <OfflineBanner />
         <Banners />
+        <AnnouncementBars />
 
         <main id="main" className="flex-1 px-4 pb-28 pt-6 sm:px-6 md:pt-9 lg:px-10 lg:pb-16">
           <div className="mx-auto w-full max-w-[1240px] animate-[rise_260ms_cubic-bezier(0.22,1,0.36,1)]" key={pathname}>
@@ -195,6 +210,8 @@ function Shell({ children }: { children: React.ReactNode }) {
       <PaymentHost />
       <OnlineFeedRuntime />
       <PropertyScopeRuntime />
+      <SupportHost />
+      <M6Runtime />
     </div>
   );
 }

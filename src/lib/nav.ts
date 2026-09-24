@@ -39,6 +39,11 @@ import {
   Package,
   TreeStructure,
   Globe,
+  Code,
+  Palette,
+  Fingerprint,
+  FileZip,
+  Lifebuoy,
   type Icon,
 } from "@phosphor-icons/react";
 import type { Capability, Permission } from "./permissions";
@@ -53,7 +58,7 @@ export interface NavItem {
   /** hidden without this capability or permission (an array means any of them) */
   cap?: Capability | Permission | (Capability | Permission)[];
   /** show a live count badge */
-  badge?: "flags" | "approvals" | "reviews" | "inbox";
+  badge?: "flags" | "approvals" | "reviews" | "inbox" | "support";
   /** label on the phone tab bar */
   short?: string;
   /** hidden for roles that have this capability (avoids duplicates) */
@@ -140,6 +145,19 @@ export const HOTEL_NAV: NavGroup[] = [
       { href: "/billing", label: "Billing & plan", icon: Receipt, cap: "billing.manage", keywords: "subscription upgrade invoices plan", shortcut: "G B" },
       { href: "/audit", label: "Audit log", icon: ClockCounterClockwise, cap: "audit.view", keywords: "history activity trail export csv json" },
     ],
+  },
+  {
+    label: "Enterprise",
+    items: [
+      { href: "/developers", label: "API & webhooks", icon: Code, feature: "api_access", cap: "integrations.view", keywords: "api keys webhooks integrations developers partner api secret scopes events deliveries" },
+      { href: "/settings/white-label", label: "White label", icon: Palette, feature: "white_label", cap: "whitelabel.manage", keywords: "brand kit logo favicon colours fonts email domain sender id sms staff portal powered by" },
+      { href: "/settings/sso", label: "Single sign-on", icon: Fingerprint, feature: "sso", cap: "sso.manage", keywords: "sso oidc google workspace microsoft entra azure login saml identity provider" },
+      { href: "/data-export", label: "Data export", icon: FileZip, feature: "data_export", cap: "data.export", keywords: "export download zip backup all data ndpa portability" },
+    ],
+  },
+  {
+    label: "Help",
+    items: [{ href: "/support", label: "Support", icon: Lifebuoy, cap: "support.request", badge: "support", keywords: "help support ticket request contact devstrike problem bug question" }],
   },
 ];
 

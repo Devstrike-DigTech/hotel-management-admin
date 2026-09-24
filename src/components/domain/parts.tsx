@@ -7,7 +7,8 @@ import { cn } from "@/lib/cn";
 export type CheckState = "OK" | "MISSING" | "MISMATCH" | "PENDING";
 
 export interface DnsRecordView {
-  type: "TXT" | "CNAME" | "A";
+  type: "TXT" | "CNAME" | "A" | "MX";
+  priority?: number | null;
   /** the full name to create, e.g. _hotelos-verify.book.hotel.com */
   name: string;
   /** what a typical DNS panel wants in "Host" (relative to the zone) */
@@ -52,6 +53,12 @@ export function CheckMark({ state, checking }: { state?: CheckState; checking?: 
   return <Hourglass size={18} className="text-ink-faint" aria-label="not checked yet" />;
 }
 
+/** "-2" for the second record of a type, so test ids stay stable for single records. */
+function dup(records: DnsRecordView[], i: number) {
+  const n = records.slice(0, i).filter((x) => x.type === records[i].type).length;
+  return n ? `-${n + 1}` : "";
+}
+
 /** The records to add, as a card per record with copy buttons: easier to follow on a phone than a table. */
 export function DnsRecords({ records, checking }: { records: DnsRecordView[]; checking?: boolean }) {
   return (
@@ -67,16 +74,17 @@ export function DnsRecords({ records, checking }: { records: DnsRecordView[]; ch
           <div className="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto]">
             <div className="min-w-0">
               <p className="mb-1 text-[11.5px] text-ink-muted">Host / name</p>
-              <CopyField value={r.host ?? r.name} label={`${r.type} host`} testId={`dns-${r.type}-host`} />
+              <CopyField value={r.host ?? r.name} label={`${r.type} host`} testId={`dns-${r.type}-host${dup(records, i)}`} />
               {r.host && r.host !== r.name && <p className="mt-1 truncate font-mono text-[10.5px] text-ink-faint" title={r.name}>full name: {r.name}</p>}
             </div>
             <div className="min-w-0">
               <p className="mb-1 text-[11.5px] text-ink-muted">{r.type === "CNAME" ? "Points to" : "Value"}</p>
-              <CopyField value={r.value} label={`${r.type} value`} testId={`dns-${r.type}-value`} />
+              <CopyField value={r.value} label={`${r.type} value`} testId={`dns-${r.type}-value${dup(records, i)}`} />
             </div>
             <div>
               <p className="mb-1 text-[11.5px] text-ink-muted">TTL</p>
               <p className="flex h-[34px] items-center font-mono text-[12.5px] text-ink">{r.ttl ?? 3600}</p>
+              {r.priority != null && <p className="font-mono text-[11px] text-ink-muted">priority {r.priority}</p>}
             </div>
           </div>
           {r.state === "MISMATCH" && r.found?.length ? (
