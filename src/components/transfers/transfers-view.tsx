@@ -118,7 +118,7 @@ export function TransfersView() {
             </Button>
             <label className="relative">
               <span className="sr-only">Day</span>
-              <Input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} className="w-[150px] font-mono" />
+              <Input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} className="w-[150px] font-mono" data-testid="transfers-day" />
             </label>
             <Button variant="secondary" size="icon" aria-label="Next day" onClick={() => setDate(addDays(date, 1))}>
               <CaretRight size={15} />

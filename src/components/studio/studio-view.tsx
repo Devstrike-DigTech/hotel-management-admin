@@ -350,8 +350,8 @@ function Studio({ state, manage }: { state: SiteThemeState; manage: boolean }) {
             <div>
               <PanelIntro title="Logo and icon">A logo on a transparent background works on light and dark pages. Without one, we set your name in the template&rsquo;s type.</PanelIntro>
               <div className="flex flex-col gap-4">
-                <AssetDrop kind="logo" label="Logo" hint="PNG, SVG or WebP, up to 2 MB." url={d.brand.logoUrl} busy={uploading === "logo"} disabled={!manage} onFile={(f) => void upload("logo", f)} onClear={() => setBrand({ logoAssetId: null, logoUrl: null })} />
-                <AssetDrop kind="favicon" label="Browser tab icon" hint="A square PNG or ICO, 64 px or more." url={d.brand.faviconUrl} busy={uploading === "favicon"} disabled={!manage} onFile={(f) => void upload("favicon", f)} onClear={() => setBrand({ faviconAssetId: null, faviconUrl: null })} />
+                <AssetDrop kind="logo" label="Logo" hint="PNG, JPEG or WebP, up to 2 MB." url={d.brand.logoUrl} busy={uploading === "logo"} disabled={!manage} onFile={(f) => void upload("logo", f)} onClear={() => setBrand({ logoAssetId: null, logoUrl: null })} />
+                <AssetDrop kind="favicon" label="Browser tab icon" hint="A square PNG or ICO, up to 256 KB." url={d.brand.faviconUrl} busy={uploading === "favicon"} disabled={!manage} onFile={(f) => void upload("favicon", f)} onClear={() => setBrand({ faviconAssetId: null, faviconUrl: null })} />
               </div>
             </div>
             <div className="border-t border-line pt-5">

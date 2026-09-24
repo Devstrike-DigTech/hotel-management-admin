@@ -192,7 +192,7 @@ test("a motor-park pickup reaches the transfers board, and assigning a driver te
   const { ctx, page } = await open(browser, owner);
   try {
     await page.goto("/transfers");
-    await page.getByLabel("Day").fill(arrival);
+    await page.getByTestId("transfers-day").fill(arrival);
     const card = page.locator(`[data-transfer="${r.code}"]`);
     await expect(card).toBeVisible();
     await expect(card).toContainText(park!.name.split(" ")[0]);

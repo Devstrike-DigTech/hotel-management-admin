@@ -351,7 +351,7 @@ export function AssetDrop({
         <input
           ref={ref}
           type="file"
-          accept={kind === "logo" ? "image/png,image/svg+xml,image/webp,image/jpeg" : "image/png,image/x-icon,image/svg+xml"}
+          accept={kind === "logo" ? "image/png,image/webp,image/jpeg" : "image/png,image/x-icon,image/vnd.microsoft.icon"}
           className="sr-only"
           tabIndex={-1}
           onChange={(e) => {

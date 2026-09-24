@@ -163,10 +163,13 @@ test("staff sign in with single sign-on through the dev OIDC provider", async ({
   await p.getByTestId("use-sso").click();
   await p.getByTestId("sso-email").fill(GM);
   await p.getByTestId("sso-continue").click();
-  // the dev provider's sign-in page (API-M6 section 16): type the account and continue
-  await p.waitForURL(/\/dev\/oidc\/authorize/, { timeout: 30_000 });
-  await p.locator('input[name="login_hint"]').fill(GM);
-  await p.getByRole("button", { name: "Continue" }).click();
+  // the email typed here travels to the provider as login_hint (API-M6 section 19), so the dev provider signs
+  // straight through; without it, its sign-in page asks for the account
+  await p.waitForURL(/\/dev\/oidc\/authorize|\/today/, { timeout: 30_000 });
+  if (/\/dev\/oidc\/authorize/.test(p.url())) {
+    await p.locator('input[name="login_hint"]').fill(GM);
+    await p.getByRole("button", { name: "Continue" }).click();
+  }
   await p.waitForURL(/\/today/, { timeout: 45_000 });
   await expect(p.getByTestId("topbar-property-lg")).toBeVisible();
   const tok = await p.evaluate(() => localStorage.getItem("admin.session.hotel"));
