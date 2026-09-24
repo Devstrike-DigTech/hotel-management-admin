@@ -166,6 +166,32 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       P("audit.export", "Export the audit log", "Download a date range as CSV or JSON.", true),
     ],
   },
+  {
+    key: "integrations",
+    label: "Integrations",
+    items: [
+      P("integrations.view", "See API keys and webhooks", "Keys, endpoints and the delivery log."),
+      P("integrations.manage", "Manage API keys and webhooks", "Create, rotate and revoke keys; add and replay webhooks.", true),
+    ],
+  },
+  {
+    key: "enterprise",
+    label: "Enterprise",
+    items: [
+      P("whitelabel.manage", "Manage white label", "Brand kit, sending domain, SMS sender and staff portal."),
+      P("sso.manage", "Manage single sign-on", "The identity provider and who may sign in with it.", true),
+      P("data.export", "Export all hotel data", "A zip of every record, guests' ID numbers included.", true),
+    ],
+  },
+  {
+    key: "support",
+    label: "Support",
+    items: [
+      P("support.request", "Contact support", "Open requests and reply to them."),
+      P("support.view_all", "See every support request", "All of the hotel's requests, not only their own."),
+      P("support.sessions.view", "See support sessions", "When our team viewed the hotel, as whom and why."),
+    ],
+  },
 ];
 
 export const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap((g) => g.items.map((i) => i.code));

@@ -68,3 +68,7 @@ export const readOnlyStore = createStore<boolean>(false);
 
 /* ---------- command palette ---------- */
 export const paletteStore = createStore<boolean>(false);
+
+/* ---------- support session (impersonation) ---------- */
+/** Set when a write is refused because the support session is read-only. */
+export const supportBlockStore = createStore<number>(0);

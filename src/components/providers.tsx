@@ -5,7 +5,7 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { useEffect, useState } from "react";
 import { setupQueryPersistence } from "@/lib/offline/persist";
 import { isApiError } from "@/lib/api/client";
-import { openUpgrade, readOnlyStore, toast } from "@/lib/store";
+import { openUpgrade, readOnlyStore, supportBlockStore, toast } from "@/lib/store";
 import { Toaster } from "@/components/ui/toaster";
 import { UpgradeDialog } from "@/components/gating/upgrade-dialog";
 import { StatusPatternDefs } from "@/components/keyrack/status-swatch";
@@ -41,6 +41,10 @@ function handleMutationError(error: unknown, meta?: MutationMeta) {
         upgradePlan: d.upgradePlan ? String(d.upgradePlan) : undefined,
         message: error.message,
       });
+      return;
+    }
+    if (error.code === "IMPERSONATION_READ_ONLY") {
+      supportBlockStore.set(Date.now());
       return;
     }
     if (error.code === "SUBSCRIPTION_READ_ONLY") {

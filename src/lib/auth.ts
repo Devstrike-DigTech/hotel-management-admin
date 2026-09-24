@@ -4,6 +4,7 @@ import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { authApi } from "./api/endpoints";
+import { impersonationApi } from "./api/endpoints-m6";
 import { refreshHotelSession } from "./api/client";
 import { jwtExpiry, session } from "./api/session";
 import { useMe, usePublicPlans } from "./api/hooks";
@@ -23,8 +24,9 @@ export function useHydrated() {
 export function useHotelSession() {
   return useSyncExternalStore(session.subscribe, session.hotel, () => null);
 }
-export function usePlatformSession() {
-  return useSyncExternalStore(session.subscribe, session.platform, () => null);
+/** The Devstrike support session open in this tab, if any. */
+export function useImpersonation() {
+  return useSyncExternalStore(session.subscribe, session.impersonation, () => null);
 }
 
 export function storeAuth(res: AuthResponse) {
@@ -36,6 +38,14 @@ export function useLogout() {
   const router = useRouter();
   return useCallback(async () => {
     const s = session.hotel();
+    if (session.impersonation()) {
+      // never sign the real user out from a support tab: end the support session instead
+      await impersonationApi.end().catch(() => undefined);
+      session.setImpersonation(null);
+      qc.clear();
+      router.replace("/impersonate?ended=1");
+      return;
+    }
     if (s?.refreshToken) await authApi.logout(s.refreshToken);
     session.setHotel(null);
     qc.clear();

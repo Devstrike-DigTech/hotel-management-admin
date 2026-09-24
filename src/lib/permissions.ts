@@ -94,22 +94,22 @@ const FRONT_DESK = [
   "reservations.view", "reservations.create", "reservations.edit", "reservations.cancel",
   "frontdesk.checkin", "frontdesk.checkout", "folio.view", "folio.charge", "folio.discount", "payments.take", "shifts.own",
   "guests.view", "guests.edit", "guests.reveal_id", "rooms.status", "housekeeping.view", "housekeeping.work",
-  "maintenance.view", "maintenance.report", "rates.view", "corporate.view", "reviews.view",
+  "maintenance.view", "maintenance.report", "rates.view", "corporate.view", "reviews.view", "support.request",
 ];
 const ACCOUNTANT = [
   "reservations.view", "folio.view", "shifts.view_all", "guests.view", "reports.view", "reports.financial", "guard.view",
-  "audit.view", "billing.manage", "rates.view", "corporate.view", "maintenance.view", "reviews.view",
+  "audit.view", "billing.manage", "rates.view", "corporate.view", "maintenance.view", "reviews.view", "support.request",
 ];
 const LEGACY: Partial<Record<string, Permission[] | "*" | "*-payouts">> = {
   OWNER: "*",
   MANAGER: "*-payouts",
   FRONT_DESK,
   ACCOUNTANT,
-  HOUSEKEEPING: ["housekeeping.view", "housekeeping.work", "maintenance.report"],
-  SUPERVISOR: ["housekeeping.view", "housekeeping.work", "housekeeping.assign", "housekeeping.inspect", "rooms.status", "maintenance.view", "maintenance.report", "reservations.view"],
-  MAINTENANCE: ["maintenance.view", "maintenance.report", "maintenance.work", "housekeeping.view"],
-  WAITER: ["pos.view", "pos.order", "pos.settle", "kds.view", "shifts.own", "payments.take", "loyalty.view"],
-  KITCHEN: ["kds.view", "pos.view", "stock.view"],
+  HOUSEKEEPING: ["housekeeping.view", "housekeeping.work", "maintenance.report", "support.request"],
+  SUPERVISOR: ["housekeeping.view", "housekeeping.work", "housekeeping.assign", "housekeeping.inspect", "rooms.status", "maintenance.view", "maintenance.report", "reservations.view", "support.request"],
+  MAINTENANCE: ["maintenance.view", "maintenance.report", "maintenance.work", "housekeeping.view", "support.request"],
+  WAITER: ["pos.view", "pos.order", "pos.settle", "kds.view", "shifts.own", "payments.take", "loyalty.view", "support.request"],
+  KITCHEN: ["kds.view", "pos.view", "stock.view", "support.request"],
 };
 
 type Checker = (p: Permission) => boolean;
@@ -127,7 +127,8 @@ function checkerFor(role: string | undefined, permissions: string[] | undefined)
   }
   const legacy = role ? LEGACY[role] : undefined;
   if (legacy === "*") return () => true;
-  if (legacy === "*-payouts") return (p) => p !== "payouts.manage";
+  // M6: single sign-on and the full export are the owner's alone
+  if (legacy === "*-payouts") return (p) => !["payouts.manage", "sso.manage", "data.export"].includes(p);
   const set = new Set(legacy ?? []);
   return (p) => set.has(p);
 }

@@ -96,29 +96,20 @@ export const SUB_STATUS: Record<SubscriptionStatus, { label: string; tone: Tone 
   SUSPENDED: { label: "Suspended", tone: "danger" },
   CANCELLED: { label: "Cancelled", tone: "neutral" },
 };
-export const SUB_STATUS_ORDER: SubscriptionStatus[] = [
-  "TRIALING",
-  "ACTIVE",
-  "PAST_DUE",
-  "READ_ONLY",
-  "SUSPENDED",
-  "CANCELLED",
-];
 
 export type Tone = "neutral" | "laterite" | "brass" | "palm" | "adire" | "ochre" | "danger";
 
 /* ---------------- Plans + features (fallbacks; the API is the source of truth) ---------------- */
 
-export const PLAN_ORDER = ["starter", "growth", "pro", "enterprise"];
+const PLAN_ORDER = ["starter", "growth", "pro", "enterprise"];
 
-/** Plan identity colours used consistently in the console + comparison. */
+/** Plan identity colours, used in the plan comparison. */
 export const PLAN_TONE: Record<string, string> = {
   starter: "var(--plan-starter)",
   growth: "var(--plan-growth)",
   pro: "var(--plan-pro)",
   enterprise: "var(--plan-enterprise)",
 };
-export const planTone = (code: string) => PLAN_TONE[code] ?? "var(--ink-muted)";
 
 const STARTER = [
   "front_desk",
@@ -150,7 +141,7 @@ const PRO = [
   "multi_property",
   "audit_export",
 ];
-const ENTERPRISE = ["white_label", "api_access", "dedicated_database"];
+const ENTERPRISE = ["white_label", "api_access", "dedicated_database", "sso", "data_export"];
 
 export const FALLBACK_PLAN_FEATURES: Record<string, string[]> = {
   starter: STARTER,
@@ -206,6 +197,8 @@ export const FALLBACK_FEATURES: FeatureInfo[] = [
   { code: "multi_property", name: "Multi-property", description: "Run several hotels from one account.", category: "Platform" },
   { code: "api_access", name: "API access", description: "Integrate with your own systems.", category: "Platform" },
   { code: "dedicated_database", name: "Dedicated database", description: "Your data in an isolated database.", category: "Platform" },
+  { code: "sso", name: "Single sign-on", description: "Staff sign in with Google Workspace or Microsoft.", category: "Platform" },
+  { code: "data_export", name: "Full data export", description: "Every record in one zip, on demand.", category: "Platform" },
 ];
 
 export function featureName(code: string, features?: FeatureInfo[]): string {

@@ -1,5 +1,5 @@
 import { config } from "@/lib/config";
-import { session, type Audience } from "./session";
+import { session } from "./session";
 import { isForcedOffline, reportNetworkFailure, reportNetworkSuccess } from "@/lib/offline/network";
 import { PROPERTY_DENIED_CODES, currentPropertyId, emitPropertyDenied, setPropertyId } from "@/lib/property";
 import type { ApiErrorBody, AuthResponse } from "./types";
@@ -21,6 +21,9 @@ export class ApiError extends Error {
   get isReadOnly() {
     return this.code === "SUBSCRIPTION_READ_ONLY";
   }
+  get isSupportReadOnly() {
+    return this.code === "IMPERSONATION_READ_ONLY";
+  }
 }
 
 export function isApiError(e: unknown): e is ApiError {
@@ -33,7 +36,7 @@ export interface RequestOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: unknown;
   query?: Query;
-  auth?: Audience | "none";
+  auth?: "hotel" | "none";
   signal?: AbortSignal;
   /** Extra headers, e.g. Idempotency-Key for offline-safe writes. */
   headers?: Record<string, string>;
@@ -46,7 +49,8 @@ export interface RequestOptions {
 }
 
 /* ---- session-expiry signal (the shell listens and redirects) ---- */
-type ExpiredListener = (aud: Audience) => void;
+type ExpiredReason = "hotel" | "impersonation";
+type ExpiredListener = (why: ExpiredReason) => void;
 const expiredListeners = new Set<ExpiredListener>();
 export function onSessionExpired(l: ExpiredListener) {
   expiredListeners.add(l);
@@ -54,9 +58,24 @@ export function onSessionExpired(l: ExpiredListener) {
     expiredListeners.delete(l);
   };
 }
-function emitExpired(aud: Audience) {
-  expiredListeners.forEach((l) => l(aud));
+function emitExpired(why: ExpiredReason) {
+  expiredListeners.forEach((l) => l(why));
 }
+
+/**
+ * During a read-only support session nothing that changes data leaves the
+ * browser; the API refuses it too (403 IMPERSONATION_READ_ONLY). These POSTs
+ * only read, and stay allowed (API-M6 section 6).
+ */
+const READ_STYLE_POST = [/^\/impersonation\/end$/, /^\/rates\/quote$/, /^\/reports\//, /^\/announcements\/[^/]+\/seen$/];
+
+export function supportSessionBlocks(method: string, path: string) {
+  const imp = session.impersonation();
+  if (!imp || imp.banner.mode !== "READ_ONLY" || method === "GET") return false;
+  return !READ_STYLE_POST.some((r) => r.test(path.split("?")[0]));
+}
+
+export const SUPPORT_READ_ONLY_MESSAGE = "This is a read-only support session, so nothing was changed.";
 
 function buildUrl(path: string, query?: Query) {
   const url = new URL(config.apiBase + (path.startsWith("/") ? path : `/${path}`));
@@ -157,9 +176,6 @@ async function request(path: string, opts: RequestOptions): Promise<Response> {
       const pid = opts.propertyId === undefined ? currentPropertyId() : opts.propertyId;
       sentPid = pid ?? null;
       if (pid) headers["X-Property-Id"] = pid;
-    } else if (auth === "platform") {
-      const t = session.platform()?.accessToken;
-      if (t) headers.Authorization = `Bearer ${t}`;
     }
     try {
       if (isForcedOffline()) throw new TypeError("Simulated outage");
@@ -178,6 +194,10 @@ async function request(path: string, opts: RequestOptions): Promise<Response> {
     }
   };
 
+  if (auth === "hotel" && supportSessionBlocks(method, path)) {
+    throw new ApiError(403, "IMPERSONATION_READ_ONLY", SUPPORT_READ_ONLY_MESSAGE, { sessionId: session.impersonation()?.banner.sessionId, client: true });
+  }
+
   let res = await send();
 
   if (res.status === 401 && auth === "hotel" && session.hotel()?.refreshToken) {
@@ -185,11 +205,11 @@ async function request(path: string, opts: RequestOptions): Promise<Response> {
     if (ok) res = await send();
   }
 
-  if (res.status === 401 && auth !== "none") {
+  if (res.status === 401 && auth === "hotel") {
     const err = await parseError(res);
-    if (auth === "hotel") session.setHotel(null);
-    else session.setPlatform(null);
-    emitExpired(auth);
+    const imp = !!session.impersonation();
+    session.setHotel(null); // in a support-session tab this ends only the support session
+    emitExpired(imp ? "impersonation" : "hotel");
     throw err;
   }
 

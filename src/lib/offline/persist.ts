@@ -3,6 +3,7 @@
 import { onlineManager, type QueryClient, type QueryKey } from "@tanstack/react-query";
 import { idb } from "./idb";
 import { networkStore } from "./network";
+import { session } from "@/lib/api/session";
 
 /**
  * Keep the last-known copy of the queries a desk needs when the line drops
@@ -40,7 +41,8 @@ export function setupQueryPersistence(qc: QueryClient) {
   // TanStack pauses queries while we are offline instead of failing them.
   onlineManager.setEventListener((setOnline) => networkStore.subscribe(() => setOnline(networkStore.get().online)));
 
-  void idb.all<CacheRow>("cache").then((rows) => {
+  // a support session's tab neither reads nor writes this device's desk cache
+  if (!session.impersonation()) void idb.all<CacheRow>("cache").then((rows) => {
     const now = Date.now();
     for (const r of rows) {
       if (now - r.updatedAt > MAX_AGE) {
@@ -62,7 +64,7 @@ export function setupQueryPersistence(qc: QueryClient) {
   return qc.getQueryCache().subscribe((ev) => {
     if (ev.type !== "updated" || ev.action.type !== "success") return;
     const { queryKey } = ev.query;
-    if (!matches(queryKey)) return;
+    if (!matches(queryKey) || session.impersonation()) return;
     const key = JSON.stringify(queryKey);
     pending.set(key, { key, queryKey, data: ev.query.state.data, updatedAt: ev.query.state.dataUpdatedAt });
     if (timer === null) timer = window.setTimeout(flush, 800);

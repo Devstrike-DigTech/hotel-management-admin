@@ -27,4 +27,6 @@ export const config = {
   appDomain: process.env.NEXT_PUBLIC_APP_DOMAIN || "hotelos.ng",
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@hotelos.ng",
   webUrl: (process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000").replace(/\/$/, ""),
+  /** set from package.json at build time (next.config.ts); sent with support requests */
+  appVersion: process.env.NEXT_PUBLIC_APP_VERSION || "dev",
 };

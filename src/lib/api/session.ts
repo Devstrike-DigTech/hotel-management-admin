@@ -1,66 +1,121 @@
 /**
- * Token storage for the two audiences this app talks to:
- *  - "hotel": staff access + rotating refresh token
- *  - "platform": Devstrike console access token (separate JWT audience)
- * Persisted to localStorage (guarded), mirrored in memory, observable for React.
+ * Token storage for the hotel staff app.
+ *  - the user's own session: access + rotating refresh token, in localStorage (shared by tabs)
+ *  - a Devstrike support session (impersonation): an access token only, in sessionStorage, so it
+ *    lives in the one tab it was opened in and never replaces the user's own tokens there or elsewhere
+ * Both are guarded, mirrored in memory and observable for React.
  */
 
-export type Audience = "hotel" | "platform";
+import type { ImpersonationBanner } from "./types-m6";
 
 export interface HotelSession {
   accessToken: string;
   refreshToken: string;
 }
-export interface PlatformSession {
+
+export interface ImpersonationState {
   accessToken: string;
-  email?: string;
-  fullName?: string;
+  expiresAt: string;
+  user: { id: string; fullName: string; email: string; role: string };
+  banner: ImpersonationBanner;
 }
 
-const KEYS: Record<Audience, string> = {
-  hotel: "admin.session.hotel",
-  platform: "admin.session.platform",
-};
+const HOTEL_KEY = "admin.session.hotel";
+const IMP_KEY = "admin.session.impersonation";
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
-const cache: { hotel?: HotelSession | null; platform?: PlatformSession | null } = {};
+const cache: { hotel?: HotelSession | null; imp?: ImpersonationState | null; view?: HotelSession | null } = {};
 
-function read<T>(aud: Audience): T | null {
+function readHotel(): HotelSession | null {
   if (typeof window === "undefined") return null;
-  if (cache[aud] !== undefined) return cache[aud] as T | null;
+  if (cache.hotel !== undefined) return cache.hotel;
   try {
-    const raw = localStorage.getItem(KEYS[aud]);
-    const v = raw ? (JSON.parse(raw) as T) : null;
-    (cache as Record<Audience, unknown>)[aud] = v;
-    return v;
+    const raw = localStorage.getItem(HOTEL_KEY);
+    cache.hotel = raw ? (JSON.parse(raw) as HotelSession) : null;
   } catch {
-    return null;
+    cache.hotel = null;
   }
+  return cache.hotel;
 }
 
-function write(aud: Audience, value: unknown) {
-  (cache as Record<Audience, unknown>)[aud] = value;
+function readImp(): ImpersonationState | null {
+  if (typeof window === "undefined") return null;
+  if (cache.imp !== undefined) return cache.imp;
   try {
-    if (value) localStorage.setItem(KEYS[aud], JSON.stringify(value));
-    else localStorage.removeItem(KEYS[aud]);
+    const raw = sessionStorage.getItem(IMP_KEY);
+    cache.imp = raw ? (JSON.parse(raw) as ImpersonationState) : null;
   } catch {
-    /* storage unavailable: memory only */
+    cache.imp = null;
   }
+  return cache.imp;
+}
+
+function emit() {
+  delete cache.view;
   listeners.forEach((l) => l());
 }
 
 export const session = {
-  hotel: () => read<HotelSession>("hotel"),
-  platform: () => read<PlatformSession>("platform"),
-  setHotel: (s: HotelSession | null) => write("hotel", s),
-  setPlatform: (s: PlatformSession | null) => write("platform", s),
+  /**
+   * The session requests in this tab use: a support session when one is open
+   * here (no refresh token), otherwise the user's own. Stable per change so it
+   * can back useSyncExternalStore.
+   */
+  hotel(): HotelSession | null {
+    if (typeof window === "undefined") return null;
+    if (cache.view !== undefined) return cache.view;
+    const imp = readImp();
+    cache.view = imp ? { accessToken: imp.accessToken, refreshToken: "" } : readHotel();
+    return cache.view;
+  },
+  /** The user's own tokens. While a support session is open in this tab, clearing ends the support session instead. */
+  setHotel(s: HotelSession | null) {
+    if (readImp()) {
+      if (s === null) {
+        session.setImpersonation(null);
+        return;
+      }
+      // a real sign-in in this tab replaces the support session
+      cache.imp = null;
+      try {
+        sessionStorage.removeItem(IMP_KEY);
+      } catch {
+        /* ignore */
+      }
+    }
+    cache.hotel = s;
+    try {
+      if (s) localStorage.setItem(HOTEL_KEY, JSON.stringify(s));
+      else localStorage.removeItem(HOTEL_KEY);
+    } catch {
+      /* storage unavailable: memory only */
+    }
+    emit();
+  },
+  impersonation: () => readImp(),
+  setImpersonation(s: ImpersonationState | null) {
+    cache.imp = s;
+    try {
+      if (s) sessionStorage.setItem(IMP_KEY, JSON.stringify(s));
+      else sessionStorage.removeItem(IMP_KEY);
+    } catch {
+      /* memory only */
+    }
+    emit();
+  },
+  /** Keep the stored banner in step with /me (mode changes). */
+  updateImpersonationBanner(b: ImpersonationBanner) {
+    const cur = readImp();
+    if (!cur || JSON.stringify(cur.banner) === JSON.stringify(b)) return;
+    session.setImpersonation({ ...cur, banner: b, expiresAt: b.expiresAt });
+  },
   subscribe(l: Listener) {
     listeners.add(l);
     const onStorage = (e: StorageEvent) => {
-      if (e.key === KEYS.hotel || e.key === KEYS.platform) {
+      if (e.key === HOTEL_KEY) {
         delete cache.hotel;
-        delete cache.platform;
+        delete cache.view;
         l();
       }
     };
