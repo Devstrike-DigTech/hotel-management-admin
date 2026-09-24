@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as D from "@radix-ui/react-dialog";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { DotsThreeOutline, Lifebuoy, MagnifyingGlass, WarningOctagon, ClockCountdown, X } from "@phosphor-icons/react";
 import { useHotelSession, useHydrated, useSilentRefresh } from "@/lib/auth";
 import { onSessionExpired } from "@/lib/api/client";
@@ -77,7 +77,16 @@ function ShellSplash() {
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsedPref, setCollapsed] = useState(false);
+  // workspaces (Brand Studio, Form Builder) need the width: the sidebar folds to icons below 1440px
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const m = window.matchMedia("(max-width: 1439px)");
+    const on = () => setNarrow(m.matches);
+    on();
+    m.addEventListener("change", on);
+    return () => m.removeEventListener("change", on);
+  }, []);
   const [drawer, setDrawer] = useState(false);
   const me = useMe();
   const pathname = usePathname();
@@ -91,8 +100,16 @@ function Shell({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const isForced = narrow && isWorkspace(pathname);
+  const forced = useRef(isForced);
+  useEffect(() => {
+    forced.current = isForced;
+  }, [isForced]);
+  const [wsOpen, setWsOpen] = useState(false);
   const toggle = () =>
-    setCollapsed((c) => {
+    forced.current
+      ? setWsOpen((o) => !o)
+      : setCollapsed((c) => {
       try {
         localStorage.setItem(COLLAPSE_KEY, c ? "0" : "1");
       } catch {
@@ -111,6 +128,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const collapsed = isForced ? !wsOpen : collapsedPref;
   const current = allNavItems().find((i) => isActive(pathname, i.href));
   const scope = usePropertyScope();
   const brand = useShellBrand();
@@ -163,7 +181,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           <div className="min-w-0 lg:hidden">
             <p className="truncate text-[13.5px] font-medium text-ink">{me.data?.tenant.name ?? " "}</p>
           </div>
-          <p className="eyebrow hidden items-center gap-2 lg:flex">
+          <p className="eyebrow hidden min-w-0 items-center gap-2 whitespace-nowrap lg:flex">
             <span className="text-ink-faint" data-testid="topbar-property-lg">{place}</span>
             <span className="text-ink-faint">/</span>
             <span className="text-ink">{current?.label ?? ""}</span>
@@ -174,7 +192,7 @@ function Shell({ children }: { children: React.ReactNode }) {
               className="group hidden h-8 items-center gap-2 rounded-md border border-line bg-surface pl-2.5 pr-1.5 text-[13px] text-ink-muted transition-colors hover:border-line-strong hover:text-ink sm:flex"
             >
               <MagnifyingGlass size={15} />
-              <span className="mr-6">Search or jump to</span>
+              <span className="mr-6 hidden whitespace-nowrap xl:inline">Search or jump to</span>
               <ModKeyHint />
             </button>
             <button

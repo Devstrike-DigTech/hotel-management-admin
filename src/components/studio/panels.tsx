@@ -102,7 +102,6 @@ export function TemplateGallery({
             type="button"
             role="radio"
             aria-checked={on}
-            aria-disabled={!ok || undefined}
             data-testid={`template-${t.id}`}
             data-locked={!ok || undefined}
             onClick={() => (ok ? onPick(t.id) : onLocked(t.id))}
@@ -121,8 +120,8 @@ export function TemplateGallery({
                 </span>
               )}
               <span className="absolute left-2 top-2 flex gap-1">
-                {on && <span className="rounded-xs bg-ink px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-paper">Draft</span>}
-                {published === t.id && <span className="rounded-xs border border-line bg-surface/95 px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-muted">Live</span>}
+                {on && published !== t.id && <span className="rounded-xs bg-ink px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-paper">Draft</span>}
+                {published === t.id && <span className={cn("rounded-xs px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.12em]", on ? "bg-ink text-paper" : "border border-line bg-surface/95 text-ink-muted")}>Live</span>}
               </span>
             </div>
             <div className="flex flex-col gap-0.5 px-3 py-2.5">
@@ -489,7 +488,6 @@ export function FontPairingPicker({
             type="button"
             role="radio"
             aria-checked={on}
-            aria-disabled={locked || undefined}
             data-testid={`pairing-${p.id}`}
             onClick={() => (locked ? onLocked() : onPick(isDefault ? null : p.id))}
             className={cn(

@@ -132,7 +132,7 @@ export function TransfersView() {
         }
       />
 
-      <Panel className="mb-5 grid grid-cols-2 divide-line sm:grid-cols-5 sm:divide-x max-sm:[&>*:nth-child(-n+4)]:border-b max-sm:[&>*:nth-child(odd)]:border-r max-sm:[&>*]:border-line">
+      <Panel className="mb-5 grid grid-cols-2 divide-line sm:grid-cols-5 sm:divide-x max-sm:[&>*:nth-child(-n+4)]:border-b max-sm:[&>*:nth-child(odd)]:border-r max-sm:[&>*]:border-line max-sm:[&>*:last-child]:col-span-2 max-sm:[&>*:last-child]:border-r-0">
         {[
           { k: "Arrivals", v: counts?.arrivals, icon: <ArrowDownRight size={14} className="text-adire" /> },
           { k: "Departures", v: counts?.departures, icon: <ArrowUpRight size={14} className="text-brass" /> },

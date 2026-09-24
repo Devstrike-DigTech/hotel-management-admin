@@ -16,6 +16,7 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
+import { useMedia } from "@/lib/use-media";
 import { useCan } from "@/lib/permissions";
 import { formApi } from "@/lib/api/endpoints-m7";
 import { qk7, useBookingForm, useFormLibrary, useFormVersions, usePickupPoints, usePreviewToken, useRenderedForm } from "@/lib/api/hooks-m7";
@@ -68,6 +69,8 @@ function Builder({ state, editable }: { state: BookingFormState; editable: boole
   const [lens, setLens] = useState<Lens>("ALL");
   const [mode, setMode] = useState<"build" | "preview">("build");
   const [pane, setPane] = useState<"library" | "form" | "field">("form");
+  const lg = useMedia("(min-width: 1024px)");
+  const xl = useMedia("(min-width: 1280px)");
   const [device, setDevice] = useState<Device>("phone");
   const [save, setSave] = useState<SaveState>({ kind: "idle" });
   const [issues, setIssues] = useState<Record<string, string>>({});
@@ -331,7 +334,7 @@ function Builder({ state, editable }: { state: BookingFormState; editable: boole
             The booking <em>form</em>
           </h1>
         </div>
-        <div className="order-3 w-full text-[12px] sm:order-none sm:w-auto">{statusLine}</div>
+        <div className="order-3 w-full text-[12px] xl:order-none xl:w-auto">{statusLine}</div>
         <Segmented<Lens>
           label="Channel"
           size="sm"
@@ -418,9 +421,11 @@ function Builder({ state, editable }: { state: BookingFormState; editable: boole
         <FormPreview lens={lens === "ALL" ? "BOOKING_SITE" : lens} onLens={setLens} device={device} onDevice={setDevice} version={previewVersion} />
       ) : (
         <div className="flex min-h-0 flex-1">
-          <aside className={cn("scrollbar-thin min-h-0 w-full shrink-0 overflow-y-auto border-line bg-surface lg:block lg:w-[272px] lg:border-r xl:w-[292px]", pane === "library" ? "block" : "hidden")} aria-label="Add questions">
-            {library}
-          </aside>
+          {(xl || (!lg && pane === "library")) && (
+            <aside className="scrollbar-thin min-h-0 w-full shrink-0 overflow-y-auto border-line bg-surface xl:w-[292px] xl:border-r" aria-label="Add questions">
+              {library}
+            </aside>
+          )}
           <section className={cn("scrollbar-thin min-h-0 min-w-0 flex-1 overflow-y-auto lg:block", pane === "form" ? "block" : "hidden")} aria-label="The form">
             <div className="mx-auto max-w-[680px] px-4 pb-24 pt-6 sm:px-8">
               <div className="mb-5 flex items-end justify-between gap-3 xl:hidden">
@@ -458,9 +463,31 @@ function Builder({ state, editable }: { state: BookingFormState; editable: boole
               )}
             </div>
           </section>
-          <aside className={cn("scrollbar-thin min-h-0 w-full shrink-0 overflow-y-auto border-line bg-surface lg:block lg:w-[340px] lg:border-l xl:w-[360px]", pane === "field" ? "block" : "hidden")} aria-label="Question settings">
-            {inspector}
-          </aside>
+          {lg ? (
+            <aside className="flex min-h-0 w-[340px] shrink-0 flex-col border-l border-line bg-surface xl:w-[360px]" aria-label={!xl && pane === "library" ? "Add questions" : "Question settings"}>
+              {!xl && (
+                <div className="flex shrink-0 items-center border-b border-line px-3 py-2">
+                  <Segmented<"library" | "field">
+                    label="Side pane"
+                    size="sm"
+                    value={pane === "library" ? "library" : "field"}
+                    onChange={setPane}
+                    options={[
+                      { value: "library", label: "Add a question", icon: <ListPlus size={13} /> },
+                      { value: "field", label: "This question", icon: <SlidersHorizontal size={13} /> },
+                    ]}
+                  />
+                </div>
+              )}
+              <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto">{!xl && pane === "library" ? library : inspector}</div>
+            </aside>
+          ) : (
+            pane === "field" && (
+              <aside className="w-full bg-surface" aria-label="Question settings">
+                {inspector}
+              </aside>
+            )
+          )}
         </div>
       )}
 

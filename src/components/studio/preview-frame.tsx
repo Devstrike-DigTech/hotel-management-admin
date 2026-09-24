@@ -17,9 +17,9 @@ export function DeviceToggle({ value, onChange, className }: { value: Device; on
       onChange={onChange}
       className={className}
       options={[
-        { value: "desktop", label: <span className="sr-only sm:not-sr-only">Desktop</span>, icon: <Desktop size={14} /> },
-        { value: "tablet", label: <span className="sr-only sm:not-sr-only">Tablet</span>, icon: <DeviceTablet size={14} /> },
-        { value: "phone", label: <span className="sr-only sm:not-sr-only">Phone</span>, icon: <DeviceMobile size={14} /> },
+        { value: "desktop", label: <span className="sr-only xl:not-sr-only">Desktop</span>, icon: <Desktop size={14} /> },
+        { value: "tablet", label: <span className="sr-only xl:not-sr-only">Tablet</span>, icon: <DeviceTablet size={14} /> },
+        { value: "phone", label: <span className="sr-only xl:not-sr-only">Phone</span>, icon: <DeviceMobile size={14} /> },
       ]}
     />
   );

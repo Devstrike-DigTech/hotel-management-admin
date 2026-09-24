@@ -437,7 +437,7 @@ function Studio({ state, manage }: { state: SiteThemeState; manage: boolean }) {
             Brand <em>Studio</em>
           </h1>
         </div>
-        <div className="order-3 w-full text-[12px] sm:order-none sm:w-auto">{statusLine}</div>
+        <div className="order-3 w-full text-[12px] xl:order-none xl:w-auto">{statusLine}</div>
         <DeviceToggle value={device} onChange={setDevice} className="hidden lg:inline-flex" />
         <div className="flex items-center gap-1.5">
           <Button variant="ghost" size="sm" onClick={() => setHistoryOpen(true)} data-testid="open-history">
