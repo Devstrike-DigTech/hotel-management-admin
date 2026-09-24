@@ -10,7 +10,7 @@ import { supportApi } from "@/lib/api/endpoints-m6";
 import { qk6, useSupportRequest, useSupportRequests, useSupportSessions } from "@/lib/api/hooks-m6";
 import type { Attachment, ImpersonationSession, SlaState, SupportMessage, SupportRequest, SupportRequestDetail, SupportStatus } from "@/lib/api/types-m6";
 import { errorMessage } from "@/lib/api/client";
-import { formatDateTime, formatTime, initials, relativeTime } from "@/lib/format";
+import { formatDateTime, formatTime, initials, relativeTime, titleCase } from "@/lib/format";
 import { toast } from "@/lib/store";
 import { cn } from "@/lib/cn";
 import { useNow } from "@/lib/use-now";
@@ -333,7 +333,7 @@ export function SupportThread({ id }: { id: string }) {
                 <dt className="text-ink-muted">Property</dt>
                 <dd className="truncate text-ink">{r.context.propertyName ?? r.property?.name ?? "--"}</dd>
                 <dt className="text-ink-muted">Role</dt>
-                <dd className="truncate text-ink">{r.context.userRole ?? r.openedBy.role}</dd>
+                <dd className="truncate text-ink">{titleCase((r.context.userRole ?? r.openedBy.role).replace(/_/g, " ").toLowerCase())}</dd>
                 <dt className="text-ink-muted">App</dt>
                 <dd className="truncate font-mono text-ink">{r.context.appVersion ?? "--"}</dd>
               </dl>
