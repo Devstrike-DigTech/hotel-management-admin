@@ -83,7 +83,7 @@ function Form({ initial }: { initial: ConciergeSettings }) {
     meta: { errorTitle: "Settings not saved" },
   });
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div className="flex min-w-0 flex-col gap-6">
         <Panel>
           <div className="px-5 py-4">

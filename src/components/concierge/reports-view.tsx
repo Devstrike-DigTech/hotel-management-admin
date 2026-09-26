@@ -113,7 +113,7 @@ function Reports() {
             ))}
           </Panel>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-2">
             <Panel>
               <PanelHeader title="By kind of service" description="Requests, with what each kind earned before tax." />
               <CategoryBars data={r.byCategory} />
@@ -129,7 +129,7 @@ function Reports() {
             <DayColumns data={r.byDay} />
           </Panel>
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
             <Panel className="overflow-hidden">
               <PanelHeader title="Vendors" description={r.vendorCommission ? "Jobs, what they earned, your commission and what's still owed to them." : "Jobs and ratings."} />
               {r.vendorCommission ? <VendorTable data={r.vendorCommission} /> : <div className="p-5"><LockedInline feature="concierge_vendors" text="See each vendor's commission and what you still owe them." /></div>}

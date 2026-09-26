@@ -131,7 +131,7 @@ export function ServicesView() {
           <EmptyState glyph="arcs" title="No services yet" body="Start with two or three things guests ask for most: a massage, a car with a driver, a table at a good restaurant." action={access.catalogue ? <Button onClick={() => setEditing("new")}>Add a service</Button> : undefined} />
         </Panel>
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" data-testid="service-list">
+        <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2 xl:grid-cols-3" data-testid="service-list">
           {shown.map((s) => (
             <li key={s.id}>
               <ServiceCard s={s} manage={access.catalogue} onOpen={() => setEditing(s)} onToggle={(v) => toggle.mutate({ s, active: v })} />

@@ -159,7 +159,7 @@ export function AcceptPolicy() {
         }
         description="Concierge is for lawful services only. Read the policy once and accept it for the hotel; from then on, every new or changed service is checked against it."
       />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <Panel as="article" className="relative overflow-hidden" data-testid="aup">
           <AdireGlyph kind="rings" size={120} className="pointer-events-none absolute -right-6 -top-6 text-line opacity-60" />
           <div className="relative border-b border-line px-6 py-5 sm:px-10">

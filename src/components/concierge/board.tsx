@@ -79,7 +79,7 @@ export function ConciergeBoard() {
             What guests <em>have asked for</em>.
           </>
         }
-        description="Every request from booking to checkout, answered on time. Private requests stay private: only the people allowed to see them ever do."
+        description={<span className="max-sm:hidden">Every request from booking to checkout, answered on time. Private requests stay private: only the people allowed to see them ever do.</span>}
         actions={
           access.work ? (
             <Button onClick={() => setCreating(true)} data-testid="new-request">
@@ -90,20 +90,21 @@ export function ConciergeBoard() {
       />
       <ConciergeTabs />
 
-      <Panel className="mb-5 grid grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x max-sm:[&>*:nth-child(-n+2)]:border-b max-sm:[&>*:nth-child(odd)]:border-r max-sm:[&>*]:border-line">
+      <Panel className="mb-5 grid grid-cols-4 divide-x divide-line">
         {[
-          { k: "New", v: counts?.new, icon: <CallBell size={14} className="text-laterite" /> },
-          { k: "Late for a first answer", v: counts?.overdue, icon: <Timer size={14} className={counts?.overdue ? "text-laterite" : "text-ink-faint"} />, hot: !!counts?.overdue },
-          { k: "Happening today", v: counts?.today, icon: <CheckCircle size={14} className="text-adire" /> },
-          { k: "Private, open", v: q.data ? privateCount : undefined, icon: <SealGlyph size={14} className="text-brass" />, sub: access.discreet ? "you can open them" : `details for ${DISCREET_HOLDERS}` },
+          { k: "New", short: "New", v: counts?.new, icon: <CallBell size={14} className="text-laterite" /> },
+          { k: "Late for a first answer", short: "Late", v: counts?.overdue, icon: <Timer size={14} className={counts?.overdue ? "text-laterite" : "text-ink-faint"} />, hot: !!counts?.overdue },
+          { k: "Happening today", short: "Today", v: counts?.today, icon: <CheckCircle size={14} className="text-adire" /> },
+          { k: "Private, open", short: "Private", v: q.data ? privateCount : undefined, icon: <SealGlyph size={14} className="text-brass" />, sub: access.discreet ? "you can open them" : `details for ${DISCREET_HOLDERS}` },
         ].map((c) => (
-          <div key={c.k} className="flex flex-col gap-1 px-5 py-3.5">
-            <span className="flex items-center gap-1.5 text-[12px] text-ink-muted">
-              {c.icon}
-              {c.k}
+          <div key={c.k} className="flex min-w-0 flex-col gap-1 px-3 py-2.5 sm:px-5 sm:py-3.5">
+            <span className="flex items-center gap-1.5 text-[11.5px] text-ink-muted sm:text-[12px]">
+              <span className="max-sm:hidden">{c.icon}</span>
+              <span className="truncate sm:hidden">{c.short}</span>
+              <span className="truncate max-sm:hidden">{c.k}</span>
             </span>
-            <span className={cn("font-mono text-[26px] leading-none", c.hot ? "text-laterite" : "text-ink")}>{c.v ?? "–"}</span>
-            {c.sub && <span className="truncate text-[11px] text-ink-faint">{c.sub}</span>}
+            <span className={cn("font-mono text-[20px] leading-none sm:text-[26px]", c.hot ? "text-laterite" : "text-ink")}>{c.v ?? "–"}</span>
+            {c.sub && <span className="truncate text-[11px] text-ink-faint max-sm:hidden">{c.sub}</span>}
           </div>
         ))}
       </Panel>
@@ -112,7 +113,8 @@ export function ConciergeBoard() {
         <div className="mb-4 flex items-start gap-2.5 rounded-md border border-[color-mix(in_oklab,var(--ochre)_40%,transparent)] bg-ochre-wash/60 px-4 py-3 text-[13px] text-ink" data-testid="flagged-banner">
           <Flag size={16} weight="fill" className="mt-0.5 shrink-0 text-ochre" />
           <p>
-            <span className="font-medium">{counts.flagged === 1 ? "One request is" : `${counts.flagged} requests are`} held for a manager.</span> The wording may fall outside what the hotel can arrange. Nothing was sent to a vendor, and the guest was told you&rsquo;ll get back to them.
+            <span className="font-medium">{counts.flagged === 1 ? "One request is" : `${counts.flagged} requests are`} held for a manager.</span>
+            <span className="max-sm:hidden"> The wording may fall outside what the hotel can arrange. Nothing was sent to a vendor, and the guest was told you&rsquo;ll get back to them.</span>
           </p>
         </div>
       )}

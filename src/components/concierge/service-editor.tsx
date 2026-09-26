@@ -218,7 +218,7 @@ export function ServiceEditor({ service, onClose }: { service: ConciergeService 
         ) : undefined
       }
     >
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" data-testid="service-editor">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" data-testid="service-editor">
         <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-4">
           {service && service.reviewStatus !== "LIVE" && (
             <div className="flex gap-2.5 rounded-md border border-[color-mix(in_oklab,var(--ochre)_45%,transparent)] bg-ochre-wash/50 px-3 py-2.5 text-[12.5px] leading-snug text-ink">

@@ -121,7 +121,7 @@ export function RequestDetailView({ id }: { id: string }) {
           {r.masked ? <SealedEnvelope r={r} /> : <WhatTheyAsked r={r} />}
           <Timeline r={r} canNote={access.work && !r.masked} />
         </div>
-        <aside className="flex min-w-0 flex-col gap-6">
+        <aside className="flex min-w-0 flex-col gap-6 max-lg:order-first">
           <NextStep r={r} />
           {!r.masked && access.work && !FINAL.includes(r.status) && <AssignPanel r={r} />}
           {!r.masked && r.payment.folioEntryId && <FolioCard r={r} />}
@@ -185,8 +185,8 @@ function WhatTheyAsked({ r }: { r: RequestDetail }) {
       <PanelHeader
         eyebrow={
           <span className="inline-flex items-center gap-1.5">
-            <CategoryGlyph category={r.category} size={13} /> {cat.label}
-            {r.service ? <span className="text-ink-faint">&middot; {pricingLabel(r.service.pricing)}</span> : <span className="text-ink-faint">&middot; in their own words</span>}
+            <CategoryGlyph category={r.category} size={13} /> {r.service ? cat.label : "In their own words"}
+            {r.service && <span className="text-ink-faint">&middot; {pricingLabel(r.service.pricing)}</span>}
           </span>
         }
         title="What they asked for"
@@ -440,6 +440,30 @@ function NextStep({ r }: { r: RequestDetail }) {
             </Button>
           </>
         )}
+        {!r.quote && r.price && (
+          <>
+            <div className="flex items-baseline justify-between">
+              <span className="text-[13px] text-ink-muted">{r.price.description}</span>
+              <span className="font-mono text-[20px] text-ink">{naira(r.price.totalKobo)}</span>
+            </div>
+            <p className="text-[12.5px] text-ink-muted">
+              {r.payment.status === "PENDING" ? `A payment link went to the guest by ${CONTACT[r.contactPreference]}. It confirms itself once they pay.` : "Waiting for the guest."}
+            </p>
+            {r.payment.authorizationUrl && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="self-start"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(r.payment.authorizationUrl!);
+                  toast.success("Link copied");
+                }}
+              >
+                <Copy size={14} /> Copy the payment link
+              </Button>
+            )}
+          </>
+        )}
         {work && r.status === "QUOTED" && (
           <Button variant="secondary" onClick={() => confirm.mutate({ id: r.id, paymentMethod: r.reservation?.folioOpen ? "FOLIO" : "ONLINE", note: "Accepted with the desk" })} loading={confirm.isPending} data-testid="record-accept">
             <CheckCircle size={15} /> They said yes to us
@@ -447,7 +471,7 @@ function NextStep({ r }: { r: RequestDetail }) {
         )}
         {work && (
           <details className="text-[12.5px] text-ink-muted">
-            <summary className="cursor-pointer">Change the quote</summary>
+            <summary className="cursor-pointer">{r.quote ? "Change the quote" : "Send a quote instead"}</summary>
             <div className="mt-3">
               <QuoteComposer r={r} />
             </div>
