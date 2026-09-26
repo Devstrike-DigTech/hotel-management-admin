@@ -688,3 +688,26 @@ chart, AA contrast in both themes, and 16px inputs on phones to avoid zoom on fo
 - `docs/screenshots` was captured with Playwright against the live API at 1440px and 390px.
 - The room table and the delivery log scroll horizontally on phones; the Key Rack, staff list and
   the rest reflow.
+
+## Docker and deploy
+
+**Whole stack.** The backend repo runs this app with the API, worker, database and the other two apps:
+`docker compose -f docker-compose.full.yml up --build` in `hotel-management-backend` (see its README, "Run everything
+with Docker"). This repo must sit next to it as `../hotel-management-admin`.
+
+**This image alone.** `Dockerfile` builds the Next.js standalone output on `node:22-alpine` and runs `node server.js`
+as the `node` user on port 3001 (`PORT` overrides). The app talks to the API from the browser only, so everything it
+needs is a build argument:
+
+```bash
+docker build -t hotel-admin \
+  --build-arg NEXT_PUBLIC_API_URL=https://api.example.com \
+  --build-arg NEXT_PUBLIC_WEB_URL=https://www.example.com .
+docker run -p 3001:3001 hotel-admin
+```
+
+The API must list this app's origin in `CORS_ORIGINS`. Behind a TLS-inspecting proxy, pass its CA as the optional
+build secret `extra_ca` (`--secret id=extra_ca,src=ca.pem`); Google Fonts are fetched during the build.
+
+**Vercel.** `vercel.json` pins pnpm and the function region (`lhr1`, next to the API). Variables and the white-label
+staff portal domains: `docs/deploy.md` in the backend repo.
