@@ -55,6 +55,7 @@ export function Inspector({
   issue,
   pickupPoints,
   editable,
+  context = "booking",
 }: {
   field: FormField;
   fields: FormField[];
@@ -66,6 +67,8 @@ export function Inspector({
   issue?: string;
   pickupPoints: PickupPoint[] | undefined;
   editable: boolean;
+  /** "service": a concierge service's own questions (M8), which have no sections or booking channels */
+  context?: "booking" | "service";
 }) {
   const meta = fieldTypeMeta(field.type);
   const sys = field.source === "SYSTEM";
@@ -155,7 +158,8 @@ export function Inspector({
         <ConditionEditor field={field} fields={fields} onChange={onChange} enabled={canConditions && !sys} />
       </Block>
 
-      <Block title="Where it appears">
+      {context === "booking" && (
+        <Block title="Where it appears">
         <Field label="Section" htmlFor="insp-section">
           <Select
             id="insp-section"
@@ -214,7 +218,8 @@ export function Inspector({
             })}
           </div>
         </div>
-      </Block>
+        </Block>
+      )}
 
       <Block title="Privacy (NDPA)">
         <Field label="Why you ask" htmlFor="insp-purpose" optional hint="For your team and your records. Guests never see it.">
