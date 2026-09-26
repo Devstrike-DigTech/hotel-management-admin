@@ -434,6 +434,73 @@ tests revert the theme and the form and cancel their bookings.
 
 ---
 
+## Milestone 8: the concierge, lawful and discreet
+
+Guests ask for things (a massage by a licensed therapist, a private chef, a barber, a car with a driver, a city tour, a
+babysitter, a table in Victoria Island) while booking, on their trip page, on WhatsApp or at the desk. The hotel answers on
+time, quotes, sends the job to a vendor, finishes it and bills it. Some requests are private, and the whole app behaves
+accordingly. The concierge is for lawful services only: hotels accept an acceptable-use policy before it opens, every service
+is screened, and anything doubtful waits for a person.
+
+![The concierge board: New, Quoted, Confirmed, Today and Done, with first-answer clocks](docs/screenshots/m8-board-1440-light.png)
+
+| | |
+|---|---|
+| ![A private request: the brass seal, who can see it, and the next step](docs/screenshots/m8-request-private-1440-light.png) | ![The same board for a colleague without the permission: private lines under a security tint](docs/screenshots/m8-board-masked-1440-light.png) |
+| ![A request held for a manager, the caught word marked](docs/screenshots/m8-request-held-1440-dark.png) | ![The acceptable-use policy, accepted once for the hotel](docs/screenshots/m8-aup-1440-light.png) |
+| ![The catalogue editor, questions built with the booking form's inspector](docs/screenshots/m8-service-editor-1440-light.png) | ![Reports drawn in SVG](docs/screenshots/m8-reports-1440-dark.png) |
+| ![Settings: answer times, the neutral bill wording, who sees private requests](docs/screenshots/m8-settings-1440-light.png) | ![Starter: a locked preview built from the real cards](docs/screenshots/m8-locked-1440-light.png) |
+
+On a phone: [board](docs/screenshots/m8-board-390-light.png), [private request](docs/screenshots/m8-request-private-390-dark.png),
+[masked request](docs/screenshots/m8-request-masked-390-light.png), [services](docs/screenshots/m8-services-390-light.png),
+[Today](docs/screenshots/m8-today-390-light.png). Every M8 shot is in `docs/screenshots/m8-*`, taken against the live API and
+its M8 seed.
+
+### M8 routes
+
+| Route | |
+|---|---|
+| `/concierge` | **Board**: New, Quoted, Confirmed, Today and Done (columns from `GET /concierge/board`), a first-answer clock on every new card (an arc that turns ochre in the last five minutes and laterite once late), counts (new, late, today, private), a banner for requests held for a manager, Everyone's / Mine / Unassigned, search. Each card carries its next action: **Confirm** at the catalogue price or **Quote** in a dialog, **Start**, **Finish**, **Rate**. *Request for a guest* opens a sheet: the stay, the service and its own questions (rendered by the M7 guest-form renderer), time, party size, contact channel and **Private** |
+| `/concierge/requests/[id]` | What was asked (the service's answers, the guest's own words with caught terms marked), the timeline (what the guest saw and what stayed with the team) with team notes, the next step (confirm and payment method, **quote composer** with the message as the guest reads it on their channel, the quote's taxes and the guest's link, *They said yes to us*, start, finish with the bill line previewed in neutral wording for a private request, decline or cancel with a kind reason), **manager review** of held requests (carry on or decline), **Who's doing it** (staff, vendor) and **Send the vendor the job** by WhatsApp or SMS (first name only and "at the front desk" unless the settings allow surname or room; never the guest's phone), the bill line, commission and what is owed to the vendor, and the vendor rating |
+| `/concierge/services` | The catalogue by category with a *Not live* filter; each card shows price label, options, questions, requests in 30 days and its review state. A service the screen held says so, marks the caught words, and explains that it stays hidden from guests until the trust team looks. The **editor**: category, pricing (fixed, per hour, per person, from / quote, free) with options such as 60 / 90 minutes, notice, days and hours, start times and how many at once, where, staff or a vendor, channels, **Guests may ask privately**, and **What guests are asked**: ready-made questions from `GET /concierge/question-library` or your own, edited in the **booking form's inspector** (labels, options, limits, conditions, sensitivity). The live screen (`POST /concierge/screen`) warns while you type |
+| `/concierge/vendors` | Vendors with contact (staff only), commission and what is still owed to them (Pro; a locked panel below), rating and jobs |
+| `/concierge/reports` | Requests, revenue, median first answer, on-time share, rating and held requests; requests by kind, answer times on a ruler against the targets, requests by day, vendors (commission on Pro), ratings and how it was paid; a CSV export (private requests only for those who may see them). Every chart has a screen-reader table |
+| `/concierge/settings` | On or off per property, answer targets on a ruler, the **neutral bill wording** (in the room / anything else) on a sample folio, **what staff without the permission see** (a private line, or nothing), vendor sharing, payment options, free-form requests, quote validity, the note retention (days) and the guest welcome line |
+
+The concierge opens only after the **acceptable-use policy** is accepted for the hotel (a signed, dated page;
+`POST /concierge/aup/accept`); while the platform has **suspended** the hotel's concierge, the pages say so with the reason.
+
+### Discretion
+
+- A private request carries a small **brass seal** everywhere; its tooltip names who can read it (owners, managers and the
+  Concierge role by default, i.e. `concierge.discreet`). Opening one is audited by the API, and the page says so.
+- Without the permission the API masks it (or leaves it out, per the hotel's setting) and the admin shows a **private line**:
+  "Private request", the room, who has it; the guest's name is replaced by a **security tint** (the fine lines inside a
+  security envelope), and the request page is a sealed envelope. Board search and the palette match it by number and room
+  only. The assignee can still mark it done.
+- **Today** is a shared screen: private requests are counted there, never listed, for anyone. Toasts, the outbox and the
+  palette never name a private request's service.
+- Messages and the bill use neutral wording ("your private request CR-000123", "In-room service (CR-000123)").
+
+### Everywhere else
+
+The sidebar gains **Concierge** (with the number of new requests), Today a **Concierge** card (new, late, held for you, and
+private ones as a count), the palette concierge requests by number (masked) and actions (board, new request, add a service,
+vendors, reports, settings). Progress (start, finish) goes through the **offline outbox** with an Idempotency-Key, like
+housekeeping. The built-in **Concierge** role appears in Staff and Roles, and the permission matrix gains a Concierge group.
+Starter sees a locked preview built from the real board cards.
+
+### M8 end-to-end tests
+
+`e2e/m8.spec.ts` against the live API and the M8 seed: a new hotel accepts the policy, adds a clean service that goes live
+(with a question built in the inspector) and one whose wording is caught, which waits in review with the word marked; a
+private request is quoted, accepted on the guest's link (to the bill), started and completed, and the folio line reads
+"Guest service (CR-...)" with nothing of the request in it; a front-desk colleague without the permission sees it masked on
+the board, in search, in the palette and on its page; a vendor is assigned and sent the job, and the message in the dev
+outbox has no surname.
+
+---
+
 ## Stack
 
 | | |
@@ -463,6 +530,8 @@ Seed accounts:
 | Hotel owner, The Palmwine House (Growth, active) | `demo@palmwine.ng` | `Demo1234!` |
 | Starter trial (housekeeping locked) | `owner@wusegarden.ng` | `Demo1234!` |
 | Starter, past due | `owner@marinacreek.ng` | `Demo1234!` |
+| Concierge role, The Palmwine House (sees private requests) | `amaka@palmwine.ng` | `Demo1234!` |
+| Front desk, The Palmwine House (private requests masked) | `ngozi@palmwine.ng` | `Demo1234!` |
 | Enterprise, Harmattan Hotels & Suites (owner, manager, front desk) | `owner@harmattanhotels.com`, `gm@harmattanhotels.com`, `frontdesk.abuja@harmattanhotels.com` | `Demo1234!` |
 
 In development the sign-in pages show a small "Dev" button that fills the demo credentials.
@@ -507,6 +576,7 @@ In development the sign-in pages show a small "Dev" button that fills the demo c
 | `/pos`, `/channel-manager`, `/dynamic-pricing`, `/loyalty`, `/inbox`, `/group` | Pro pages (see Milestone 5); on lower plans, previews naming the plan that unlocks them |
 | `/developers`, `/settings/white-label`, `/settings/sso`, `/data-export`, `/support` | Enterprise pages and support (see Milestone 6) |
 | `/site`, `/settings/booking-form`, `/extras`, `/pickup-points`, `/transfers`, `/setup` | Booking site, form, extras, pickups and setup (see Milestone 7) |
+| `/concierge`, `/concierge/services`, `/concierge/vendors`, `/concierge/reports`, `/concierge/settings` | The concierge (see Milestone 8) |
 
 Cmd/Ctrl+K opens the command palette: navigation, actions ("Add rooms in bulk", "Add staff member"),
 theme and log out. Type a room number and a status (`204 dirty`, `305 clean`) to change it without
@@ -599,6 +669,20 @@ src/
     m7-catalog.ts          templates, sections, pairings, library, presets, extras, pickup kinds, transport companies
     use-sortable.ts        drag to reorder with pointer events and arrow keys
     use-media.ts
+```
+
+M8 adds:
+
+```
+src/
+  app/(hotel)/concierge, concierge/requests/[id], concierge/services, concierge/vendors, concierge/reports, concierge/settings
+  components/concierge/
+    board.tsx, request-detail.tsx, quote-composer.tsx, new-request.tsx   the board, a request, quotes, requests for a guest
+    services-view.tsx, service-editor.tsx                                catalogue and editor (reuses form-builder/inspector)
+    vendors-view.tsx, reports-view.tsx, settings-view.tsx, aup.tsx      vendors, SVG reports, settings, the policy gate
+    bits.tsx                                                            seal, security tint, SLA clock, star input
+    today-card.tsx, palette.tsx, routes.tsx, actions.ts                 Today, palette, plan gate and preview, mutations
+  lib/api/types-m8.ts, endpoints-m8.ts, hooks-m8.ts                     the M8 contract
 ```
 
 The shell renders `/site` and `/settings/booking-form` as full-width workspaces that fill the viewport under the top bar.
