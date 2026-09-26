@@ -50,6 +50,7 @@ import {
   Signpost,
   Van,
   ListChecks,
+  CallBell,
   type Icon,
 } from "@phosphor-icons/react";
 import type { Capability, Permission } from "./permissions";
@@ -64,7 +65,7 @@ export interface NavItem {
   /** hidden without this capability or permission (an array means any of them) */
   cap?: Capability | Permission | (Capability | Permission)[];
   /** show a live count badge */
-  badge?: "flags" | "approvals" | "reviews" | "inbox" | "support";
+  badge?: "flags" | "approvals" | "reviews" | "inbox" | "support" | "concierge";
   /** label on the phone tab bar */
   short?: string;
   /** hidden for roles that have this capability (avoids duplicates) */
@@ -87,6 +88,7 @@ export const HOTEL_NAV: NavGroup[] = [
       { href: "/reservations", label: "Reservations", short: "Bookings", icon: BookBookmark, feature: "reservations", cap: "reservations.read", keywords: "bookings stays arrivals codes", shortcut: "G V" },
       { href: "/guests", label: "Guests", icon: AddressBook, feature: "guest_register", cap: "guest.read", keywords: "guest profiles people customers ndpa" },
       { href: "/inbox", label: "Guest inbox", short: "Inbox", icon: ChatCircleText, feature: "whatsapp_messaging", cap: "inbox.view", badge: "inbox", keywords: "whatsapp messages chat conversations reply guests threads", shortcut: "G I" },
+      { href: "/concierge", label: "Concierge", icon: CallBell, feature: "concierge", cap: "concierge.view", badge: "concierge", keywords: "concierge requests guest services spa massage chef barber car driver tour babysitting table booking photographer vendors quote discreet" },
       { href: "/loyalty", label: "Loyalty", icon: Crown, feature: "loyalty", cap: "loyalty.view", keywords: "rewards points members tiers circle redeem" },
       { href: "/reviews", label: "Reviews", icon: ChatsTeardrop, cap: "reviews.read", badge: "reviews", keywords: "ratings stars feedback reply verified stays" },
       { href: "/transfers", label: "Transfers", icon: Van, feature: "paid_extras", cap: "transfers.view", keywords: "pickups drop-offs airport motor park bus driver jibowu mmia train jetty transfer board" },

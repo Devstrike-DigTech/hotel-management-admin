@@ -18,6 +18,7 @@ import { cn } from "@/lib/cn";
 import { LogoMark, Wordmark } from "@/components/brand";
 import { TenantMark, TenantWordmark } from "@/components/tenant-mark";
 import { useSupportSummary } from "@/lib/api/hooks-m6";
+import { useConciergeToday } from "@/lib/api/hooks-m8";
 import { useShellBrand } from "./m6-runtime";
 import { Tip } from "@/components/ui/primitives";
 import { PropertySwitcher } from "./property-switcher";
@@ -44,6 +45,7 @@ export function Sidebar({
   const reviews = useReviewSummary(ready && can("reviews.reply"));
   const inbox = useInboxSummary(ready && can("inbox.view") && has("whatsapp_messaging"));
   const support = useSupportSummary(ready);
+  const concierge = useConciergeToday();
   const brand = useShellBrand();
   const badges: Record<string, number | undefined> = {
     flags: summary.data?.open,
@@ -51,6 +53,7 @@ export function Sidebar({
     reviews: reviews.data?.unreplied,
     inbox: inbox.data?.unread,
     support: support.data?.unread,
+    concierge: concierge.data ? concierge.data.new : undefined,
   };
 
   return (
@@ -163,9 +166,9 @@ function NavLink({
         <span
           className={cn(
             "ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1.5 font-mono text-[10.5px] font-medium",
-            item.badge === "flags" || item.badge === "inbox" || item.badge === "support" ? "bg-laterite text-laterite-ink" : "bg-brass-wash text-brass",
+            item.badge === "flags" || item.badge === "inbox" || item.badge === "support" || item.badge === "concierge" ? "bg-laterite text-laterite-ink" : "bg-brass-wash text-brass",
           )}
-          aria-label={`${count} ${item.badge === "flags" ? "open flags" : item.badge === "reviews" ? "to reply to" : item.badge === "inbox" ? "unread messages" : item.badge === "support" ? "new replies" : "waiting"}`}
+          aria-label={`${count} ${item.badge === "flags" ? "open flags" : item.badge === "reviews" ? "to reply to" : item.badge === "inbox" ? "unread messages" : item.badge === "support" ? "new replies" : item.badge === "concierge" ? "new requests" : "waiting"}`}
         >
           {count}
         </span>

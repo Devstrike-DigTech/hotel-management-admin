@@ -27,6 +27,7 @@ import { StatusSwatch } from "@/components/keyrack/status-swatch";
 import { OccupancyRing } from "@/components/charts/occupancy-ring";
 import { ActivityFeed } from "./activity-feed";
 import { SetupChecklistCard, TransfersTodayCard } from "@/components/m7/today-cards";
+import { ConciergeTodayCard } from "@/components/concierge/today-card";
 
 export function TodayView() {
   const me = useMe();
@@ -161,6 +162,10 @@ export function TodayView() {
 
       <div className="mb-6 empty:hidden">
         <TransfersTodayCard />
+      </div>
+
+      <div className="mb-6 empty:hidden">
+        <ConciergeTodayCard />
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-12">

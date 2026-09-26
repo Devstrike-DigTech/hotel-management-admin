@@ -40,6 +40,7 @@ import { usePropertyScope, useSwitchProperty } from "./property-switcher";
 import { EnvelopeSimple, Eye, FileZip, Fingerprint, Key, Lifebuoy, Palette, WebhooksLogo } from "@phosphor-icons/react";
 import { openSupport } from "@/components/support/new-request";
 import { ListChecks, PaintBrush, ShoppingBag, Signpost, Textbox, Van } from "@phosphor-icons/react";
+import { ConciergePaletteGroups } from "@/components/concierge/palette";
 
 const itemCls =
   "group flex h-10 cursor-pointer items-center gap-3 rounded-md px-3 text-[14px] text-ink outline-none data-[selected=true]:bg-surface-2 data-[disabled=true]:opacity-50";
@@ -197,6 +198,8 @@ export function CommandPalette() {
           </Command.Group>
         )}
 
+        <ConciergePaletteGroups part="hits" open={open} term={search} run={run} itemCls={itemCls} groupCls={groupCls} />
+
         <Command.Group heading="Front desk" className={groupCls}>
           {can("reservations.write") && (
             <Action icon={<CalendarPlus size={17} weight="duotone" />} label="New reservation" hint="walk-in or phone" keywords="book booking walk in create stay" onSelect={() => run(() => openNewReservation({}))} />
@@ -304,6 +307,8 @@ export function CommandPalette() {
           {can("transfers.view") && <Action icon={<Van size={17} weight="duotone" />} label="Today's pickups" hint="assign a driver" locked={!has("paid_extras")} keywords="transfers pickups driver assign airport motor park bus" onSelect={() => run(() => router.push("/transfers"))} />}
           {can("settings.manage") && <Action icon={<ListChecks size={17} weight="duotone" />} label="Resume setup" keywords="setup wizard go live checklist getting started" onSelect={() => run(() => router.push("/setup"))} />}
         </Command.Group>
+
+        <ConciergePaletteGroups part="actions" open={open} term={search} run={run} itemCls={itemCls} groupCls={groupCls} />
 
         <Command.Group heading="Enterprise and help" className={groupCls}>
           {can("integrations.manage") && <Action icon={<Key size={17} weight="duotone" />} label="Create an API key" locked={!has("api_access")} keywords="api key integration developer secret token partner" onSelect={() => run(() => router.push("/developers/api-keys"))} />}
