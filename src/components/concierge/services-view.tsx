@@ -31,7 +31,7 @@ export function ServicesView() {
   const [editing, setEditing] = useState<ConciergeService | "new" | null>(null);
   const list = useMemo(() => q.data ?? [], [q.data]);
   const notLive = list.filter((s) => s.reviewStatus !== "LIVE");
-  const shown = list.filter((s) => (cat === "ALL" ? true : cat === "REVIEW" ? s.reviewStatus !== "LIVE" : s.category === cat));
+  const shown = list.filter((s) => (cat === "ALL" ? true : cat === "REVIEW" ? s.reviewStatus !== "LIVE" : s.category === cat)).sort((a, b) => Number(a.reviewStatus === "LIVE") - Number(b.reviewStatus === "LIVE"));
   const counts = useMemo(() => {
     const m = new Map<ServiceCategory, number>();
     for (const s of list) m.set(s.category, (m.get(s.category) ?? 0) + 1);

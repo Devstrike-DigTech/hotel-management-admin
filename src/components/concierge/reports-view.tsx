@@ -203,43 +203,48 @@ function CategoryBars({ data }: { data: ConciergeReport["byCategory"] }) {
   );
 }
 
-/** Median and slowest-tenth answer times on one ruler, with the two targets marked. */
+/** Median and slowest-tenth answer times on one ruler, with the targets marked (a far pre-arrival target is noted at the end). */
 function ResponseRuler({ rt, inStay, preArrival }: { rt: ConciergeReport["responseTimes"]; inStay: number; preArrival: number }) {
-  const top = Math.max(60, preArrival * 1.1, (rt.p90Minutes ?? 0) * 1.1);
+  const top = Math.ceil(Math.max(30, inStay * 2.5, (rt.p90Minutes ?? 0) * 1.35) / 5) * 5;
   const x = (m: number) => `${Math.min(100, (m / top) * 100)}%`;
   const within = rt.withinSlaPct ?? 0;
+  const marks = [{ m: inStay, label: "in-stay target" }, ...(preArrival <= top ? [{ m: preArrival, label: "pre-arrival target" }] : [])];
   return (
     <div className="flex flex-col gap-5 px-5 py-5">
-      <div className="relative h-16" aria-hidden>
-        <div className="absolute inset-x-0 top-7 h-2 rounded-xs bg-surface-2" />
-        {rt.medianMinutes != null && rt.p90Minutes != null && <div className="absolute top-7 h-2 bg-adire/80" style={{ left: x(0), width: x(rt.p90Minutes) }} />}
-        {rt.medianMinutes != null && <div className="absolute top-7 h-2 bg-adire" style={{ left: 0, width: x(rt.medianMinutes) }} />}
-        {[
-          { m: inStay, label: "in-stay target" },
-          { m: preArrival, label: "pre-arrival target" },
-        ].map((t) => (
-          <div key={t.label} className="absolute top-0 flex -translate-x-1/2 flex-col items-center" style={{ left: x(t.m) }}>
-            <span className="whitespace-nowrap font-mono text-[10.5px] text-ink-muted">{t.m} min</span>
-            <span className="mt-0.5 h-10 border-l border-dashed border-ink" />
-          </div>
-        ))}
+      <div aria-hidden>
+        <div className="relative h-20">
+          <div className="absolute inset-x-0 top-10 h-3 rounded-xs bg-surface-2" />
+          {rt.p90Minutes != null && <div className="absolute left-0 top-10 h-3 rounded-r-[4px] bg-adire/35" style={{ width: x(rt.p90Minutes) }} />}
+          {rt.medianMinutes != null && <div className="absolute left-0 top-10 h-3 rounded-r-[4px] bg-adire" style={{ width: x(rt.medianMinutes) }} />}
+          {marks.map((t) => (
+            <div key={t.label} className="absolute top-0 flex -translate-x-1/2 flex-col items-center" style={{ left: x(t.m) }}>
+              <span className="whitespace-nowrap text-[10.5px] text-ink-muted">{t.label}</span>
+              <span className="font-mono text-[10.5px] text-ink">{t.m} min</span>
+              <span className="mt-0.5 h-8 border-l border-dashed border-ink" />
+            </div>
+          ))}
+        </div>
+        <div className="relative mt-1 h-4 font-mono text-[10.5px] text-ink-faint">
+          <span className="absolute left-0">0</span>
+          <span className="absolute right-0">{preArrival > top ? `${top} min · pre-arrival target ${preArrival} min` : `${top} min`}</span>
+        </div>
       </div>
       <dl className="grid grid-cols-3 gap-3 text-[12.5px]">
         <div>
           <dt className="flex items-center gap-1.5 text-ink-muted">
-            <span className="h-2 w-3 rounded-xs bg-adire" /> Median
+            <span className="h-2.5 w-3 rounded-xs bg-adire" /> Median
           </dt>
-          <dd className="font-mono text-[18px] text-ink">{rt.medianMinutes == null ? "–" : `${rt.medianMinutes} min`}</dd>
+          <dd className="font-mono text-[20px] text-ink">{rt.medianMinutes == null ? "–" : `${rt.medianMinutes} min`}</dd>
         </div>
         <div>
           <dt className="flex items-center gap-1.5 text-ink-muted">
-            <span className="h-2 w-3 rounded-xs bg-adire/50" /> Slowest tenth
+            <span className="h-2.5 w-3 rounded-xs bg-adire/35" /> Slowest tenth
           </dt>
-          <dd className="font-mono text-[18px] text-ink">{rt.p90Minutes == null ? "–" : `${rt.p90Minutes} min`}</dd>
+          <dd className="font-mono text-[20px] text-ink">{rt.p90Minutes == null ? "–" : `${rt.p90Minutes} min`}</dd>
         </div>
         <div>
-          <dt className="text-ink-muted">Late now</dt>
-          <dd className={cn("font-mono text-[18px]", rt.overdueNow ? "text-laterite" : "text-ink")}>{rt.overdueNow}</dd>
+          <dt className="text-ink-muted">Late right now</dt>
+          <dd className={cn("font-mono text-[20px]", rt.overdueNow ? "text-laterite" : "text-ink")}>{rt.overdueNow}</dd>
         </div>
       </dl>
       <div>

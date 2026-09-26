@@ -87,7 +87,7 @@ export function ConciergePaletteGroups({ part, open, term, run, itemCls, groupCl
         </Command.Item>
       )}
       {can("concierge.settings") && (
-        <Command.Item value="concierge settings answer time sla neutral bill wording redaction private visibility" onSelect={() => go("/settings/concierge")} className={itemCls}>
+        <Command.Item value="concierge settings answer time sla neutral bill wording redaction private visibility" onSelect={() => go("/concierge/settings")} className={itemCls}>
           {icon(SlidersHorizontal)}
           <span>Concierge settings</span>
           {lock}

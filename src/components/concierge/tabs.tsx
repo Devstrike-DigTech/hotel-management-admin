@@ -33,7 +33,7 @@ const TABS = [
     cap: "concierge.reports",
   },
   {
-    href: "/settings/concierge",
+    href: "/concierge/settings",
     label: "Settings",
     icon: SlidersHorizontal,
     cap: "concierge.settings",

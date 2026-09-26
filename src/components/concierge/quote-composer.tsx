@@ -12,6 +12,14 @@ import { CONTACT } from "./catalog";
 import { useRequestActions } from "./actions";
 
 const VALIDITY = [2, 6, 24, 72];
+const NOTE_HINT: Partial<Record<string, string>> = {
+  WELLNESS: "A licensed therapist brings the table and oils; 90 minutes in your room.",
+  DINING: "Three courses cooked in your suite; ingredients and the chef's time included.",
+  TRANSPORT: "Car, driver and fuel for the day; tolls and parking extra.",
+  ROMANCE_AND_CELEBRATION: "Roses, candles and a small cake, set up while you're at dinner.",
+  SHOPPING: "Collected tomorrow morning and back by Friday afternoon.",
+  PHOTOGRAPHY: "One hour around the hotel and the beach, 30 edited photos.",
+};
 const toKobo = (s: string) => {
   const n = Number(s.replace(/[^\d.]/g, ""));
   return Number.isFinite(n) ? Math.round(n * 100) : 0;
@@ -56,7 +64,7 @@ export function QuoteComposer({ r, onDone }: { r: RequestDetail; onDone?: () => 
         </div>
       </div>
       <Field label="A line for the guest" htmlFor={`q-note-${r.id}`} optional hint="Plain words: what's included, where, how long.">
-        <Textarea id={`q-note-${r.id}`} className="min-h-16" maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Includes the therapist's table and oils; 90 minutes in your room." data-testid="quote-note" />
+        <Textarea id={`q-note-${r.id}`} className="min-h-16" maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder={NOTE_HINT[r.category ?? "OTHER"] ?? "Everything that's included, where and for how long."} data-testid="quote-note" />
       </Field>
 
       <div className="rounded-md border border-line bg-surface-2/50">

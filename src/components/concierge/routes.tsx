@@ -46,9 +46,9 @@ const sample = (id: string, number: string, title: string, category: RequestList
   flagged: false,
   totalKobo: null,
   paymentStatus: "NONE",
-  sla: { dueAt: at(23), firstResponseAt: null, overdue: false, minutesLeft: 12, escalatedAt: null, target: "IN_STAY" },
-  createdAt: at(9),
-  updatedAt: at(9),
+  sla: { dueAt: new Date(Date.now() + 12 * 60_000).toISOString(), firstResponseAt: null, overdue: false, minutesLeft: 12, escalatedAt: null, target: "IN_STAY" },
+  createdAt: new Date(Date.now() - 4 * 60_000).toISOString(),
+  updatedAt: new Date(Date.now() - 4 * 60_000).toISOString(),
   ...more,
 });
 

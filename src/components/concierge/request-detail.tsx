@@ -258,23 +258,6 @@ function Timeline({ r, canNote }: { r: RequestDetail; canNote: boolean }) {
   return (
     <Panel>
       <PanelHeader title="Timeline" description={r.masked ? "Times and who moved it on. The contents are for the concierge team." : "Every step, message and note. Notes stay with the team."} />
-      {canNote && (
-        <form
-          className="flex flex-col gap-2 border-b border-line px-5 py-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (text.trim()) note.mutate({ id: r.id, text: text.trim() }, { onSuccess: () => setText("") });
-          }}
-        >
-          <label htmlFor="team-note" className="sr-only">
-            Note for the team
-          </label>
-          <Textarea id="team-note" className="min-h-14" placeholder="A note for the team. The guest never sees it." value={text} onChange={(e) => setText(e.target.value)} maxLength={500} />
-          <Button type="submit" size="sm" variant="secondary" className="self-end" loading={note.isPending} disabled={!text.trim()}>
-            <NotePencil size={14} /> Add note
-          </Button>
-        </form>
-      )}
       <ol className="relative flex flex-col px-5 py-4" data-testid="timeline">
         <span aria-hidden className="absolute bottom-6 left-[31px] top-6 w-px bg-line" />
         {events.map((e, i) => (
@@ -293,12 +276,29 @@ function Timeline({ r, canNote }: { r: RequestDetail; canNote: boolean }) {
         ))}
         {!events.length && <li className="text-[13px] text-ink-muted">Opened {formatDateTime(r.createdAt)}.</li>}
       </ol>
+      {canNote && (
+        <form
+          className="flex flex-col gap-2 border-t border-line px-5 py-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (text.trim()) note.mutate({ id: r.id, text: text.trim() }, { onSuccess: () => setText("") });
+          }}
+        >
+          <label htmlFor="team-note" className="sr-only">
+            Note for the team
+          </label>
+          <Textarea id="team-note" className="min-h-14" placeholder="A note for the team. The guest never sees it." value={text} onChange={(e) => setText(e.target.value)} maxLength={500} />
+          <Button type="submit" size="sm" variant="secondary" className="self-end" loading={note.isPending} disabled={!text.trim()}>
+            <NotePencil size={14} /> Add note
+          </Button>
+        </form>
+      )}
     </Panel>
   );
 }
 
 function folioLine(r: RequestDetail, labels?: { inRoom: string; other: string }) {
-  if (r.discreet) return `${r.service?.location === "IN_ROOM" || !r.service ? (labels?.inRoom ?? "In-room service") : (labels?.other ?? "Guest service")} (${r.number})`;
+  if (r.discreet) return `${r.service?.location === "IN_ROOM" ? (labels?.inRoom ?? "In-room service") : (labels?.other ?? "Guest service")} (${r.number})`;
   return `${r.title} (${r.number})`;
 }
 
@@ -323,6 +323,8 @@ function NextStep({ r }: { r: RequestDetail }) {
   let title = "Next step";
   let body: React.ReactNode = null;
   const pendingFlag = r.flagged && r.flag?.status === "PENDING";
+  // once it is booked in or under way it can only be cancelled (API-M8 7.1)
+  const cancelling = r.status === "SCHEDULED" || r.status === "IN_PROGRESS";
 
   if (r.masked) {
     title = FINAL.includes(r.status) ? "Closed" : "Helping it along";
@@ -524,7 +526,7 @@ function NextStep({ r }: { r: RequestDetail }) {
       {!FINAL.includes(r.status) && work && !pendingFlag && (
         <div className="border-t border-line px-5 py-2.5">
           <Button size="sm" variant="ghost" onClick={() => setDeclining(true)} className="hover:text-danger" data-testid="decline-request">
-            <XCircle size={14} /> Decline kindly
+            <XCircle size={14} /> {cancelling ? "Cancel it" : "Decline kindly"}
           </Button>
         </div>
       )}
@@ -532,15 +534,15 @@ function NextStep({ r }: { r: RequestDetail }) {
         open={declining}
         onOpenChange={setDeclining}
         eyebrow={r.number}
-        title="Decline this request?"
+        title={cancelling ? "Cancel this request?" : "Decline this request?"}
         description="The guest gets a short, polite note with your reason in plain words."
         footer={
           <>
             <Button variant="secondary" onClick={() => setDeclining(false)}>
               Keep it
             </Button>
-            <Button variant="danger" disabled={reason.trim().length < 3} loading={decline.isPending} onClick={() => decline.mutate({ id: r.id, reason: reason.trim() }, { onSuccess: () => setDeclining(false) })}>
-              Decline
+            <Button variant="danger" disabled={reason.trim().length < 3} loading={decline.isPending} onClick={() => decline.mutate({ id: r.id, reason: reason.trim(), cancel: cancelling }, { onSuccess: () => setDeclining(false) })}>
+              {cancelling ? "Cancel it" : "Decline"}
             </Button>
           </>
         }

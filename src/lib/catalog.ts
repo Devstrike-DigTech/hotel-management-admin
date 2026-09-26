@@ -137,8 +137,10 @@ const GROWTH = [
   "custom_roles",
   "promotions",
   "sms_messaging",
+  "concierge",
 ];
 const PRO = [
+  "concierge_vendors",
   "site_fonts",
   "form_file_uploads",
   "custom_domain",
@@ -208,6 +210,8 @@ export const FALLBACK_FEATURES: FeatureInfo[] = [
   { code: "dedicated_database", name: "Dedicated database", description: "Your data in an isolated database.", category: "Platform" },
   { code: "sso", name: "Single sign-on", description: "Staff sign in with Google Workspace or Microsoft.", category: "Platform" },
   { code: "data_export", name: "Full data export", description: "Every record in one zip, on demand.", category: "Platform" },
+  { code: "concierge", name: "Concierge", description: "Guest requests, your own services and vendors, quotes and private requests.", category: "Guests" },
+  { code: "concierge_vendors", name: "Vendor commission", description: "Commission per vendor, what you owe them and settling up.", category: "Guests" },
   { code: "brand_kit", name: "Brand kit", description: "Logo, favicon and colours on your booking site.", category: "Growth" },
   { code: "site_templates_all", name: "All site templates", description: "Boutique, Business, Resort and Heritage layouts.", category: "Growth" },
   { code: "site_sections", name: "Section editor", description: "Reorder and switch booking-site sections; light or dark.", category: "Growth" },

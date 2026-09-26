@@ -82,10 +82,10 @@ export function useRequestActions() {
   });
 
   const decline = useMutation({
-    mutationFn: (v: { id: string; reason: string }) => conciergeApi.setStatus(v.id, { status: "DECLINED", note: v.reason }),
+    mutationFn: (v: { id: string; reason: string; cancel?: boolean }) => conciergeApi.setStatus(v.id, { status: v.cancel ? "CANCELLED" : "DECLINED", note: v.reason }),
     onSuccess: (r) => {
       refresh(r);
-      toast.success("Declined", `${r.number}. The guest has been told, kindly.`);
+      toast.success(r.status === "CANCELLED" ? "Cancelled" : "Declined", `${r.number}. The guest has been told, kindly.`);
     },
     meta: { errorTitle: "Not declined" },
   });

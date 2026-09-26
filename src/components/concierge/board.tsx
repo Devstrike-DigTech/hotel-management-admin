@@ -3,12 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CallBell, CheckCircle, Flag, MagnifyingGlass, Play, Plus, Star, Storefront, Timer, WarningCircle } from "@phosphor-icons/react";
+import { CallBell, CheckCircle, Flag, MagnifyingGlass, Play, Plus, Star, Storefront, Timer, UsersThree, WarningCircle } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { useMe } from "@/lib/api/hooks";
 import { useConciergeAccess, useConciergeBoard, useConciergeRequest } from "@/lib/api/hooks-m8";
 import type { ColumnKey, RequestListItem } from "@/lib/api/types-m8";
-import { dayKeyOf, formatDay, lagosHHMM, todayKey } from "@/lib/dates";
+import { dayKeyOf, lagosHHMM, shortWeekday, todayKey } from "@/lib/dates";
 import { initials, naira } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/overlay";
@@ -243,7 +243,7 @@ export function RequestCard({ r, column, onAct, canWork = false }: { r: RequestL
   const router = useRouter();
   const { progress } = useRequestActions();
   const when = r.preferredStart;
-  const whenText = when ? (dayKeyOf(when) === todayKey() ? lagosHHMM(when) : `${formatDay(dayKeyOf(when))} ${lagosHHMM(when)}`) : null;
+  const whenText = when ? (dayKeyOf(when) === todayKey() ? lagosHHMM(when) : `${shortWeekday(dayKeyOf(when))} ${lagosHHMM(when)}`) : null;
   const href = `/concierge/requests/${r.id}`;
   const busy = progress.isPending;
 
@@ -298,9 +298,9 @@ export function RequestCard({ r, column, onAct, canWork = false }: { r: RequestL
       {r.discreet && <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-brass" />}
       <Link href={href} className="block px-3 pb-2 pt-2.5 outline-none focus-visible:bg-surface-2">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[11px] text-ink-muted">{r.number}</span>
+          <span className="whitespace-nowrap font-mono text-[11px] text-ink-muted">{r.number}</span>
           {r.discreet && <DiscreetSeal compact readable={!r.masked} />}
-          <span className="ml-auto">{column === "NEW" ? <SlaTimer r={r} compact /> : whenText ? <span className="font-mono text-[11.5px] text-ink-muted">{whenText}</span> : null}</span>
+          <span className="ml-auto whitespace-nowrap">{column === "NEW" ? <SlaTimer r={r} compact /> : whenText ? <span className="font-mono text-[11.5px] text-ink-muted">{whenText}</span> : null}</span>
         </div>
         <div className="mt-1.5 flex items-start gap-2">
           {r.masked ? (
@@ -316,15 +316,19 @@ export function RequestCard({ r, column, onAct, canWork = false }: { r: RequestL
         </div>
         <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[12px] text-ink-muted">
           {r.roomNumber ? (
-            <span>
+            <span className="shrink-0 whitespace-nowrap">
               Room <span className="font-mono text-ink">{r.roomNumber}</span>
             </span>
           ) : (
-            <span>Before arrival</span>
+            <span className="shrink-0 whitespace-nowrap">Before arrival</span>
           )}
           <span aria-hidden>&middot;</span>
           {r.masked ? <Masked width="7ch" label="Guest withheld" /> : <span className="truncate">{r.guestName ?? "Guest"}</span>}
-          {!!r.partySize && r.partySize > 1 && !r.masked && <span className="shrink-0">&middot; {r.partySize}</span>}
+          {!!r.partySize && r.partySize > 1 && !r.masked && (
+            <span className="ml-auto inline-flex shrink-0 items-center gap-0.5 font-mono text-[11px]" title={`${r.partySize} people`}>
+              <UsersThree size={12} /> {r.partySize}
+            </span>
+          )}
         </p>
         {r.flagged && (
           <p className="mt-2 flex items-center gap-1.5 rounded-xs bg-ochre-wash/70 px-2 py-1 text-[11.5px] text-ink">
