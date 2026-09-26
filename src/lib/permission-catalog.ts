@@ -151,6 +151,19 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     ],
   },
   {
+    key: "concierge",
+    label: "Concierge",
+    items: [
+      P("concierge.view", "See concierge requests", "The board and requests. Private ones show as a private line unless they may see those too."),
+      P("concierge.work", "Work concierge requests", "Take requests for guests, quote, assign staff or vendors, send vendors the job, update and complete."),
+      P("concierge.discreet", "See private requests", "What a private request is, its notes and who asked. Every opening is recorded in the audit log.", true),
+      P("concierge.catalogue", "Keep the catalogue", "Services, their prices and questions, and the vendor directory."),
+      P("concierge.review", "Review held requests", "Decide on requests the content check held back, and hear about late ones.", true),
+      P("concierge.settings", "Concierge settings", "Answer times, bill wording, who sees private requests, and accepting the acceptable-use policy.", true),
+      P("concierge.reports", "Concierge reports", "Requests, answer times, revenue, commission, ratings and exports."),
+    ],
+  },
+  {
     key: "reviews",
     label: "Reviews",
     items: [

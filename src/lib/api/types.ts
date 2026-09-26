@@ -36,7 +36,7 @@ export type BillingInterval = "MONTHLY" | "YEARLY";
 export type SubscriptionStatus = "TRIALING" | "ACTIVE" | "PAST_DUE" | "READ_ONLY" | "SUSPENDED" | "CANCELLED";
 
 /** System roles; M4 adds SUPERVISOR and MAINTENANCE, and CUSTOM for a user on a custom role (see roleId / roleName). */
-export type Role = "OWNER" | "MANAGER" | "FRONT_DESK" | "HOUSEKEEPING" | "ACCOUNTANT" | "SUPERVISOR" | "MAINTENANCE" | "WAITER" | "KITCHEN" | "CUSTOM";
+export type Role = "OWNER" | "MANAGER" | "FRONT_DESK" | "HOUSEKEEPING" | "ACCOUNTANT" | "SUPERVISOR" | "MAINTENANCE" | "WAITER" | "KITCHEN" | "CONCIERGE" | "CUSTOM";
 
 export type RoomStatus = "VACANT_CLEAN" | "VACANT_DIRTY" | "OCCUPIED" | "RESERVED" | "OUT_OF_ORDER";
 

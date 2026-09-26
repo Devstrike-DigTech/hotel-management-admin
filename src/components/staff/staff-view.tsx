@@ -33,6 +33,7 @@ const ROLE_TONE: Record<Role, Tone> = {
   MAINTENANCE: "ochre",
   WAITER: "adire",
   KITCHEN: "ochre",
+  CONCIERGE: "brass",
   CUSTOM: "laterite",
 };
 

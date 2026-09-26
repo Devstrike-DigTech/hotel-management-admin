@@ -76,9 +76,10 @@ export const ROLES: Record<Role, { label: string; description: string }> = {
   MAINTENANCE: { label: "Technician", description: "Maintenance tickets and the diesel log" },
   WAITER: { label: "Waiter / cashier", description: "Takes orders and settles bills at the outlets" },
   KITCHEN: { label: "Kitchen / bar", description: "Works the kitchen display" },
+  CONCIERGE: { label: "Concierge", description: "Guest requests, services and vendors, private requests included" },
   CUSTOM: { label: "Custom role", description: "Permissions chosen by the hotel" },
 };
-export const ROLE_ORDER: Role[] = ["OWNER", "MANAGER", "FRONT_DESK", "HOUSEKEEPING", "SUPERVISOR", "MAINTENANCE", "WAITER", "KITCHEN", "ACCOUNTANT"];
+export const ROLE_ORDER: Role[] = ["OWNER", "MANAGER", "FRONT_DESK", "HOUSEKEEPING", "SUPERVISOR", "MAINTENANCE", "WAITER", "KITCHEN", "CONCIERGE", "ACCOUNTANT"];
 
 /** The display name for a user's role, custom roles included. */
 export function roleLabel(u: { role: Role; roleName?: string | null } | null | undefined): string {

@@ -9,13 +9,13 @@ import { currentPropertyId } from "@/lib/property";
 /**
  * The offline outbox. Desk actions that can be taken without a connection:
  * check-in, payment, room status, check-out, and a housekeeper's start,
- * checklist ticks, finish and skip. Each action gets its own
+ * checklist ticks, finish and skip, and concierge progress (start, complete). Each action gets its own
  * Idempotency-Key the moment the clerk presses the button; the same key is
  * used for the first attempt and every replay, so an action that did reach
  * the server before the line dropped is never applied twice.
  */
 
-export type OutboxKind = "check-in" | "payment" | "room-status" | "check-out" | "housekeeping" | "pos-order";
+export type OutboxKind = "check-in" | "payment" | "room-status" | "check-out" | "housekeeping" | "pos-order" | "concierge";
 
 export interface OutboxItem {
   id: string; // also the Idempotency-Key
